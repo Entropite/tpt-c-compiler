@@ -24,7 +24,26 @@ Node.INVERTED_NODE_TYPES = {
     "WHILE",
     "RETURN",
     "ADDRESS_OF",
-    "DEREFERENCE"
+    "DEREFERENCE",
+    "STRING_LITERAL",
+    "CHARACTER",
+    "TERNARY",
+    "SUM_EXPRESSION",
+    "MULTIPLICATIVE_EXPRESSION",
+    "INITIALIZER_LIST",
+    "DECLARATOR",
+    "DIRECT_DECLARATOR",
+    "INIT_DECLARATOR",
+    "INITIALIZER",
+    "DECLARATION_SPECIFIER",
+    "CAST_EXPRESSION",
+    "UNARY_EXPRESSION",
+    "POSTFIX_EXPRESSION",
+    "PRIMARY_EXPRESSION",
+    "ABSTRACT_DECLARATOR",
+    "DIRECT_ABSTRACT_DECLARATOR",
+    "PARAMETER_DECLARATION",
+    "PARAMETER_LIST"
 }
 
 
@@ -36,7 +55,9 @@ Node.__index = Node
 
 
 
-
+function Node.node_check(n, node_string)
+    return n.type == Node.NODE_TYPES[node_string]
+end
 
 function Node:new(ty)
     local t = {type=ty}

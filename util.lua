@@ -19,7 +19,7 @@ end
 function Utils.string_to_array(str)
     local result = {}
     for i = 1, #str do
-        table.insert(result, string.sub(str, i, i))
+        table.insert(result, i == #str and 0 or string.format("'%s'", string.sub(str, i, i)))
     end
 
     return result

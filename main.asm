@@ -32,6 +32,10 @@
     mul x, x, y
 %endmacro
 
+jmp init
+global_data_section:
+    dw 0, 0
+init:
     mov term_reg, 0x9F80
                               
     ld r0, term_reg                
@@ -48,27 +52,29 @@
 
 start:
     mov stack_pointer,2047
-	mov r5, 8
-	st r5, 2047
-	jmp main
-main:
+	mov r8, x
+	st r8, 1
+	ld r9, 1
+	call r9
+	add stack_pointer, 0
+	mov r10, return_reg
+	st r10, 2
+	hlt
+x:
 	sub stack_pointer, 1
 	push base_pointer
 	mov base_pointer, stack_pointer
-	mov r6, 2047
-	st r6, base_pointer, 1
-	mov r7, 5
-	ld r8, base_pointer, 1
-	ld r8, r8
-	add r7, r8
-	ld r9, base_pointer, 1
-	st r7, r9
-	ld r1, 2047
+	mov r5, 5
+	st r5, base_pointer, 1
+	ld r6, base_pointer, 1
+	add r6, 5
+	mov r1, r6
 	call print_num
-.exit_main:
+	mov r7, return_reg
+.exit_x:
 	pop base_pointer
 	add stack_pointer, 1
-	hlt
+	ret
 print_num:
 	test r1, r1
 	jnz .not_zero
@@ -100,3 +106,15 @@ print_num:
 	ret
 .buf:
 	dw 0, 0, 0, 0, 0
+    
+printf:
+.printf_loop:
+    ld r2, r1
+    test r2, r2
+    jz .printf_exit
+    st r2, term_reg, 0x25
+    add r1, 1
+    jmp .printf_loop
+.printf_exit:
+    ret
+    

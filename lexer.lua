@@ -13,6 +13,7 @@ function Lexer.lex(s)
     local S = loc.space^0
     local TOKEN_TYPES = Token.TOKEN_TYPES
 
+    s = s:gsub("/%*.-%*/", "") -- remove comments
     -- Integers
     local integers = lpeg.C(lpeg.R("09")^1) / function(n) return Token:new(TOKEN_TYPES["INT"], tonumber(n)) end
 
@@ -23,14 +24,15 @@ function Lexer.lex(s)
     local reserved = (lpeg.C(lpeg.P("if") + "else" + "for" + "while" + "return") * -loc.alnum) / function(r) return Token:new(TOKEN_TYPES[string.upper(r)], r) end
 
     -- Type specifiers
-    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void") * -loc.alnum) / function(ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts) end
-    
+    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "struct" + "union") * -loc.alnum) / function(ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts) end
+
+    local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static") * -loc.alnum) / function(sc) return Token:new(TOKEN_TYPES["STORAGE_CLASS"], sc) end
     -- Punctuation
     local punctuation = lpeg.C(lpeg.S("(){};,[]")) / function(p) return Token:new(TOKEN_TYPES[p], p) end
 
 
     -- Operators
-    local non_bool_ops = lpeg.C(lpeg.S("+-*/%!<=>&")) / function(o) return Token:new(TOKEN_TYPES[o], o) end
+    local non_bool_ops = lpeg.C(lpeg.P("++") + lpeg.P("--") + lpeg.S("+-*/%!<=>&?:")) / function(o) return Token:new(TOKEN_TYPES[o], o) end
 
     local bool_ops = lpeg.C(lpeg.P("&&") + "||" + "==" + "!=" + "<=" + ">=") / function(o) return Token:new(TOKEN_TYPES[o], o) end
 
@@ -42,8 +44,10 @@ function Lexer.lex(s)
     -- String Literals
     local string_lit = lpeg.C(lpeg.P("\"") * (lpeg.P(1) - "\"")^0 * "\"") / function(s) return Token:new(TOKEN_TYPES["STRING_LITERAL"], s) end
 
+    local character = lpeg.C(lpeg.P("'") * (lpeg.P(1) - "'") * "'") / function(s) return Token:new(TOKEN_TYPES["CHARACTER"], s) end
+
     -- LPEG is greedy so floats must be checked before integers else, integers will match the integer part of the float
-    local token = S * ((reserved + type_specifier + id + string_lit + floats + integers + punctuation + op) * S)^0
+    local token = S * ((reserved + type_specifier + id + string_lit + character + floats + integers + punctuation + op) * S)^0
     
     tokens = {token:match(s)}
     setmetatable(tokens, {__tostring = function(s) return util.array_to_string(s, " ") end })

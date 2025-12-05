@@ -1,10 +1,11 @@
 local Operand = require("operand")
-
+local serpent = require("serpent")
 local CodeGen = {
     size=2047,
-    global_addr=0,
+    global_addr=1,
     symbol_table={},
     current_method="!global",
+    ir = nil
     
 }
 
@@ -16,7 +17,7 @@ function CodeGen:as_memory(operand)
         return self:as_stack(operand)
     elseif(operand.type == "p") then
         return self:as_parameter(operand)
-    elseif(operand.type == "t" or operand.type == "r") then
+    else
         return self.as_reg(operand)
     end
 end
@@ -26,6 +27,7 @@ function CodeGen:as_parameter(operand)
 end
 
 function CodeGen:as_global(operand)
+    print("a" .. operand.value)
     return self.global_addr + operand.value
 end
 
@@ -43,17 +45,21 @@ end
 
 function CodeGen:emit_get_address(symbol, dest)
     reg = CodeGen.as_reg(dest)
-    if(symbol.place.type == "g") then
-        return string.format("mov %s, %s", reg, self.global_addr + symbol.place.value)
-    elseif(symbol.place.type == "p") then
+    if(symbol.type == "g") then
+        return string.format("mov %s, %s", reg, self.global_addr + symbol.value)
+    elseif(symbol.type == "p") then
         return string.format("mov %s, %s\nadd %s, %s", reg, self.current_method.local_size + 2, reg, "base_pointer")
-    elseif(symbol.place.type == "l") then
-        return string.format("mov %s, %s\nadd %s, %s", reg, symbol.place.value + 1, reg, "base_pointer")
+    elseif(symbol.type == "l") then
+        return string.format("mov %s, %s\nadd %s, %s", reg, symbol.value + 1, reg, "base_pointer")
+    elseif(symbol.type == "pr") then
+        return string.format("mov %s, %s", reg, self.as_reg(symbol))
+    else
+        error("Invalid symbol type")
     end
 end
 
 CodeGen.emission_map = {
-    ["call"]=function(c) return string.format("%s %s", c.type, c.target) end,
+    ["call"]=function(c) return string.format("%s %s", c.type, c.target.type == "i" and c.target.value or CodeGen.as_reg(c.target)) end,
     ["st"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.source), CodeGen:as_memory(c.dest)) end,
     ["ld"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.dest), CodeGen:as_memory(c.source)) end,
     ["push"]=function(c) return string.format("%s %s", c.type, CodeGen.as_reg(c.target)) end,
@@ -61,7 +67,6 @@ CodeGen.emission_map = {
     ["ret"]=function(c) return c.type end,
     ["label"]=function(c) return c.value..":" end,
     ["jmp"]=function(c) return string.format("%s %s", c.type, c.target) end,
-    ["call"]=function(c) return string.format("%s %s", c.type, c.target) end,
     ["!get_address"]=function(c) return CodeGen:emit_get_address(c.target, c.dest) end
 }
 
@@ -74,10 +79,26 @@ setmetatable(CodeGen.emission_map, {
     end                                              
 })
 
+function CodeGen:build_global_data_section()
+    if self.ir == nil then
+        return ""
+    end
+
+    local data_section = {}
+    for i=0, self.ir.global - 1 do
+        if self.ir.global_data[i] ~= nil then
+            table.insert(data_section, self.ir.global_data[i])
+        else
+            table.insert(data_section, 0)
+        end
+    end
+
+    return "dw " .. table.concat(data_section, ", ")
+end
 
 function CodeGen:generate(code)
-    self.global_addr = self.size - code.global
     self.symbol_table = code.symbol_table
+    self.ir = code
     gen = [[
 %include "common"
 
@@ -113,6 +134,11 @@ function CodeGen:generate(code)
     mul x, x, y
 %endmacro
 
+jmp init
+global_data_section:
+    ]] .. self:build_global_data_section() .. [[
+
+init:
     mov term_reg, 0x9F80
                               
     ld r0, term_reg                
@@ -128,7 +154,7 @@ function CodeGen:generate(code)
     st r17, term_reg, 0x45
 
 start:
-    mov stack_pointer,]] .. (self.size - code.global) .. "\n" -- the stack decrements before storing a value, so the stack will initially overlap with the global storage
+    mov stack_pointer,]] .. self.size .. "\n" -- the stack decrements before storing a value, so the stack will initially overlap with the global storage
 
     -- handle global code
     for i, c in ipairs(code.tac["!global"]) do
@@ -136,7 +162,11 @@ start:
     end
 
     code.tac["!global"] = nil
-    gen = gen .. "\tjmp main\n"
+    if(code.tac["main"] ~= nil) then
+        gen = gen .. "\tjmp main\n"
+    else
+        gen = gen .. "\thlt\n"
+    end
     -- handle method code
     for method_id, c in pairs(code.tac) do
         self.current_method = self.symbol_table[method_id]
@@ -149,6 +179,7 @@ start:
         -- emit body
     
         for i, c in ipairs(c) do
+            print(c.type .. " " .. (c.target and c.target.value or "nil"))
             gen = gen .. "\t" .. self.emission_map[c.type](c) .. "\n"
         end
         -- emit epilogue
@@ -194,7 +225,19 @@ print_num:
 .exit:
 	ret
 .buf:
-	dw 0, 0, 0, 0, 0]]
+	dw 0, 0, 0, 0, 0
+    
+printf:
+.printf_loop:
+    ld r2, r1
+    test r2, r2
+    jz .printf_exit
+    st r2, term_reg, 0x25
+    add r1, 1
+    jmp .printf_loop
+.printf_exit:
+    ret
+    ]]
     return gen
 end
 

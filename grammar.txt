@@ -1,0 +1,77 @@
+(* BNF Grammar extracted from parser.lua *)
+
+<program> ::= <declaration>*
+
+<declaration> ::= <declaration_specifier> <declarator> { '=' <initializer>}? ';'
+
+<declaration_specifier> ::= <storage_class_specifier>? <type_specifier>
+
+<storage_class_specifier> ::= 'auto' | 'register' | 'static' | 'extern' | 'typedef'
+
+<type_specifier> ::= <simple_type_specifier> | <struct_or_union_specifier>
+
+<simple_type_specifier> ::= 'void' | 'char' | 'int' | <other_type_specifier>
+
+<struct_or_union_specifier> ::= ('struct' | 'union') <identifier>? '{' <struct_declaration> '}'?
+
+<struct_declaration> ::= <type_specifier> <struct_declarator_list>
+(* Note: parse_struct_declarator_list is referenced but not implemented *)
+
+<declarator> ::= '*'* <direct_declarator>
+
+<direct_declarator> ::= <identifier> | '(' <declarator> ')' | <direct_declarator> '[' <integer>? ']'
+
+<initializer> ::= '{' <initializer_list> ','? '}' | <assignment_expression>
+
+<initializer_list> ::= <initializer> (',' <initializer>)*
+
+<statement> ::= <local_declaration> | <if_statement> | <for_statement> | <while_statement> | <return_statement> | <expression>
+(* Note: parse_while is referenced but not implemented *)
+
+<local_declaration> ::= <type_specifier> <identifier> ('=' <assignment_expression>)?
+
+<block> ::= '{' <statement> (';' <statement>)* ';'? '}'
+
+<if_statement> ::= 'if' '(' <expression> ')' <block>
+
+<for_statement> ::= 'for' '(' <expression> ';' <expression> ';' <expression> ')' <block>
+
+<return_statement> ::= 'return' <expression>
+
+<expression> ::= <assignment_expression> (',' <assignment_expression>)*
+
+<assignment_expression> ::= <ternary_expression> | <ternary_expression> '=' <assignment_expression>
+
+<ternary_expression> ::= <sum_expression> | <sum_expression> '?' <assignment_expression> ':' <sum_expression>
+
+<sum_expression> ::= <term> (('+' | '-') <term>)*
+
+<term> ::= <factor> (('*' | '/' | '%') <factor>)*
+
+<factor> ::= <integer> | <identifier> | <function_call> | '(' <expression> ')' | <address_of> | <dereference> | <string_literal> | <character>
+
+<function_call> ::= <identifier> '(' <argument_list> ')'
+
+<argument_list> ::= <assignment_expression> (',' <assignment_expression>)* | ε
+
+<address_of> ::= '&' <identifier>
+
+<dereference> ::= '*' <sum_expression>
+
+<parameter_list> ::= <parameter> (',' <parameter>)* | ε
+
+<parameter> ::= <type_specifier> <identifier>
+
+<identifier> ::= ID
+
+<integer> ::= INT
+
+<string_literal> ::= STRING_LITERAL
+
+<character> ::= CHARACTER
+
+(* Terminal symbols *)
+(* ID, INT, STRING_LITERAL, CHARACTER are token types *)
+(* Operators: '+', '-', '*', '/', '%', '=', '?', ':', '&', '(', ')', '[', ']', '{', '}', ';', ',' *)
+(* Keywords: 'if', 'for', 'while', 'return', 'void', 'char', 'int', 'struct', 'union', 'auto', 'register', 'static', 'extern', 'typedef' *)
+
