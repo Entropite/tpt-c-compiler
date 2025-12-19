@@ -1,13 +1,15 @@
 local Operand = require("operand")
 local serpent = require("serpent")
+local Standard_Library = require("standard_library")
 local CodeGen = {
-    size=2047,
+    size=8191,
     global_addr=1,
     symbol_table={},
     available_registers={},
     current_method="!global",
-    register_count=22,
-    ir = nil
+    register_count=21,
+    ir = nil,
+    optimized = true
     
 }
 
@@ -23,6 +25,10 @@ function CodeGen:as_memory(operand)
         return self:as_stack(operand)
     elseif(operand.type == "p") then
         return self:as_parameter(operand)
+    elseif(operand.type == "i") then
+        return operand.value
+    elseif(operand.type == "pr" and operand.offset) then
+        return self.as_reg(operand) .. ", " .. (operand.offset.type == "i" and operand.offset.value or self.as_reg(operand.offset))
     else
         return self.as_reg(operand)
     end
@@ -57,12 +63,14 @@ function CodeGen:emit_get_address(symbol, dest)
     if(symbol.type == "g") then
         return string.format("mov %s, %s", reg, self.global_addr + symbol.value)
     elseif(symbol.type == "p") then
-        return string.format("mov %s, %s\nadd %s, %s", reg, self.current_method.local_size + 2 + symbol.value, reg, "base_pointer")
+        return string.format("add %s, %s, %s", reg, "base_pointer", self.current_method.local_size + 2 + symbol.value)
     elseif(symbol.type == "l") then
-        return string.format("mov %s, %s\nadd %s, %s", reg, symbol.value + 1, reg, "base_pointer")
+        return string.format("add %s, %s, %s", reg, "base_pointer", symbol.value + 1)
     elseif(symbol.type == "pr") then
         return string.format("mov %s, %s", reg, self.as_reg(symbol))
     else
+        print(symbol.type)
+        print(serpent.line(dest))
         error("Invalid symbol type")
     end
 end
@@ -77,7 +85,9 @@ CodeGen.emission_map = {
     ["label"]=function(c) return c.target.value..":" end,
     ["cmp"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.first), c.second.type == "i" and c.second.value or CodeGen.as_reg(c.second)) end,
     ["!get_address"]=function(c) return CodeGen:emit_get_address(c.target, c.dest) end,
-    ["nop"]=function(c) return c.type end
+    ["nop"]=function(c) return c.type end,
+    ["addoffset"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
+    ["ldoffset"]=function(c) return string.format("%s %s, %s, %s", "ld", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end
 }
 
 
@@ -87,7 +97,7 @@ setmetatable(CodeGen.emission_map, {
                     if(string.sub(c.type, 1, 1) == "j") then
                         return string.format("%s %s", c.type, c.target.value)
                     else
-                        return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source)) 
+                        return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen:as_memory(c.source)) 
                     end
                 end
     end                                              
@@ -122,6 +132,19 @@ function CodeGen:generate(code, symbol_table)
 %define term_reg r28
 %define return_addr_reg r27
 
+%define term_base 0x9F80
+
+%eval term_input  term_base 0x00 +
+%eval term_raw    term_base 0x04 +
+%eval term_single term_base 0x05 +
+%eval term_print  term_base 0x25 +
+%eval term_term   term_base 0x35 +
+%eval term_hrange term_base 0x42 +
+%eval term_vrange term_base 0x43 +
+%eval term_cursor term_base 0x44 +
+%eval term_nlchar term_base 0x45 +
+%eval term_colour term_base 0x46 +
+
 
 %macro push thing
     subs stack_pointer, 1
@@ -139,9 +162,9 @@ function CodeGen:generate(code, symbol_table)
 %endmacro
 
 %macro ret
-    mov r2, return_addr_reg
+    mov r26, return_addr_reg
     pop return_addr_reg
-    jmp r2
+    jmp r26
 %endmacro
 
 %macro mull x, y
@@ -157,21 +180,22 @@ init:
                               
     ld r0, term_reg                
     mov r1, { 11 5 << }
-    st r1, term_reg, 0x42
+    st r1, term_hrange
     mov r1, { 7 5 << }
-    st r1, term_reg, 0x43
-    mov r17, 0x1000
-    st r17, term_reg, 0x44
-    mov r17, 0xF
-    st r17, term_reg, 0x46
-    mov r17, 1
-    st r17, term_reg, 0x45
+    st r1, term_vrange
+    mov r1, 0x1000
+    st r1, term_cursor
+    mov r1, 0xF
+    st r1, term_colour
+    mov r1, 10
+    st r1,  term_nlchar
 
 start:
     mov stack_pointer,]] .. self.size .. "\n" -- the stack decrements before storing a value, so the stack will initially overlap with the global storage
 
     -- handle global code
-    self:allocate_registers(code.tac["!global"])
+    --self:peephole(code.tac["!global"])
+    --self:allocate_registers(code.tac["!global"])
     for i, c in ipairs(code.tac["!global"]) do
         gen = gen .. "\t" .. self.emission_map[c.type](c) .. "\n"
         
@@ -189,19 +213,36 @@ start:
         -- emit prologue
         method = self.symbol_table.get_symbol(method_id, symbol_table.ordinary)
         gen = gen .. method_id .. ":\n"
-        gen = gen .. "\tsub stack_pointer, " .. method.local_size .. "\n"
+        if(method.local_size > 0) then
+            gen = gen .. "\tsub stack_pointer, " .. method.local_size .. "\n"
+        end
         gen = gen .. "\tpush base_pointer\n"
         gen = gen .. "\tmov base_pointer, stack_pointer\n"
         -- emit body
-        self:allocate_registers(c)
-        for i, c in ipairs(c) do
-            gen = gen .. "\t" .. self.emission_map[c.type](c) .. "\n"
+        local used_registers = nil
+        if(self.optimized) then
+            used_registers =self:allocate_registers(c)
             
+            self:peephole(c)
+            for i, v in ipairs(used_registers) do
+                gen = gen .. "\tpush r" .. v .. "\n"
+            end
+        end
+        for i, c in ipairs(c) do
+            assert(c.type ~= nil, "Nil instruction")
+            gen = gen .. "\t" .. self.emission_map[c.type](c) .. "\n"
         end
         -- emit epilogue
         gen = gen .. ".exit_" .. method_id .. ":\n"
+        if(used_registers ~= nil) then
+            for i = #used_registers, 1, -1 do
+                gen = gen .. "\tpop r" .. used_registers[i] .. "\n"
+            end
+        end
         gen = gen .. "\tpop base_pointer\n"
-        gen = gen .. "\tadd stack_pointer, " .. method.local_size .. "\n"
+        if(method.local_size > 0) then
+            gen = gen .. "\tadd stack_pointer, " .. method.local_size .. "\n"
+        end
         if(method_id ~= "main") then
             gen = gen .. "\tret\n"
         else
@@ -210,120 +251,384 @@ start:
     end
 
     -- print num + other util functions
-    built_ins =string.gsub([[
-__print_unsigned_int:
-	test %1, %1
-	jnz .__print_unsigned_int_not_zero
-	mov %1, '0'
-	st %1, term_reg, 0x25
-	jmp .__print_unsigned_int_exit
-.__print_unsigned_int_not_zero:
-	mov %2, 4		; p = 4
-.__print_unsigned_int_fixed_point:
-	mulh %3, %1, 52429	; q = (n * 52429) >> 16
-	shr %3, 3		; q >>= 3
-	mul %4, %3, 10		; d*q
-	sub %1, %4		; remainder = n - d*q
-	st %1, %2, .__print_unsigned_int_buf		
-	sub %2, 1		; p--;
-	movf %1, %3		; n = q
-	jnz .__print_unsigned_int_fixed_point
-
-	add %2, 1
-.__print_unsigned_int_print_int:
-	ld %1, %2, .__print_unsigned_int_buf
-	add %1, '0'
-	st %1, term_reg, 0x25
-	add %2, 1
-	cmp %2, 5
-	jne .__print_unsigned_int_print_int
-	
-.__print_unsigned_int_exit:
-	ret
-.__print_unsigned_int_buf:
-	dw 0, 0, 0, 0, 0
-
-__print_signed_int:
-    cmp %1, 0
-    jge .__print_signed_int_not_negative
-    mov %2, '-'
-    st %2, term_reg, 0x25
-	xor %1, 65535
-    add %1, 1
-.__print_signed_int_not_negative:
-    call __print_unsigned_int
-    ret
-    
-printf:
-.printf_loop:
-    ld %2, %1
-    test %2, %2
-    jz .printf_exit
-    st %2, term_reg, 0x25
-    add %1, 1
-    jmp .printf_loop
-.printf_exit:
-    ret
-
-putchar:
-    st %1, term_reg, 0x25
-    ret
-
-getchar:
-    ld return_reg, term_reg
-    test return_reg, return_reg
-    jz getchar
-    ret
-
-]], "%%(%d+)", {["1"]="r23", ["2"]="r24", ["3"]="r25", ["4"]="r26"})
+    built_ins =string.gsub(Standard_Library.code, "%%(%d+)", {["1"]="r22", ["2"]="r23", ["3"]="r24", ["4"]="r25"})
 
     return gen .. built_ins
 end
 
-function CodeGen:allocate_registers(tac)
-    local intervals = {}
+function CodeGen:tac_to_string(tac)
+    return "\t" .. self.emission_map[tac.type](tac) .. "\n"
+end
+
+CodeGen.use_def_map = {
+    ["st"]=function(c) return {c.dest, c.source}, {} end,
+    ["ld"]=function(c) return {c.source}, {c.dest} end,
+    ["push"]=function(c) return {c.target}, {} end,
+    ["pop"]=function(c) return {}, {c.target} end,
+    ["call"]=function(c) return {c.target}, {} end,
+    ["addoffset"]=function(c) return {c.source, c.offset}, {c.dest} end,
+    ["ldoffset"]=function(c) return {c.source, c.offset}, {c.dest} end,
+    ["cmp"]=function(c) return {c.first, c.second}, {} end,
+    ["add"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["sub"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["mull"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["shl"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["shr"]=function(c) return {c.source, c.dest}, {c.dest} end
+}
+setmetatable(CodeGen.use_def_map, {
+    __index=function(t, x)
+        return function(c) return {c.source}, {c.dest} end
+    end
+})
+
+function CodeGen:build_basic_blocks(tac)
+    local basic_blocks = {}
+    local current_block = {start=1, id="!start", code={}, pred={}, succ={}}
+    basic_blocks[#basic_blocks + 1] = current_block
+    local block_map = {[current_block.id]=current_block}
+
+    function new_block(pred, succ, id)
+        id=id or "anon_block" .. #basic_blocks
+        local new_block = {id=id, code={}, pred=pred, succ=succ}
+        table.insert(basic_blocks, new_block)
+        block_map[id] = new_block
+        return new_block
+    end
+
     for i, c in ipairs(tac) do
-        for j, operand in pairs(c) do
-            if(operand.type == "t" or operand.type == "pr") then
-                
-                if(intervals[operand.value] == nil) then
-                    -- overwrite the metatable to sort
-                    intervals[operand.value] = {start=i, last_use=i}
-                else
-                    intervals[operand.value].last_use = i
+        c.index = i
+        if(c.type == "label") then
+            table.insert(current_block.succ, c.target.value)
+            if(block_map[c.target.value] == nil) then
+                current_block = new_block({current_block.id}, {}, c.target.value)
+            else
+                table.insert(block_map[c.target.value].pred, current_block.id)
+                current_block = block_map[c.target.value]
+            end
+                -- always entering an empty block although previous jmps may have discovered it
+                current_block.code = {c}
+        elseif(c.type == "jmp") then
+            table.insert(current_block.succ, c.target.value)
+            if(block_map[c.target.value] == nil) then
+                new_block({current_block.id}, {}, c.target.value)
+            else
+                table.insert(block_map[c.target.value].pred,current_block.id)
+            end
+            table.insert(current_block.code, c)
+            current_block = new_block({}, {})
+        elseif(string.sub(c.type, 1, 1) == "j") then
+            table.insert(current_block.succ, c.target.value)
+            -- conditional jump
+            if(block_map[c.target.value] == nil) then
+                new_block({current_block.id}, {}, c.target.value)
+            else
+                table.insert(block_map[c.target.value].pred, current_block.id)
+            end
+            table.insert(current_block.code, c)
+            table.insert(current_block.succ, "anon_block" .. #basic_blocks)
+            current_block = new_block({current_block.id}, {})
+        else
+            table.insert(current_block.code, c)
+        end
+    end
+
+    return basic_blocks, block_map
+end
+
+local reg_operands = {["t"]=1, ["vr"]=1, ["pr"]=1}
+
+
+function CodeGen.get_polished_use_def(use, def)
+    local polished_use = {}
+    for _, v in ipairs(use) do
+        if(reg_operands[v.type] and v.value ~= "return_reg") then
+            table.insert(polished_use, v.value)
+        end
+    end
+    local polished_def = {}
+    for _, v in ipairs(def) do
+        if(reg_operands[v.type] and v.value ~= "return_reg") then
+
+            table.insert(polished_def, v.value)
+        end
+    end
+    return polished_use, polished_def
+end
+
+function CodeGen:build_block_use_def(block)
+    local def_seen = {}
+    block.use = {}
+    block.def = {}
+    for i, c in ipairs(block.code) do
+        local use, def = self.get_polished_use_def(self.use_def_map[c.type](c))
+        if(#use > 0 and use[1] == nil or #def > 0 and def[1] == nil) then
+            error()
+        end
+        for _,v in ipairs(use) do
+            if(def_seen[v] == nil) then
+                block.use[v] = true
+            end
+        end
+        for _,v in ipairs(def) do
+            if(def_seen[v] == nil) then
+                def_seen[v] = true
+                block.def[v] = true
+            end
+        end
+    end
+end
+
+function multi_union(sets)
+    local union = {}
+    for _, set in ipairs(sets) do
+        for k, v in pairs(set) do
+            union[k] = true
+        end
+    end
+    return union
+end
+
+function difference(set1, set2)
+    local diff = {}
+
+    for k, v in pairs(set1) do
+        if(set2[k] == nil) then
+            diff[k] = true
+        end
+    end
+    return diff
+end
+
+function equal(set1, set2)
+    for k, v in pairs(set1) do
+        if(set2[k] == nil) then
+            return false
+        end
+    end
+    for k, v in pairs(set2) do
+        if(set1[k] == nil) then
+            return false
+        end
+    end
+    return true
+end
+
+function CodeGen:liveness_block_analysis(blocks)
+    local changed = true
+
+    while(changed) do
+        changed = false
+        for name, block in pairs(blocks) do
+            local old_in = block.live_in or {}
+            local old_out = block.live_out or {}
+
+            local succ_ins = {}
+            for _, succ in ipairs(block.succ) do
+                table.insert(succ_ins, blocks[succ].live_in)
+            end
+            block.live_out = multi_union(succ_ins)
+            block.live_in = multi_union({block.use, difference(block.live_out, block.def)})
+            if(not(equal(old_in, block.live_in) and equal(old_out, block.live_out))) then
+                changed = true
+            end
+        end
+    end
+end
+
+function copy_set(s)
+    local copy = {}
+    for k, v in pairs(s) do
+        copy[k] = v
+    end
+    return copy
+end
+
+function CodeGen:compute_per_instruction_liveness(block)
+    block.per_instruction_live_in = {}
+    block.per_instruction_live_out = {}
+    if(#block.code == 0) then
+        return
+    end
+    local live = copy_set(block.live_out)
+    for i = #block.code, 1, -1 do
+        block.per_instruction_live_out[i] = copy_set(live)
+        local temp_use, temp_def = self.get_polished_use_def(self.use_def_map[block.code[i].type](block.code[i]))
+        local use = {}
+        local def = {}
+        for i, v in ipairs(temp_use) do
+            use[v] = true
+        end
+        for i, v in ipairs(temp_def) do
+            def[v] = true
+        end
+        live = multi_union({use, difference(live, def)}) or {}
+        
+        block.per_instruction_live_in[i] = copy_set(live)
+    end
+    if(not equal(block.live_in, block.per_instruction_live_in[1])) then
+        print(block.id)
+        for k, v in pairs(block.per_instruction_live_in[1]) do
+            print("per instruction live in", k, v)
+        end
+        for k, v in pairs(block.live_in) do
+            print("live in", k, v)
+        end
+
+        error("Live in and per instruction live in are not equal")
+    end
+    if(not equal(block.live_out, block.per_instruction_live_out[#block.code])) then
+        error("Live out and per instruction live out are not equal")
+    end
+end
+
+function CodeGen:build_interference_graph(blocks)
+    local interference_graph = {}
+
+    for i, block in ipairs(blocks) do
+        for j = 1, #block.code do
+            local use, def = self.get_polished_use_def(self.use_def_map[block.code[j].type](block.code[j]))
+            for _, v in ipairs(def) do
+                interference_graph[v] = interference_graph[v] or {}
+                for k, _ in pairs(block.per_instruction_live_out[j]) do
+                    assert(type(v) == "number" and type(k) == "number", "Invalid operands")
+                    interference_graph[k] = interference_graph[k] or {}
+                    if(v ~= k) then
+                        
+                        interference_graph[v][k] = true
+                        
+                        interference_graph[k][v] = true
+                    end
                 end
             end
         end
     end
 
-    local events = {}
-    for reg_id, interval in pairs(intervals) do
-        table.insert(events, {type="+", value=reg_id, time=interval.start})
-        table.insert(events, {type="-", value=reg_id, time=interval.last_use})
+    return interference_graph
+end
+
+function CodeGen:colour_graph(graph)
+    local colour_mapping = {}
+    local max_colour = 0
+
+    for reg, neighbours in pairs(graph) do
+        local used = {}
+        for n,_ in pairs(neighbours) do
+            local c = colour_mapping[n]
+            if c then used[c] = true end
+        end
+
+        local c = 1
+        while used[c] do c = c + 1 end
+
+        colour_mapping[reg] = c
+        if c > max_colour then max_colour = c end
     end
 
-    table.sort(events, function(a, b) return a.time < b.time end)
+    return colour_mapping
+end
 
-    local register_map = {}
 
-    for i, event in ipairs(events) do
-        if(event.type == "+") then
-            register_map[event.value] = table.remove(self.available_registers)
+
+
+
+
+function CodeGen:allocate_registers(tac)
+
+    local blocks, block_map = self:build_basic_blocks(tac)
+    for i, block in ipairs(blocks) do
+        self:build_block_use_def(block)
+    end
+    self:liveness_block_analysis(block_map)
+
+    local sort_by_code_order = function(a, b)
+        if(#a.code == 0) then
+            return false
+        elseif(#b.code == 0) then
+            return true
         else
-            table.insert(self.available_registers, register_map[event.value])
+            return a.code[1].index < b.code[1].index
         end
     end
 
-    for i, c in ipairs(tac) do
-        for j, operand in pairs(c) do
-            if(operand.type == "t" or operand.type == "pr") then
+    table.sort(blocks, sort_by_code_order)
+
+    for i, block in ipairs(blocks) do
+        self:compute_per_instruction_liveness(block)
+        -- if(#block.code > 0) then
+        --     print("\n\n\n",block.id, block.code[1].index)
+        --     for i, v in ipairs(block.pred) do
+        --         print("\tpred", v)
+        --     end
+        --     for i, v in ipairs(block.succ) do
+        --         print("\tsucc", v)
+        --     end
+        --     for j=1, #block.code do
+        --         print("Index ", j, "\t", self:tac_to_string(block.code[j]))
+        --         for k, v in pairs(block.per_instruction_live_in[j]) do
+        --             print("per instruction live in\t", k)
+        --         end
+        --         for k, v in pairs(block.per_instruction_live_out[j]) do
+        --             print("per instruction live ou\t", k)
+        --         end
+        --     end
+
+        -- end
+    end
+
+    local interference_graph = self:build_interference_graph(blocks)
+
+    -- for k, v in pairs(interference_graph) do
+    --     print("Neighbours of", k)
+    --     for k2, v2 in pairs(v) do
+    --         print("\t", k2)
+    --     end
+    -- end
+
+
+    local colour_mapping = self:colour_graph(interference_graph)
+
+    for i, cx in ipairs(tac) do
+        for j, operand in pairs(cx) do
+            if(type(operand) == "table" and (operand.type == "t" or operand.type == "pr" or operand.type == "vr")) then
                 
+                assert(colour_mapping[operand.value] ~= nil, "Invalid operand")
+                operand.value = colour_mapping[operand.value]
                 operand.type = "r"
-                operand.value = register_map[operand.value]
-                
             end
         end
     end
+
+    local used = {}
+    local colour_list = {}
+    for k, v in pairs(colour_mapping) do
+        if(used[v] == nil) then
+            table.insert(colour_list, v)
+            used[v] = true
+        end
+    end
+
+    return colour_list
+
 end
+
+function CodeGen:peephole(tac)
+    local removals = 0
+    for i = #tac - 1, 1, -1 do
+        local c = tac[i]
+        if(c.type == "mov" and c.source == c.dest) then
+            table.remove(tac, i)
+            removals = removals + 1
+        end
+        -- if(c.type == "addoffset" and tac[i + 1].type == "ld" and c.dest == tac[i + 1].source) then
+        --     tac[i] = {type="ldoffset", source=c.source, dest=tac[i + 1].dest, offset=c.offset}
+        --     table.remove(tac, i + 1)
+        -- elseif(c.type == "mov" and tac[i + 1].type == "add" or tac[i + 1].type == "sub" and c.dest == tac[i + 1].dest) then
+        --     --tac[i + 1].source = Operand:new("pr", c.source.value, tac[i + 1].source)
+        --     --table.remove(tac, i)
+        -- end
+    end
+    print("Removed", removals, "instructions")
+end
+
 
 return CodeGen

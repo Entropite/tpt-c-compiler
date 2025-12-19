@@ -16,6 +16,15 @@ function Utils.invert_table(table)
     return inverted_table
 end
 
+function Utils.split_string(str, delimiter)
+    local result = {}
+    for match in string.gmatch(str, "([^" .. delimiter .. "]+)") do
+        table.insert(result, match)
+    end
+
+    return result
+end
+
 function Utils.string_to_array(str)
     local result = {}
     for i = 1, #str do

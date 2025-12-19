@@ -2,6 +2,7 @@ local Node = require('node')
 local util = require('util')
 local serpent = require('serpent')
 local Type = require('type')
+local Operand = require('operand')
 local Type_Checker = {}
 
 
@@ -12,6 +13,7 @@ function Type_Checker:type_check(ast, symbol_table)
     local func = Type.func
     local struct = Type.struct
     local union = Type.union
+    local enum = Type.enum
     local to_string = Type.to_string
     local to_string_pretty = Type.to_string_pretty
     local same_type_chain = Type.same_type_chain
@@ -76,10 +78,29 @@ function Type_Checker:type_check(ast, symbol_table)
         n.handle = get_symbol(n.id.id, symbol_table.tag)
     end
 
+    function check_enum_type(n)
+        
+        if(n.declaration) then
+            local type = enum(n.id.id)
+            for i, value in ipairs(n.declaration) do
+                type.members[value.id] = {type=base("INT", false)}
+                type.members[value.id].place = Operand:new("i", i - 1)
+                add_symbol(value.id, type.members[value.id], symbol_table.ordinary)
+            end
+            add_symbol(n.id.id, {type = type}, symbol_table.tag)
+        end
+        n.value_type = base("INT", false)
+
+        n.handle = get_symbol(n.id.id, symbol_table.tag)
+    end
+
     function build_type(n)
         local base_type = nil
         if(node_check(n.specifier.type_specifier.kind, "STRUCT_OR_UNION_SPECIFIER")) then
             check_struct_or_union_type(n.specifier.type_specifier.kind)
+            base_type = n.specifier.type_specifier.kind.value_type
+        elseif(node_check(n.specifier.type_specifier.kind, "ENUM_SPECIFIER")) then
+            check_enum_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
         else
             base_type = base(n.specifier.type_specifier.kind)
@@ -91,30 +112,50 @@ function Type_Checker:type_check(ast, symbol_table)
             n.value_type = base_type
         end
 
-        if(n.initializer) then
-            if(n.value_type.kind == Type.KINDS["ARRAY"] and n.value_type.length == -1) then
-                n.value_type.length = #n.initializer
-            end
-            if(node_check(n.initializer, "INITIALIZER_LIST")) then
-                if(not check_initializer_list(n.initializer, n.value_type)) then
+        if(n.value_type.kind == Type.KINDS["VOID"]) then
+            error("Cannot declare a variable of type void")
+        end
 
+        if(n.initializer) then
+            if(node_check(n.initializer, "INITIALIZER_LIST")) then
+                if(n.value_type.length == -1) then
+                    n.value_type.length = #n.initializer
+                end
+                -- checks whether the initializer list can be morphed into the target type
+                if(not match_initializer_list(n.initializer, n.value_type)) then
                     error("Initializer list does not match the declared type")
                 end
                 n.initializer.value_type = n.value_type
             else
-                if(not can_coerce(check_initializer(n.initializer), n.value_type)) then
+                
+                if(not can_coerce(check_initializer(n.initializer), n.value_type, true)) then
+                    print(to_string_pretty(n.initializer.value_type))
                     error("Initializer does not match the declared type")
+                end
+
+                if(n.initializer.value and node_check(n.initializer.value, "STRING_LITERAL")) then
+                    if(n.value_type.kind == Type.KINDS["ARRAY"] and n.value_type.length == -1) then
+                        n.value_type.length = #n.initializer.value.value + 1
+                    else
+                        n.initializer.value_type = n.value_type
+                    end
                 end
             end
         end
 
         if(n.id) then
-            add_symbol(n.id.id, {type = n.value_type}, symbol_table.ordinary)
+            if(n.is_function and not n.block) then
+                add_symbol(n.id.id, {type = n.value_type, is_prototype = true}, symbol_table.ordinary)
+            else
+                add_symbol(n.id.id, {type = n.value_type}, symbol_table.ordinary)
+            end
             n.handle = get_symbol(n.id.id, symbol_table.ordinary)
         else
+            -- when declaring a struct, union, or enum type, the handle is the created tag symbol
             n.handle = get_symbol(n.specifier.type_specifier.kind.id.id, symbol_table.tag)
         end
 
+        -- for when a function is declared
         if(n.block) then
             new_scope(n.declarator.direct_declarator.id.id)
             for _, child in ipairs(n.declarator.direct_declarator.parameter_list) do
@@ -188,9 +229,33 @@ function Type_Checker:type_check(ast, symbol_table)
             -- nothing
         elseif(node_check(n.child, "WHILE")) then
             check_while(n.child)
+        elseif(node_check(n.child, "SWITCH")) then
+            check_switch(n.child)
+        elseif(node_check(n.child, "CASE")) then
+            check_case(n.child)
+        elseif(node_check(n.child, "DEFAULT")) then
+            check_default(n.child)
         elseif(node_check(n.child, "EXPRESSION")) then
             check_expression(n.child)
         end
+    end
+
+    function check_switch(n)
+        if(not can_coerce(check_expression(n.condition), base("INT"))) then
+            error("The condition for a switch statement must be coercible to an int")
+        end
+        check_block(n.block)
+    end
+
+    function check_case(n)
+        if(not can_coerce(check_primary_expression(n.value), base("INT"))) then
+            error("The value of a case statement must be coercible to an int")
+        end
+        check_statement(n.statement)
+    end
+
+    function check_default(n)
+        check_statement(n.statement)
     end
 
     function check_for(n)
@@ -267,60 +332,41 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function can_coerce(type, target, allow_greater_target_length)
         allow_greater_target_length = allow_greater_target_length or false
-
-        -- array to pointer decay
-        while(type ~= nil and target ~= nil) do
-
-            if(target.kind == Type.KINDS["STRUCT"]) then
-                if(type.kind == Type.KINDS["STRUCT"]) then
-                    if(type.id ~= target.id) then
-                        return false
-                    end
-                    return true
-                elseif(type.kind == Type.KINDS["ARRAY"]) then
-                    return can_coerce_array_to_struct(type, target)
-                else
-                    return false
-                end
-            -- can coerce when both types are base types or if the coerced type is void at any point in the type chain
-            elseif(type.kind == Type.KINDS["FUNCTION"] and target.kind == Type.KINDS["FUNCTION"]) then
-                if(#type.parameter_types ~= #target.parameter_types) then
-                    return false
-                end
-
-                for i, param_type in ipairs(type.parameter_types) do
-                    if(not can_coerce(param_type, target.parameter_types[i])) then
-                        return false
-                    end
-                end
-
-                return true
-            elseif(is_base_type(type) and is_base_type(target) or type.kind == Type.KINDS["VOID"]) then
-                return true
-            elseif(type.kind ~= target.kind and not (type.kind == Type.KINDS["ARRAY"] and target.kind == Type.KINDS["POINTER"])) then
-                break
-            elseif(type.length ~= nil and target.length ~= nil and (type.length > target.length or (target.length > type.length and not allow_greater_target_length))) then
-                if(target.length ~= -1) then -- -1 means the target array has unknown dimensions that will later be filled
-                    break
-                end
+        -- if(type.kind == Type.KINDS["VOID"] or target.kind == Type.KINDS["VOID"]) then
+        --     return true
+        if(type.kind == Type.KINDS["POINTER"] and target.kind == Type.KINDS["POINTER"]) then
+            return can_coerce(type.points_to, target.points_to, allow_greater_target_length)
+        elseif(type.kind == Type.KINDS["ARRAY"] and target.kind == Type.KINDS["POINTER"]) then
+            return can_coerce(type.points_to, target.points_to, allow_greater_target_length)
+        elseif(type.kind == Type.KINDS["ARRAY"] and target.kind == Type.KINDS["ARRAY"]) then
+            return can_coerce(type.points_to, target.points_to, allow_greater_target_length)
+        elseif(Type.is_base_type(type) and Type.is_base_type(target)) then
+            if(type.kind == Type.KINDS["STRUCT"] and target.kind == Type.KINDS["STRUCT"]) then
+                return type.id == target.id
+            elseif(type.kind == Type.KINDS["STRUCT"] or type.kind == Type.KINDS["STRUCT"]) then
+                return false
+            elseif(type.kind == Type.KINDS["UNION"] and target.kind == Type.KINDS["UNION"]) then
+                return type.id == target.id
+            elseif(type.kind == Type.KINDS["UNION"] or target.kind == Type.KINDS["UNION"]) then
+                return false
             end
-            type = type.points_to
-            target = target.points_to
-        end
 
-        return false
-    end
-
-    function check_initializer_list(n, target_type)
-        assert(target_type.kind == Type.KINDS["ARRAY"] or target_type.kind == Type.KINDS["STRUCT"] or target_type.kind == Type.KINDS["UNION"], "Declared type must be an aggregate type")
-        if((target_type.kind == Type.KINDS["ARRAY"] and target_type.length < #n) or (target_type.kind == Type.KINDS["STRUCT"] and #target_type.members < #n)) then
+            return true
+        else
             return false
         end
+    end
+
+    function match_initializer_list(n, target_type)
+        assert(target_type.kind == Type.KINDS["ARRAY"] or target_type.kind == Type.KINDS["STRUCT"] or target_type.kind == Type.KINDS["UNION"], "Declared type must be an aggregate type")
+        -- if((target_type.kind == Type.KINDS["ARRAY"] and target_type.length < #n) or (target_type.kind == Type.KINDS["STRUCT"] and #target_type.members < #n)) then
+        --     return false
+        -- end
 
         if(target_type.kind == Type.KINDS["UNION"]) then
             for i, member in ipairs(target_type.members) do
                 if(node_check(n[1], "INITIALIZER_LIST")) then
-                    if(check_initializer_list(n[1], member.type)) then
+                    if(match_initializer_list(n[1], member.type)) then
                         return true
                     end
                 else
@@ -336,13 +382,14 @@ function Type_Checker:type_check(ast, symbol_table)
             local same_type = nil
             if(node_check(child, "INITIALIZER_LIST")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
-                    same_type = check_initializer_list(child, target_type.members[i].type)
+                    same_type = match_initializer_list(child, target_type.members[i].type)
                 else
-                    same_type = check_initializer_list(child, target_type.points_to)
+                    same_type = match_initializer_list(child, target_type.points_to)
                 end
 
             elseif(node_check(child, "INITIALIZER")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
+                    
                     same_type = can_coerce(check_initializer(child), target_type.members[i].type)
                 else
                     same_type = can_coerce(check_initializer(child), target_type.points_to)
@@ -382,7 +429,8 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "ASSIGNMENT")) then
             local lhs_type = check_ternary_expression(n.lhs)
             local rhs_type = check_assignment_expression(n.rhs)
-            if(not same_type_chain(lhs_type, rhs_type, true)) then
+            assert(lhs_type ~= nil and rhs_type ~= nil, "Assignment expression must have a lhs and rhs")
+            if(not same_type_chain(lhs_type, rhs_type, true) and not lhs_type.kind == Type.KINDS["VOID"] and not rhs_type.kind == Type.KINDS["VOID"]) then
                 error("Assignment types do not match")
             end
             n.value_type = lhs_type
@@ -532,7 +580,7 @@ function Type_Checker:type_check(ast, symbol_table)
                 local term_type = check_term(term)
                 if(term_type.kind == Type.KINDS["POINTER"]) then
                     pointer_type = term_type
-                elseif(term_type.kind ~= Type.KINDS["INT"]) then
+                elseif(term_type.kind ~= Type.KINDS["INT"] and term_type.kind ~= Type.KINDS["CHAR"]) then
                     error("Sum expression term types must be ints or pointers")
                 end
             end
@@ -582,7 +630,7 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_cast_expression(n)
         if(node_check(n, "CAST_EXPRESSION")) then
-            n.value_type = check_type_specifier(n.type_specifier)
+            n.value_type = check_type_name(n.type_specifier)
             for i=1, n.pointer_level do
                 n.value_type = pointer(n.value_type)
             end
@@ -604,7 +652,11 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_unary_expression(n)
         if(node_check(n, "UNARY_EXPRESSION")) then
-            check_unary_expression(n.child)
+            if(node_check(n.child, "TYPE_NAME")) then
+                check_type_name(n.child)
+            else
+                check_unary_expression(n.child)
+            end
             if(n.operator == "++" or n.operator == "--") then
                 if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
                     n.value_type = n.child.value_type
@@ -616,7 +668,15 @@ function Type_Checker:type_check(ast, symbol_table)
             elseif(n.operator == "&") then
                 n.value_type = pointer(n.child.value_type)
             elseif(n.operator == "*") then
-                n.value_type = n.child.value_type.points_to
+                if(n.child.value_type.kind == Type.KINDS["POINTER"] or n.child.value_type.kind == Type.KINDS["ARRAY"]) then
+                    if(n.child.value_type.points_to.kind == Type.KINDS["VOID"]) then
+                        error("Cannot dereference a void pointer")
+                    else
+                        n.value_type = n.child.value_type.points_to
+                    end
+                else
+                    error("The dereference operator can only be performed on either a pointer or an array")
+                end
             elseif(n.operator == "!") then
                 n.value_type = base("INT")
             elseif(n.operator == "~") then
@@ -643,6 +703,41 @@ function Type_Checker:type_check(ast, symbol_table)
         return n.value_type
     end
 
+    function check_type_name(n)
+        local base_type = check_type_specifier(n.type_specifier)
+        n.value_type = build_abstract_declarator(n.declarator, base_type)
+        return n.value_type
+    end
+
+    function build_abstract_declarator(n, base_type)
+        for i=1, n.pointer_level do
+            base_type = pointer(base_type)
+        end
+        if(n.direct_abstract_declarator) then
+            base_type = build_direct_abstract_declarator(n.direct_abstract_declarator, base_type)
+        end
+
+        return base_type
+    end
+    function build_direct_abstract_declarator(n, base_type)
+        if(n.parameter_list) then
+            local param_list = build_parameter_list(n.parameter_list)
+            base_type = func(base_type, param_list)
+        end
+
+        for i = #n, 1, -1 do
+            local dim = tonumber(n[i].value)
+            assert(type(dim) == "number", "Array dimension must be an int constant")
+            base_type = array(dim, base_type)
+        end
+
+        if(n.declarator) then
+            base_type = build_abstract_declarator(n.declarator, base_type)
+        end
+
+        return base_type
+    end
+
     function check_postfix_expression(n)
         if(node_check(n, "POSTFIX_EXPRESSION")) then
             local primary_expression_type = check_primary_expression(n.primary_expression)
@@ -650,11 +745,19 @@ function Type_Checker:type_check(ast, symbol_table)
             n.value_types[0] = primary_expression_type
             for i, operation in ipairs(n) do
                 if(operation.type == "[") then
-                    local index_type = check_expression(operation.value)
-                    if(can_coerce(index_type, base("INT"))) then
-                        table.insert(n.value_types, n.value_types[i-1].points_to) -- use the previous type to generate a new type
+                    if(n.value_types[i-1].kind == Type.KINDS["POINTER"] or n.value_types[i-1].kind == Type.KINDS["ARRAY"]) then
+                        if(n.value_types[i-1].points_to.kind ~= Type.KINDS["VOID"]) then
+                            local index_type = check_expression(operation.value)
+                            if(can_coerce(index_type, base("INT"))) then
+                                table.insert(n.value_types, n.value_types[i-1].points_to) -- use the previous type to generate a new type
+                            else
+                                error("Array index must be an int")
+                            end
+                        else
+                            error("Cannot index a void pointer or array")
+                        end
                     else
-                        error("Array index must be an int")
+                        error("Can only index a pointer or an array")
                     end
                 elseif(operation.type == "(") then
                     n.value_types[i-1] = n.value_types[i-1].kind == Type.KINDS["POINTER"] and n.value_types[i-1].points_to or n.value_types[i-1]
@@ -716,10 +819,14 @@ function Type_Checker:type_check(ast, symbol_table)
             n.value_type = base("INT")
         elseif(node_check(n, "IDENTIFIER")) then
             n.handle = get_symbol(n.value, symbol_table.ordinary)
+            if(n.handle == nil) then
+                error("Symbol '" .. n.value .. "' used before definition")
+            end
+            -- if(n.handle.type.kind == Type.KINDS["ARRAY"]) then
+            --     n.handle.type = pointer(n.handle.type.points_to)
+            -- end
             n.value_type = n.handle.type
-            if(n.value_type.kind == Type.KINDS["ARRAY"]) then
-                n.value_type = pointer(n.value_type.points_to)
-            elseif(n.value_type.kind == Type.KINDS["FUNCTION"]) then
+            if(n.value_type.kind == Type.KINDS["FUNCTION"]) then
                 n.value_type = pointer(n.value_type)
             end
         elseif(node_check(n, "STRING_LITERAL")) then
@@ -754,7 +861,7 @@ function Type_Checker:type_check(ast, symbol_table)
         for i=#n.dimensions, 1, -1 do
             type = array(n.dimensions[i], type)
         end
-        if(n.parameter_list) then -- FIX THIS
+        if(n.parameter_list) then
             type = func(type, build_parameter_list(n.parameter_list))
         end
 

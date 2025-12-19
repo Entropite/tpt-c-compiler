@@ -10,44 +10,81 @@ Lexer.__index = Lexer
 
 function Lexer.lex(s)
     local loc = lpeg.locale()
-    local S = loc.space^0
+    local S = lpeg.S(" \t\r")^0
     local TOKEN_TYPES = Token.TOKEN_TYPES
+
+    local last_newline_pos = 0
+    local rows = 1
+
+    function check_for_escape_sequence(ch)
+        local escape_map = {
+            ["'\\n'"] = 10,
+            ["'\\\\'"] = "'\\'"
+        }
+        if(escape_map[ch]) then
+            return escape_map[ch]
+        else
+            return ch
+        end
+    end
+
+    function check_for_escape_sequences_string(str)
+        local string_escape_map = {
+            ["\\n"] = "\n",
+            ["\\\\"] = "\\"
+        }
+        return str:gsub("\\.", function(ch) return string_escape_map[ch] end)
+    end
 
     s = s:gsub("/%*.-%*/", "") -- remove comments
     -- Integers
-    local integers = lpeg.C(lpeg.R("09")^1) / function(n) return Token:new(TOKEN_TYPES["INT"], tonumber(n)) end
+    local integers = lpeg.C(lpeg.R("09")^1) 
+    integers = lpeg.Cp() * integers / function(pos, n) return Token:new(TOKEN_TYPES["INT"], tonumber(n), {row=rows, col=pos - last_newline_pos}) end
 
     -- Floats
-    local floats = lpeg.C(loc.digit^1 * "." * loc.digit^1) / function(f) return Token:new(TOKEN_TYPES["FLOAT"], tonumber(f)) end
+    local floats = lpeg.C(loc.digit^1 * "." * loc.digit^1) 
+    floats = lpeg.Cp() * floats / function(pos, f) return Token:new(TOKEN_TYPES["FLOAT"], tonumber(f), {row=rows, col=pos - last_newline_pos}) end
 
     -- Reserved words
-    local reserved = (lpeg.C(lpeg.P("if") + "else" + "for" + "while" + "return" + "break" + "continue") * -loc.alnum) / function(r) return Token:new(TOKEN_TYPES[string.upper(r)], r) end
+    local reserved = (lpeg.C(lpeg.P("if") + "else" + "for" + "while" + "return" + "break" + "continue" + "switch" + "case" + "default") * -loc.alnum) 
+    reserved = lpeg.Cp() * reserved / function(pos, r) return Token:new(TOKEN_TYPES[string.upper(r)], r, {row=rows, col=pos - last_newline_pos}) end
 
     -- Type specifiers
-    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "unsigned" + "signed"+ "struct" + "union") * -loc.alnum) / function(ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts) end
+    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -loc.alnum) 
+    type_specifier = lpeg.Cp() * type_specifier / function(pos, ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts, {row=rows, col=pos - last_newline_pos}) end
 
     local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static") * -loc.alnum) / function(sc) return Token:new(TOKEN_TYPES["STORAGE_CLASS"], sc) end
+    storage_class = lpeg.Cp() * storage_class / function(pos, sc) return Token:new(TOKEN_TYPES["STORAGE_CLASS"], sc, {row=rows, col=pos - last_newline_pos}) end
     -- Punctuation
-    local punctuation = lpeg.C(lpeg.S("(){};,[]")) / function(p) return Token:new(TOKEN_TYPES[p], p) end
+    local punctuation = lpeg.C(lpeg.S("(){};,[]")) 
+    punctuation = lpeg.Cp() * punctuation / function(pos, p) return Token:new(TOKEN_TYPES[p], p, {row=rows, col=pos - last_newline_pos}) end
 
 
     -- Operators
-    local non_bool_ops = lpeg.C(lpeg.P("++") + lpeg.P("--") + lpeg.P("->") + lpeg.P("...") + lpeg.P("<<") + lpeg.P(">>") + lpeg.S("+-*/%!<=>&?:.^")) / function(o) return Token:new(TOKEN_TYPES[o], o) end
+    local non_bool_ops = lpeg.C(lpeg.P("++") + lpeg.P("--") + lpeg.P("->") + lpeg.P("...") + lpeg.P("<<") + lpeg.P(">>") + "sizeof" + lpeg.S("+-*/%!<=>&?:.^|~")) 
+    non_bool_ops = lpeg.Cp() * non_bool_ops / function(pos, o) return Token:new(TOKEN_TYPES[string.upper(o)], o, {row=rows, col=pos - last_newline_pos}) end
 
-    local bool_ops = lpeg.C(lpeg.P("&&") + "||" + "==" + "!=" + "<=" + ">=") / function(o) return Token:new(TOKEN_TYPES[o], o) end
+    local bool_ops = lpeg.C(lpeg.P("&&") + "||" + "==" + "!=" + "<=" + ">=") 
+    bool_ops = lpeg.Cp() * bool_ops / function(pos, o) return Token:new(TOKEN_TYPES[o], o, {row=rows, col=pos - last_newline_pos}) end
 
     local op = bool_ops + non_bool_ops
     -- Identifiers
 
-    local id = lpeg.C(-(reserved + type_specifier) * (loc.alpha + "_") * (loc.alnum + "_")^0) / function(i) return Token:new(TOKEN_TYPES["ID"], i) end
+    local id = lpeg.C(-(reserved + type_specifier) * (loc.alpha + "_") * (loc.alnum + "_")^0)
+    id = lpeg.Cp() *id / function(pos, i) return Token:new(TOKEN_TYPES["ID"], i, {row=rows, col=pos - last_newline_pos}) end
 
     -- String Literals
-    local string_lit = lpeg.C(lpeg.P("\"") * (lpeg.P(1) - "\"")^0 * "\"") / function(s) return Token:new(TOKEN_TYPES["STRING_LITERAL"], s) end
+    local string_lit = lpeg.C(lpeg.P("\"") * (lpeg.P(1) - "\"")^0 * "\"") 
+    string_lit = lpeg.Cp() * string_lit / function(pos, s) return Token:new(TOKEN_TYPES["STRING_LITERAL"], check_for_escape_sequences_string(s), {row=rows, col=pos - last_newline_pos}) end
 
-    local character = lpeg.C(lpeg.P("'") * (lpeg.P(1) - "'") * "'") / function(s) return Token:new(TOKEN_TYPES["CHARACTER"], s) end
+    local character = lpeg.C(lpeg.P("'") * (lpeg.P(1) - "'")^0 * "'") 
+    character = lpeg.Cp() * character / function(pos, s) return Token:new(TOKEN_TYPES["CHARACTER"], check_for_escape_sequence(tostring(s)), {row=rows, col=pos - last_newline_pos}) end
+
+    -- Newlines
+    local newline = lpeg.Cp() *lpeg.C(lpeg.P("\n")) / function(pos, n) last_newline_pos = pos; rows = rows + 1 end
 
     -- LPEG is greedy so floats must be checked before integers else, integers will match the integer part of the float
-    local token = S * ((reserved + storage_class +type_specifier + id + string_lit + character + floats + integers + punctuation + op) * S)^0
+    local token = S * ((newline + reserved + storage_class + op +type_specifier + id + string_lit + character + floats + integers + punctuation) * S)^0
     
     tokens = {token:match(s)}
     setmetatable(tokens, {__tostring = function(s) return util.array_to_string(s, " ") end })
@@ -79,5 +116,3 @@ return Lexer
 -- end
 -- print(type(parsed))
 -- print_tree(parsed, 0)
-
-

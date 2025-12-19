@@ -3,11 +3,19 @@ local base = Type.base
 local pointer = Type.pointer
 local func = Type.func
 
-local symbol_table = {level=0, tag_symbols={}, ordinary_symbols={["__print_unsigned_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__print_unsigned_int"}},
+local symbol_table = {level=0, tag_symbols={}, ordinary_symbols={["NULL"]={type=Type.pointer(Type.base("VOID")), place={type="i",value=0}},
+    ["__print_unsigned_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__print_unsigned_int"}},
 ["__print_signed_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__print_signed_int"}},
 ["putchar"]={type=Type.func(Type.base("VOID"), {Type.base("CHAR")}), place={is_standard_function=true, type="i",value="putchar"}},
 ["getchar"]={type=Type.func(Type.base("CHAR"), {}), place={is_standard_function=true, type="i",value="getchar"}},
-["printf"]={type=Type.func(Type.base("INT"), {Type.pointer(Type.base("CHAR"))}), place={is_standard_function=true, is_variadic=true, type="i",value="printf"}}}}
+["printf"]={type=Type.func(Type.base("INT"), {Type.pointer(Type.base("CHAR"))}), place={is_standard_function=false, is_variadic=true,type="i",value="printf"}},
+["scanf"]={type=Type.func(Type.base("INT"), {Type.pointer(Type.base("CHAR"))}), place={is_standard_function=false, is_variadic=true,type="i",value="scanf"}},
+["__scanf_signed_int"]={type=Type.func(Type.base("INT"), {Type.pointer(Type.base("INT"))}), place={is_standard_function=true, type="i",value="__scanf_signed_int"}},
+["__scanf_unsigned_int"]={type=Type.func(Type.base("INT"), {Type.pointer(Type.base("INT"))}), place={is_standard_function=true, type="i",value="__scanf_unsigned_int"}},
+["__scanf_char_array"]={type=Type.func(Type.pointer(Type.base("CHAR")), {Type.pointer(Type.base("CHAR"))}), place={is_standard_function=true, type="i",value="__scanf_char_array"}},
+["set_colour"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="set_colour"}},
+["set_cursor"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="set_cursor"}},
+["__print_char_array"]={type=Type.func(Type.base("VOID"), {Type.pointer(Type.base("CHAR"))}), place={is_standard_function=true, is_variadic=false, type="i",value="__print_char_array"}}}}
 
 symbol_table.current_scope = symbol_table
 symbol_table.tag = "t"
@@ -49,6 +57,9 @@ end
 function symbol_table.add_symbol(id, symbol, namespace)
     local sym = symbol_table.namespace_get[namespace](symbol_table.current_scope, id)
     if(sym) then
+        if(sym.is_prototype) then
+            return
+        end
         error(string.format("Symbol '%s' has already been defined", id))
     else
         symbol_table.set_symbol(id, symbol, namespace)

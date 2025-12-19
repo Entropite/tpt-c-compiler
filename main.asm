@@ -6,6 +6,19 @@
 %define term_reg r28
 %define return_addr_reg r27
 
+%define term_base 0x9F80
+
+%eval term_input  term_base 0x00 +
+%eval term_raw    term_base 0x04 +
+%eval term_single term_base 0x05 +
+%eval term_print  term_base 0x25 +
+%eval term_term   term_base 0x35 +
+%eval term_hrange term_base 0x42 +
+%eval term_vrange term_base 0x43 +
+%eval term_cursor term_base 0x44 +
+%eval term_nlchar term_base 0x45 +
+%eval term_colour term_base 0x46 +
+
 
 %macro push thing
     subs stack_pointer, 1
@@ -23,9 +36,9 @@
 %endmacro
 
 %macro ret
-    mov r2, return_addr_reg
+    mov r26, return_addr_reg
     pop return_addr_reg
-    jmp r2
+    jmp r26
 %endmacro
 
 %macro mull x, y
@@ -34,60 +47,653 @@
 
 jmp init
 global_data_section:
-    
+    dw 'a', 'a', 'r', 'o', 'n', 'a', 'b', 'o', 'u', 't', 'a', 'b', 'o', 'v', 'e', 'a', 'b', 'u', 's', 'e', 'a', 'c', 'i', 'd', 's', 'a', 'c', 'r', 'e', 's', 'a', 'c', 't', 'o', 'r', 'a', 'c', 'u', 't', 'e', 'a', 'd', 'a', 'm', 's', 'a', 'd', 'd', 'e', 'd', 'a', 'd', 'm', 'i', 'n', 'a', 'd', 'm', 'i', 't', 'a', 'd', 'o', 'b', 'e', 'a', 'd', 'o', 'p', 't', 'a', 'd', 'u', 'l', 't', 'a', 'f', 't', 'e', 'r', 'a', 'g', 'a', 'i', 'n', 'a', 'g', 'e', 'n', 't', 'a', 'g', 'i', 'n', 'g', 'a', 'g', 'r', 'e', 'e', 'a', 'h', 'e', 'a', 'd', 'a', 'i', 'm', 'e', 'd', 'a', 'l', 'a', 'r', 'm', 'a', 'l', 'b', 'u', 'm', 'a', 'l', 'e', 'r', 't', 'a', 'l', 'i', 'a', 's', 'a', 'l', 'i', 'c', 'e', 'a', 'l', 'i', 'e', 'n', 'a', 'l', 'i', 'g', 'n', 'a', 'l', 'i', 'k', 'e', 'a', 'l', 'i', 'v', 'e', 'a', 'l', 'l', 'a', 'h', 'a', 'l', 'l', 'a', 'n', 'a', 'l', 'l', 'e', 'n', 'a', 'l', 'l', 'o', 'w', 'a', 'l', 'l', 'o', 'y', 'a', 'l', 'o', 'n', 'e', 'a', 'l', 'o', 'n', 'g', 'a', 'l', 'p', 'h', 'a', 'a', 'l', 't', 'e', 'r', 'a', 'm', 'b', 'e', 'r', 'a', 'm', 'e', 'n', 'd', 'a', 'm', 'i', 'n', 'o', 'a', 'm', 'o', 'n', 'g', 'a', 'n', 'g', 'e', 'l', 'a', 'n', 'g', 'e', 'r', 'a', 'n', 'g', 'l', 'e', 'a', 'n', 'g', 'r', 'y', 'a', 'n', 'i', 'm', 'e', 'a', 'n', 'n', 'e', 'x', 'a', 'n', 'n', 'i', 'e', 'a', 'p', 'a', 'r', 't', 'a', 'p', 'n', 'i', 'c', 'a', 'p', 'p', 'l', 'e', 'a', 'p', 'p', 'l', 'y', 'a', 'p', 'r', 'i', 'l', 'a', 'r', 'b', 'o', 'r', 'a', 'r', 'e', 'a', 's', 'a', 'r', 'e', 'n', 'a', 'a', 'r', 'g', 'u', 'e', 'a', 'r', 'i', 's', 'e', 'a', 'r', 'm', 'e', 'd', 'a', 'r', 'm', 'o', 'r', 'a', 'r', 'r', 'a', 'y', 'a', 'r', 'r', 'o', 'w', 'a', 'r', 'u', 'b', 'a', 'a', 's', 'c', 'i', 'i', 'a', 's', 'i', 'a', 'n', 'a', 's', 'i', 'd', 'e', 'a', 's', 'k', 'e', 'd', 'a', 's', 's', 'e', 't', 'a', 't', 'l', 'a', 's', 'a', 'u', 'd', 'i', 'o', 'a', 'u', 'd', 'i', 't', 'a', 'u', 't', 'o', 's', 'a', 'v', 'o', 'i', 'd', 'a', 'w', 'a', 'r', 'd', 'a', 'w', 'a', 'r', 'e', 'a', 'w', 'f', 'u', 'l', 'b', 'a', 'b', 'e', 's', 'b', 'a', 'c', 'o', 'n', 'b', 'a', 'd', 'g', 'e', 'b', 'a', 'd', 'l', 'y', 'b', 'a', 'k', 'e', 'r', 'b', 'a', 'l', 'l', 's', 'b', 'a', 'n', 'd', 's', 'b', 'a', 'n', 'k', 's', 'b', 'a', 'r', 'r', 'y', 'b', 'a', 's', 'e', 'd', 'b', 'a', 's', 'e', 's', 'b', 'a', 's', 'i', 'c', 'b', 'a', 's', 'i', 'n', 'b', 'a', 's', 'i', 's', 'b', 'a', 't', 'c', 'h', 'b', 'a', 't', 'h', 's', 'b', 'e', 'a', 'c', 'h', 'b', 'e', 'a', 'd', 's', 'b', 'e', 'a', 'n', 's', 'b', 'e', 'a', 'r', 's', 'b', 'e', 'a', 's', 't', 'b', 'e', 'a', 't', 's', 'b', 'e', 'g', 'a', 'n', 'b', 'e', 'g', 'i', 'n', 'b', 'e', 'g', 'u', 'n', 'b', 'e', 'i', 'n', 'g', 'b', 'e', 'l', 'l', 'e', 'b', 'e', 'l', 'l', 'y', 'b', 'e', 'l', 'o', 'w', 'b', 'e', 'l', 't', 's', 'b', 'e', 'n', 'c', 'h', 'b', 'e', 'r', 'r', 'y', 'b', 'e', 't', 't', 'y', 'b', 'i', 'b', 'l', 'e', 'b', 'i', 'k', 'e', 's', 'b', 'i', 'l', 'l', 's', 'b', 'i', 'l', 'l', 'y', 'b', 'i', 'n', 'g', 'o', 'b', 'i', 'r', 'd', 's', 'b', 'i', 'r', 't', 'h', 'b', 'i', 't', 'c', 'h', 'b', 'l', 'a', 'c', 'k', 'b', 'l', 'a', 'd', 'e', 'b', 'l', 'a', 'i', 'r', 'b', 'l', 'a', 'k', 'e', 'b', 'l', 'a', 'm', 'e', 'b', 'l', 'a', 'n', 'k', 'b', 'l', 'a', 's', 't', 'b', 'l', 'e', 'n', 'd', 'b', 'l', 'e', 's', 's', 'b', 'l', 'i', 'n', 'd', 'b', 'l', 'i', 'n', 'k', 'b', 'l', 'o', 'c', 'k', 'b', 'l', 'o', 'g', 's', 'b', 'l', 'o', 'n', 'd', 'b', 'l', 'o', 'o', 'd', 'b', 'l', 'o', 'o', 'm', 'b', 'l', 'u', 'e', 's', 'b', 'o', 'a', 'r', 'd', 'b', 'o', 'a', 't', 's', 'b', 'o', 'b', 'b', 'y', 'b', 'o', 'n', 'd', 's', 'b', 'o', 'n', 'e', 's', 'b', 'o', 'n', 'u', 's', 'b', 'o', 'o', 'b', 's', 'b', 'o', 'o', 'k', 's', 'b', 'o', 'o', 's', 't', 'b', 'o', 'o', 't', 'h', 'b', 'o', 'o', 't', 's', 'b', 'o', 'o', 't', 'y', 'b', 'o', 'r', 'e', 'd', 'b', 'o', 'u', 'n', 'd', 'b', 'o', 'x', 'e', 'd', 'b', 'o', 'x', 'e', 's', 'b', 'r', 'a', 'i', 'n', 'b', 'r', 'a', 'k', 'e', 'b', 'r', 'a', 'n', 'd', 'b', 'r', 'a', 's', 's', 'b', 'r', 'a', 'v', 'e', 'b', 'r', 'e', 'a', 'd', 'b', 'r', 'e', 'a', 'k', 'b', 'r', 'e', 'e', 'd', 'b', 'r', 'i', 'a', 'n', 'b', 'r', 'i', 'c', 'k', 'b', 'r', 'i', 'd', 'e', 'b', 'r', 'i', 'e', 'f', 'b', 'r', 'i', 'n', 'g', 'b', 'r', 'o', 'a', 'd', 'b', 'r', 'o', 'k', 'e', 'b', 'r', 'o', 'o', 'k', 'b', 'r', 'o', 'w', 'n', 'b', 'r', 'u', 'c', 'e', 'b', 'r', 'u', 's', 'h', 'b', 'r', 'y', 'a', 'n', 'b', 'u', 'c', 'k', 's', 'b', 'u', 'd', 'd', 'y', 'b', 'u', 'i', 'l', 'd', 'b', 'u', 'i', 'l', 't', 'b', 'u', 'n', 'c', 'h', 'b', 'u', 'n', 'n', 'y', 'b', 'u', 'r', 'k', 'e', 'b', 'u', 'r', 'n', 's', 'b', 'u', 'r', 's', 't', 'b', 'u', 's', 'e', 's', 'b', 'u', 's', 't', 'y', 'b', 'u', 't', 't', 's', 'b', 'u', 'y', 'e', 'r', 'b', 'y', 't', 'e', 's', 'c', 'a', 'b', 'i', 'n', 'c', 'a', 'b', 'l', 'e', 'c', 'a', 'c', 'h', 'e', 'c', 'a', 'k', 'e', 's', 'c', 'a', 'l', 'l', 's', 'c', 'a', 'm', 'e', 'l', 'c', 'a', 'm', 'p', 's', 'c', 'a', 'n', 'a', 'l', 'c', 'a', 'n', 'd', 'y', 'c', 'a', 'n', 'o', 'n', 'c', 'a', 'r', 'd', 's', 'c', 'a', 'r', 'e', 'y', 'c', 'a', 'r', 'g', 'o', 'c', 'a', 'r', 'l', 'o', 'c', 'a', 'r', 'o', 'l', 'c', 'a', 'r', 'r', 'y', 'c', 'a', 's', 'e', 's', 'c', 'a', 's', 'e', 'y', 'c', 'a', 's', 'i', 'o', 'c', 'a', 't', 'c', 'h', 'c', 'a', 'u', 's', 'e', 'c', 'e', 'd', 'a', 'r', 'c', 'e', 'l', 'l', 's', 'c', 'e', 'n', 't', 's', 'c', 'h', 'a', 'i', 'n', 'c', 'h', 'a', 'i', 'r', 'c', 'h', 'a', 'o', 's', 'c', 'h', 'a', 'r', 'm', 'c', 'h', 'a', 'r', 't', 'c', 'h', 'a', 's', 'e', 'c', 'h', 'e', 'a', 'p', 'c', 'h', 'e', 'a', 't', 'c', 'h', 'e', 'c', 'k', 'c', 'h', 'e', 's', 's', 'c', 'h', 'e', 's', 't', 'c', 'h', 'e', 'v', 'y', 'c', 'h', 'i', 'c', 'k', 'c', 'h', 'i', 'e', 'f', 'c', 'h', 'i', 'l', 'd', 'c', 'h', 'i', 'l', 'e', 'c', 'h', 'i', 'n', 'a', 'c', 'h', 'i', 'p', 's', 'c', 'h', 'o', 'i', 'r', 'c', 'h', 'o', 's', 'e', 'c', 'h', 'r', 'i', 's', 'c', 'h', 'u', 'c', 'k', 'c', 'i', 'n', 'd', 'y', 'c', 'i', 's', 'c', 'o', 'c', 'i', 't', 'e', 'd', 'c', 'i', 'v', 'i', 'c', 'c', 'i', 'v', 'i', 'l', 'c', 'l', 'a', 'i', 'm', 'c', 'l', 'a', 'r', 'a', 'c', 'l', 'a', 'r', 'k', 'c', 'l', 'a', 's', 's', 'c', 'l', 'e', 'a', 'n', 'c', 'l', 'e', 'a', 'r', 'c', 'l', 'e', 'r', 'k', 'c', 'l', 'i', 'c', 'k', 'c', 'l', 'i', 'f', 'f', 'c', 'l', 'i', 'm', 'b', 'c', 'l', 'i', 'p', 's', 'c', 'l', 'o', 'c', 'k', 'c', 'l', 'o', 'n', 'e', 'c', 'l', 'o', 's', 'e', 'c', 'l', 'o', 't', 'h', 'c', 'l', 'o', 'u', 'd', 'c', 'l', 'u', 'b', 's', 'c', 'o', 'a', 'c', 'h', 'c', 'o', 'a', 's', 't', 'c', 'o', 'c', 'k', 's', 'c', 'o', 'd', 'e', 's', 'c', 'o', 'h', 'e', 'n', 'c', 'o', 'i', 'n', 's', 'c', 'o', 'l', 'i', 'n', 'c', 'o', 'l', 'o', 'n', 'c', 'o', 'l', 'o', 'r', 'c', 'o', 'm', 'b', 'o', 'c', 'o', 'm', 'e', 's', 'c', 'o', 'm', 'i', 'c', 'c', 'o', 'n', 'd', 'o', 'c', 'o', 'n', 'g', 'o', 'c', 'o', 'n', 's', 't', 'c', 'o', 'r', 'a', 'l', 'c', 'o', 'r', 'p', 's', 'c', 'o', 's', 't', 'a', 'c', 'o', 's', 't', 's', 'c', 'o', 'u', 'l', 'd', 'c', 'o', 'u', 'n', 't', 'c', 'o', 'u', 'r', 't', 'c', 'o', 'v', 'e', 'r', 'c', 'r', 'a', 'c', 'k', 'c', 'r', 'a', 'f', 't', 'c', 'r', 'a', 'i', 'g', 'c', 'r', 'a', 'p', 's', 'c', 'r', 'a', 's', 'h', 'c', 'r', 'a', 'z', 'y', 'c', 'r', 'e', 'a', 'm', 'c', 'r', 'e', 'e', 'k', 'c', 'r', 'e', 's', 't', 'c', 'r', 'i', 'm', 'e', 'c', 'r', 'o', 'p', 's', 'c', 'r', 'o', 's', 's', 'c', 'r', 'o', 'w', 'd', 'c', 'r', 'o', 'w', 'n', 'c', 'r', 'u', 'd', 'e', 'c', 'u', 'b', 'i', 'c', 'c', 'u', 'r', 'v', 'e', 'c', 'y', 'b', 'e', 'r', 'c', 'y', 'c', 'l', 'e', 'c', 'z', 'e', 'c', 'h', 'd', 'a', 'd', 'd', 'y', 'd', 'a', 'i', 'l', 'y', 'd', 'a', 'i', 'r', 'y', 'd', 'a', 'i', 's', 'y', 'd', 'a', 'n', 'c', 'e', 'd', 'a', 'n', 'n', 'y', 'd', 'a', 't', 'e', 'd', 'd', 'a', 't', 'e', 's', 'd', 'a', 'v', 'i', 'd', 'd', 'a', 'v', 'i', 's', 'd', 'e', 'a', 'l', 's', 'd', 'e', 'a', 'l', 't', 'd', 'e', 'a', 't', 'h', 'd', 'e', 'b', 'u', 'g', 'd', 'e', 'b', 'u', 't', 'd', 'e', 'c', 'o', 'r', 'd', 'e', 'l', 'a', 'y', 'd', 'e', 'l', 'h', 'i', 'd', 'e', 'l', 't', 'a', 'd', 'e', 'n', 's', 'e', 'd', 'e', 'p', 'o', 't', 'd', 'e', 'p', 't', 'h', 'd', 'e', 'r', 'b', 'y', 'd', 'e', 'r', 'e', 'k', 'd', 'e', 'v', 'e', 'l', 'd', 'e', 'v', 'i', 'l', 'd', 'e', 'v', 'o', 'n', 'd', 'i', 'a', 'n', 'a', 'd', 'i', 'a', 'n', 'e', 'd', 'i', 'a', 'r', 'y', 'd', 'i', 'c', 'k', 'e', 'd', 'i', 'c', 'k', 's', 'd', 'i', 'e', 'g', 'o', 'd', 'i', 'f', 'f', 's', 'd', 'i', 'g', 'i', 't', 'd', 'i', 'l', 'd', 'o', 'd', 'i', 'r', 't', 'y', 'd', 'i', 's', 'c', 'o', 'd', 'i', 's', 'c', 's', 'd', 'i', 's', 'k', 's', 'd', 'o', 'd', 'g', 'e', 'd', 'o', 'i', 'n', 'g', 'd', 'o', 'l', 'l', 's', 'd', 'o', 'n', 'n', 'a', 'd', 'o', 'n', 'o', 'r', 'd', 'o', 'o', 'r', 's', 'd', 'o', 'u', 'b', 't', 'd', 'o', 'v', 'e', 'r', 'd', 'o', 'z', 'e', 'n', 'd', 'r', 'a', 'f', 't', 'd', 'r', 'a', 'i', 'n', 'd', 'r', 'a', 'm', 'a', 'd', 'r', 'a', 'w', 'n', 'd', 'r', 'a', 'w', 's', 'd', 'r', 'e', 'a', 'm', 'd', 'r', 'e', 's', 's', 'd', 'r', 'i', 'e', 'd', 'd', 'r', 'i', 'l', 'l', 'd', 'r', 'i', 'n', 'k', 'd', 'r', 'i', 'v', 'e', 'd', 'r', 'o', 'p', 's', 'd', 'r', 'o', 'v', 'e', 'd', 'r', 'u', 'g', 's', 'd', 'r', 'u', 'm', 's', 'd', 'r', 'u', 'n', 'k', 'd', 'r', 'y', 'e', 'r', 'd', 'u', 'b', 'a', 'i', 'd', 'u', 't', 'c', 'h', 'd', 'y', 'i', 'n', 'g', 'd', 'y', 'l', 'a', 'n', 'e', 'a', 'g', 'l', 'e', 'e', 'a', 'r', 'l', 'y', 'e', 'a', 'r', 't', 'h', 'e', 'b', 'o', 'n', 'y', 'e', 'b', 'o', 'o', 'k', 'e', 'd', 'd', 'i', 'e', 'e', 'd', 'g', 'a', 'r', 'e', 'd', 'g', 'e', 's', 'e', 'g', 'y', 'p', 't', 'e', 'i', 'g', 'h', 't', 'e', 'l', 'd', 'e', 'r', 'e', 'l', 'e', 'c', 't', 'e', 'l', 'i', 't', 'e', 'e', 'l', 'l', 'e', 'n', 'e', 'l', 'l', 'i', 's', 'e', 'l', 'v', 'i', 's', 'e', 'm', 'a', 'c', 's', 'e', 'm', 'a', 'i', 'l', 'e', 'm', 'i', 'l', 'y', 'e', 'm', 'p', 't', 'y', 'e', 'n', 'd', 'e', 'd', 'e', 'n', 'd', 'i', 'f', 'e', 'n', 'e', 'm', 'y', 'e', 'n', 'j', 'o', 'y', 'e', 'n', 't', 'e', 'r', 'e', 'n', 't', 'r', 'y', 'e', 'p', 's', 'o', 'n', 'e', 'q', 'u', 'a', 'l', 'e', 'r', 'r', 'o', 'r', 'e', 's', 's', 'a', 'y', 'e', 's', 's', 'e', 'x', 'e', 'u', 'r', 'o', 's', 'e', 'v', 'a', 'n', 's', 'e', 'v', 'e', 'n', 't', 'e', 'v', 'e', 'r', 'y', 'e', 'x', 'a', 'c', 't', 'e', 'x', 'a', 'm', 's', 'e', 'x', 'c', 'e', 'l', 'e', 'x', 'i', 's', 't', 'e', 'x', 't', 'r', 'a', 'f', 'a', 'c', 'e', 'd', 'f', 'a', 'c', 'e', 's', 'f', 'a', 'c', 't', 's', 'f', 'a', 'i', 'l', 's', 'f', 'a', 'i', 'r', 'y', 'f', 'a', 'i', 't', 'h', 'f', 'a', 'l', 'l', 's', 'f', 'a', 'l', 's', 'e', 'f', 'a', 'n', 'c', 'y', 'f', 'a', 'r', 'e', 's', 'f', 'a', 'r', 'm', 's', 'f', 'a', 't', 'a', 'l', 'f', 'a', 't', 't', 'y', 'f', 'a', 'u', 'l', 't', 'f', 'a', 'v', 'o', 'r', 'f', 'e', 'a', 'r', 's', 'f', 'e', 'e', 'd', 's', 'f', 'e', 'e', 'l', 's', 'f', 'e', 'n', 'c', 'e', 'f', 'e', 'r', 'r', 'y', 'f', 'e', 'v', 'e', 'r', 'f', 'e', 'w', 'e', 'r', 'f', 'i', 'b', 'e', 'r', 'f', 'i', 'b', 'r', 'e', 'f', 'i', 'e', 'l', 'd', 'f', 'i', 'f', 't', 'h', 'f', 'i', 'f', 't', 'y', 'f', 'i', 'g', 'h', 't', 'f', 'i', 'l', 'e', 'd', 'f', 'i', 'l', 'e', 's', 'f', 'i', 'l', 'm', 'e', 'f', 'i', 'l', 'm', 's', 'f', 'i', 'n', 'a', 'l', 'f', 'i', 'n', 'd', 's', 'f', 'i', 'r', 'e', 'd', 'f', 'i', 'r', 'e', 's', 'f', 'i', 'r', 'm', 's', 'f', 'i', 'r', 's', 't', 'f', 'i', 'x', 'e', 'd', 'f', 'i', 'x', 'e', 's', 'f', 'l', 'a', 'g', 's', 'f', 'l', 'a', 'm', 'e', 'f', 'l', 'a', 's', 'h', 'f', 'l', 'e', 'e', 't', 'f', 'l', 'e', 's', 'h', 'f', 'l', 'o', 'a', 't', 'f', 'l', 'o', 'o', 'd', 'f', 'l', 'o', 'o', 'r', 'f', 'l', 'o', 'u', 'r', 'f', 'l', 'o', 'w', 's', 'f', 'l', 'o', 'y', 'd', 'f', 'l', 'u', 'i', 'd', 'f', 'l', 'u', 's', 'h', 'f', 'l', 'y', 'e', 'r', 'f', 'o', 'c', 'a', 'l', 'f', 'o', 'c', 'u', 's', 'f', 'o', 'l', 'k', 's', 'f', 'o', 'n', 't', 's', 'f', 'o', 'o', 'd', 's', 'f', 'o', 'r', 'c', 'e', 'f', 'o', 'r', 'g', 'e', 'f', 'o', 'r', 'm', 's', 'f', 'o', 'r', 't', 'h', 'f', 'o', 'r', 't', 'y', 'f', 'o', 'r', 'u', 'm', 'f', 'o', 't', 'o', 's', 'f', 'o', 'u', 'n', 'd', 'f', 'r', 'a', 'm', 'e', 'f', 'r', 'a', 'n', 'k', 'f', 'r', 'a', 'u', 'd', 'f', 'r', 'e', 's', 'h', 'f', 'r', 'o', 'n', 't', 'f', 'r', 'o', 's', 't', 'f', 'r', 'u', 'i', 't', 'f', 'u', 'l', 'l', 'y', 'f', 'u', 'n', 'd', 's', 'f', 'u', 'n', 'k', 'y', 'f', 'u', 'n', 'n', 'y', 'f', 'u', 'z', 'z', 'y', 'g', 'a', 'i', 'n', 's', 'g', 'a', 'm', 'e', 's', 'g', 'a', 'm', 'm', 'a', 'g', 'a', 't', 'e', 's', 'g', 'a', 'u', 'g', 'e', 'g', 'e', 'n', 'e', 's', 'g', 'e', 'n', 'r', 'e', 'g', 'h', 'a', 'n', 'a', 'g', 'h', 'o', 's', 't', 'g', 'i', 'a', 'n', 't', 'g', 'i', 'f', 't', 's', 'g', 'i', 'r', 'l', 's', 'g', 'i', 'v', 'e', 'n', 'g', 'i', 'v', 'e', 's', 'g', 'l', 'a', 's', 's', 'g', 'l', 'e', 'n', 'n', 'g', 'l', 'o', 'b', 'e', 'g', 'l', 'o', 'r', 'y', 'g', 'n', 'o', 'm', 'e', 'g', 'o', 'a', 'l', 's', 'g', 'o', 'i', 'n', 'g', 'g', 'o', 'n', 'n', 'a', 'g', 'o', 'o', 'd', 's', 'g', 'o', 't', 't', 'a', 'g', 'r', 'a', 'c', 'e', 'g', 'r', 'a', 'd', 'e', 'g', 'r', 'a', 'i', 'n', 'g', 'r', 'a', 'm', 's', 'g', 'r', 'a', 'n', 'd', 'g', 'r', 'a', 'n', 't', 'g', 'r', 'a', 'p', 'h', 'g', 'r', 'a', 's', 's', 'g', 'r', 'a', 'v', 'e', 'g', 'r', 'e', 'a', 't', 'g', 'r', 'e', 'e', 'k', 'g', 'r', 'e', 'e', 'n', 'g', 'r', 'i', 'l', 'l', 'g', 'r', 'o', 's', 's', 'g', 'r', 'o', 'u', 'p', 'g', 'r', 'o', 'v', 'e', 'g', 'r', 'o', 'w', 'n', 'g', 'r', 'o', 'w', 's', 'g', 'u', 'a', 'r', 'd', 'g', 'u', 'e', 's', 's', 'g', 'u', 'e', 's', 't', 'g', 'u', 'i', 'd', 'e', 'g', 'u', 'i', 'l', 'd', 'h', 'a', 'i', 'r', 'y', 'h', 'a', 'i', 't', 'i', 'h', 'a', 'n', 'd', 's', 'h', 'a', 'n', 'd', 'y', 'h', 'a', 'p', 'p', 'y', 'h', 'a', 'r', 'r', 'y', 'h', 'a', 'v', 'e', 'n', 'h', 'a', 'y', 'e', 's', 'h', 'e', 'a', 'd', 's', 'h', 'e', 'a', 'r', 'd', 'h', 'e', 'a', 'r', 't', 'h', 'e', 'a', 't', 'h', 'h', 'e', 'a', 'v', 'y', 'h', 'e', 'l', 'e', 'n', 'h', 'e', 'l', 'l', 'o', 'h', 'e', 'l', 'p', 's', 'h', 'e', 'n', 'c', 'e', 'h', 'e', 'n', 'r', 'y', 'h', 'e', 'r', 'b', 's', 'h', 'i', 'g', 'h', 's', 'h', 'i', 'l', 'l', 's', 'h', 'i', 'n', 'd', 'u', 'h', 'i', 'n', 't', 's', 'h', 'i', 'r', 'e', 'd', 'h', 'o', 'b', 'b', 'y', 'h', 'o', 'l', 'd', 's', 'h', 'o', 'l', 'e', 's', 'h', 'o', 'l', 'l', 'y', 'h', 'o', 'm', 'e', 's', 'h', 'o', 'n', 'd', 'a', 'h', 'o', 'n', 'e', 'y', 'h', 'o', 'n', 'o', 'r', 'h', 'o', 'p', 'e', 'd', 'h', 'o', 'p', 'e', 's', 'h', 'o', 'r', 'n', 'y', 'h', 'o', 'r', 's', 'e', 'h', 'o', 's', 't', 's', 'h', 'o', 't', 'e', 'l', 'h', 'o', 'u', 'r', 's', 'h', 'o', 'u', 's', 'e', 'h', 'o', 'w', 't', 'o', 'h', 'u', 'm', 'a', 'n', 'h', 'u', 'm', 'o', 'r', 'i', 'c', 'o', 'n', 's', 'i', 'd', 'a', 'h', 'o', 'i', 'd', 'e', 'a', 'l', 'i', 'd', 'e', 'a', 's', 'i', 'm', 'a', 'g', 'e', 'i', 'n', 'b', 'o', 'x', 'i', 'n', 'd', 'e', 'x', 'i', 'n', 'd', 'i', 'a', 'i', 'n', 'd', 'i', 'e', 'i', 'n', 'n', 'e', 'r', 'i', 'n', 'p', 'u', 't', 'i', 'n', 't', 'e', 'l', 'i', 'n', 't', 'e', 'r', 'i', 'n', 't', 'r', 'o', 'i', 'r', 'a', 'q', 'i', 'i', 'r', 'i', 's', 'h', 'i', 's', 'a', 'a', 'c', 'i', 's', 'l', 'a', 'm', 'i', 's', 's', 'u', 'e', 'i', 't', 'a', 'l', 'y', 'i', 't', 'e', 'm', 's', 'i', 'v', 'o', 'r', 'y', 'j', 'a', 'c', 'o', 'b', 'j', 'a', 'm', 'e', 's', 'j', 'a', 'm', 'i', 'e', 'j', 'a', 'n', 'e', 't', 'j', 'a', 'p', 'a', 'n', 'j', 'a', 's', 'o', 'n', 'j', 'e', 'a', 'n', 's', 'j', 'e', 'n', 'n', 'y', 'j', 'e', 'r', 'r', 'y', 'j', 'e', 's', 's', 'e', 'j', 'e', 's', 'u', 's', 'j', 'e', 'w', 'e', 'l', 'j', 'i', 'm', 'm', 'y', 'j', 'o', 'h', 'n', 's', 'j', 'o', 'i', 'n', 's', 'j', 'o', 'i', 'n', 't', 'j', 'o', 'k', 'e', 's', 'j', 'o', 'n', 'e', 's', 'j', 'o', 'y', 'c', 'e', 'j', 'u', 'd', 'g', 'e', 'j', 'u', 'i', 'c', 'e', 'j', 'u', 'l', 'i', 'a', 'j', 'u', 'l', 'i', 'e', 'k', 'a', 'r', 'e', 'n', 'k', 'a', 'r', 'm', 'a', 'k', 'a', 't', 'h', 'y', 'k', 'a', 't', 'i', 'e', 'k', 'e', 'e', 'p', 's', 'k', 'e', 'i', 't', 'h', 'k', 'e', 'l', 'l', 'y', 'k', 'e', 'n', 'n', 'y', 'k', 'e', 'n', 'y', 'a', 'k', 'e', 'r', 'r', 'y', 'k', 'e', 'v', 'i', 'n', 'k', 'i', 'l', 'l', 's', 'k', 'i', 'n', 'd', 'a', 'k', 'i', 'n', 'd', 's', 'k', 'i', 'n', 'g', 's', 'k', 'i', 't', 't', 'y', 'k', 'l', 'e', 'i', 'n', 'k', 'n', 'i', 'f', 'e', 'k', 'n', 'o', 'c', 'k', 'k', 'n', 'o', 'w', 'n', 'k', 'n', 'o', 'w', 's', 'k', 'o', 'd', 'a', 'k', 'k', 'o', 'r', 'e', 'a', 'l', 'a', 'b', 'e', 'l', 'l', 'a', 'b', 'o', 'r', 'l', 'a', 'd', 'e', 'n', 'l', 'a', 'k', 'e', 's', 'l', 'a', 'm', 'p', 's', 'l', 'a', 'n', 'c', 'e', 'l', 'a', 'n', 'd', 's', 'l', 'a', 'n', 'e', 's', 'l', 'a', 'n', 'k', 'a', 'l', 'a', 'r', 'g', 'e', 'l', 'a', 'r', 'r', 'y', 'l', 'a', 's', 'e', 'r', 'l', 'a', 't', 'e', 'r', 'l', 'a', 't', 'e', 'x', 'l', 'a', 't', 'i', 'n', 'l', 'a', 'u', 'g', 'h', 'l', 'a', 'u', 'r', 'a', 'l', 'a', 'y', 'e', 'r', 'l', 'e', 'a', 'd', 's', 'l', 'e', 'a', 'r', 'n', 'l', 'e', 'a', 's', 'e', 'l', 'e', 'a', 's', 't', 'l', 'e', 'a', 'v', 'e', 'l', 'e', 'e', 'd', 's', 'l', 'e', 'g', 'a', 'l', 'l', 'e', 'm', 'o', 'n', 'l', 'e', 'o', 'n', 'e', 'l', 'e', 'v', 'e', 'l', 'l', 'e', 'w', 'i', 's', 'l', 'e', 'x', 'u', 's', 'l', 'i', 'g', 'h', 't', 'l', 'i', 'k', 'e', 'd', 'l', 'i', 'k', 'e', 's', 'l', 'i', 'm', 'i', 't', 'l', 'i', 'n', 'd', 'a', 'l', 'i', 'n', 'e', 'd', 'l', 'i', 'n', 'e', 's', 'l', 'i', 'n', 'k', 's', 'l', 'i', 'n', 'u', 'x', 'l', 'i', 'o', 'n', 's', 'l', 'i', 's', 't', 's', 'l', 'i', 'v', 'e', 'd', 'l', 'i', 'v', 'e', 'r', 'l', 'i', 'v', 'e', 's', 'l', 'l', 'o', 'y', 'd', 'l', 'o', 'a', 'd', 's', 'l', 'o', 'a', 'n', 's', 'l', 'o', 'b', 'b', 'y', 'l', 'o', 'c', 'a', 'l', 'l', 'o', 'c', 'k', 's', 'l', 'o', 'd', 'g', 'e', 'l', 'o', 'g', 'a', 'n', 'l', 'o', 'g', 'i', 'c', 'l', 'o', 'g', 'i', 'n', 'l', 'o', 'g', 'o', 's', 'l', 'o', 'o', 'k', 's', 'l', 'o', 'o', 'p', 's', 'l', 'o', 'o', 's', 'e', 'l', 'o', 'p', 'e', 'z', 'l', 'o', 't', 'u', 's', 'l', 'o', 'u', 'i', 's', 'l', 'o', 'v', 'e', 'd', 'l', 'o', 'v', 'e', 'r', 'l', 'o', 'v', 'e', 's', 'l', 'o', 'w', 'e', 'r', 'l', 'u', 'c', 'a', 's', 'l', 'u', 'c', 'i', 'a', 'l', 'u', 'c', 'k', 'y', 'l', 'u', 'n', 'c', 'h', 'l', 'y', 'c', 'o', 's', 'l', 'y', 'i', 'n', 'g', 'l', 'y', 'r', 'i', 'c', 'm', 'a', 'c', 'r', 'o', 'm', 'a', 'g', 'i', 'c', 'm', 'a', 'i', 'l', 's', 'm', 'a', 'i', 'n', 'e', 'm', 'a', 'j', 'o', 'r', 'm', 'a', 'k', 'e', 'r', 'm', 'a', 'k', 'e', 's', 'm', 'a', 'l', 'e', 's', 'm', 'a', 'l', 't', 'a', 'm', 'a', 'm', 'b', 'o', 'm', 'a', 'n', 'g', 'a', 'm', 'a', 'n', 'o', 'r', 'm', 'a', 'p', 'l', 'e', 'm', 'a', 'r', 'c', 'h', 'm', 'a', 'r', 'c', 'o', 'm', 'a', 'r', 'd', 'i', 'm', 'a', 'r', 'i', 'a', 'm', 'a', 'r', 'i', 'e', 'm', 'a', 'r', 'i', 'o', 'm', 'a', 'r', 'k', 's', 'm', 'a', 'r', 's', 'h', 'm', 'a', 's', 'o', 'n', 'm', 'a', 't', 'c', 'h', 'm', 'a', 'y', 'b', 'e', 'm', 'a', 'y', 'o', 'r', 'm', 'a', 'z', 'd', 'a', 'm', 'e', 'a', 'l', 's', 'm', 'e', 'a', 'n', 's', 'm', 'e', 'a', 'n', 't', 'm', 'e', 'd', 'a', 'l', 'm', 'e', 'd', 'i', 'a', 'm', 'e', 'e', 't', 's', 'm', 'e', 'n', 'u', 's', 'm', 'e', 'r', 'c', 'y', 'm', 'e', 'r', 'g', 'e', 'm', 'e', 'r', 'i', 't', 'm', 'e', 'r', 'r', 'y', 'm', 'e', 't', 'a', 'l', 'm', 'e', 't', 'e', 'r', 'm', 'e', 't', 'r', 'o', 'm', 'e', 'y', 'e', 'r', 'm', 'i', 'a', 'm', 'i', 'm', 'i', 'c', 'r', 'o', 'm', 'i', 'g', 'h', 't', 'm', 'i', 'l', 'a', 'n', 'm', 'i', 'l', 'e', 's', 'm', 'i', 'l', 'f', 's', 'm', 'i', 'l', 'l', 's', 'm', 'i', 'n', 'd', 's', 'm', 'i', 'n', 'e', 's', 'm', 'i', 'n', 'o', 'r', 'm', 'i', 'n', 'u', 's', 'm', 'i', 'x', 'e', 'd', 'm', 'i', 'x', 'e', 'r', 'm', 'o', 'd', 'e', 'l', 'm', 'o', 'd', 'e', 'm', 'm', 'o', 'd', 'e', 's', 'm', 'o', 'n', 'e', 'y', 'm', 'o', 'n', 't', 'e', 'm', 'o', 'n', 't', 'h', 'm', 'o', 'o', 'r', 'e', 'm', 'o', 'r', 'a', 'l', 'm', 'o', 's', 'e', 's', 'm', 'o', 't', 'e', 'l', 'm', 'o', 't', 'o', 'r', 'm', 'o', 'u', 'n', 't', 'm', 'o', 'u', 's', 'e', 'm', 'o', 'u', 't', 'h', 'm', 'o', 'v', 'e', 'd', 'm', 'o', 'v', 'e', 's', 'm', 'o', 'v', 'i', 'e', 'm', 'p', 'e', 'g', 's', 'm', 's', 'g', 'i', 'd', 'm', 'u', 'l', 't', 'i', 'm', 'u', 's', 'i', 'c', 'm', 'y', 'e', 'r', 's', 'm', 'y', 's', 'q', 'l', 'n', 'a', 'i', 'l', 's', 'n', 'a', 'k', 'e', 'd', 'n', 'a', 'm', 'e', 'd', 'n', 'a', 'm', 'e', 's', 'n', 'a', 'n', 'c', 'y', 'n', 'a', 's', 't', 'y', 'n', 'a', 'v', 'a', 'l', 'n', 'e', 'e', 'd', 's', 'n', 'e', 'p', 'a', 'l', 'n', 'e', 'r', 'v', 'e', 'n', 'e', 'v', 'e', 'r', 'n', 'e', 'w', 'e', 'r', 'n', 'e', 'w', 'l', 'y', 'n', 'i', 'g', 'e', 'r', 'n', 'i', 'g', 'h', 't', 'n', 'i', 'k', 'o', 'n', 'n', 'o', 'b', 'l', 'e', 'n', 'o', 'd', 'e', 's', 'n', 'o', 'i', 's', 'e', 'n', 'o', 'k', 'i', 'a', 'n', 'o', 'r', 't', 'h', 'n', 'o', 't', 'e', 'd', 'n', 'o', 't', 'e', 's', 'n', 'o', 't', 'r', 'e', 'n', 'o', 'v', 'e', 'l', 'n', 'u', 'r', 's', 'e', 'n', 'y', 'l', 'o', 'n', 'o', 'a', 's', 'i', 's', 'o', 'c', 'c', 'u', 'r', 'o', 'c', 'e', 'a', 'n', 'o', 'f', 'f', 'e', 'r', 'o', 'f', 't', 'e', 'n', 'o', 'l', 'd', 'e', 'r', 'o', 'l', 'i', 'v', 'e', 'o', 'm', 'a', 'h', 'a', 'o', 'm', 'e', 'g', 'a', 'o', 'n', 'i', 'o', 'n', 'o', 'p', 'e', 'n', 's', 'o', 'p', 'e', 'r', 'a', 'o', 'r', 'b', 'i', 't', 'o', 'r', 'd', 'e', 'r', 'o', 'r', 'g', 'a', 'n', 'o', 's', 'c', 'a', 'r', 'o', 't', 'h', 'e', 'r', 'o', 'u', 'g', 'h', 't', 'o', 'u', 't', 'e', 'r', 'o', 'w', 'n', 'e', 'd', 'o', 'w', 'n', 'e', 'r', 'o', 'x', 'i', 'd', 'e', 'o', 'z', 'o', 'n', 'e', 'p', 'a', 'c', 'k', 's', 'p', 'a', 'g', 'e', 's', 'p', 'a', 'i', 'n', 't', 'p', 'a', 'i', 'r', 's', 'p', 'a', 'n', 'e', 'l', 'p', 'a', 'n', 'i', 'c', 'p', 'a', 'n', 't', 's', 'p', 'a', 'p', 'e', 'r', 'p', 'a', 'p', 'u', 'a', 'p', 'a', 'r', 'i', 's', 'p', 'a', 'r', 'k', 's', 'p', 'a', 'r', 't', 's', 'p', 'a', 'r', 't', 'y', 'p', 'a', 's', 't', 'a', 'p', 'a', 's', 't', 'e', 'p', 'a', 't', 'c', 'h', 'p', 'a', 't', 'h', 's', 'p', 'a', 't', 'i', 'o', 'p', 'a', 'x', 'i', 'l', 'p', 'e', 'a', 'c', 'e', 'p', 'e', 'a', 'r', 'l', 'p', 'e', 'e', 'r', 's', 'p', 'e', 'n', 'i', 's', 'p', 'e', 'n', 'n', 'y', 'p', 'e', 'r', 'r', 'y', 'p', 'e', 'r', 't', 'h', 'p', 'e', 't', 'e', 'r', 'p', 'h', 'a', 's', 'e', 'p', 'h', 'o', 'n', 'e', 'p', 'h', 'o', 't', 'o', 'p', 'h', 'p', 'b', 'b', 'p', 'i', 'a', 'n', 'o', 'p', 'i', 'c', 'k', 's', 'p', 'i', 'e', 'c', 'e', 'p', 'i', 'l', 'l', 's', 'p', 'i', 'l', 'o', 't', 'p', 'i', 'p', 'e', 's', 'p', 'i', 't', 'c', 'h', 'p', 'i', 'x', 'e', 'l', 'p', 'i', 'z', 'z', 'a', 'p', 'l', 'a', 'c', 'e', 'p', 'l', 'a', 'i', 'n', 'p', 'l', 'a', 'n', 'e', 'p', 'l', 'a', 'n', 's', 'p', 'l', 'a', 'n', 't', 'p', 'l', 'a', 't', 'e', 'p', 'l', 'a', 'y', 's', 'p', 'l', 'a', 'z', 'a', 'p', 'l', 'o', 't', 's', 'p', 'o', 'e', 'm', 's', 'p', 'o', 'i', 'n', 't', 'p', 'o', 'k', 'e', 'r', 'p', 'o', 'l', 'a', 'r', 'p', 'o', 'l', 'l', 's', 'p', 'o', 'o', 'l', 's', 'p', 'o', 'r', 'n', 'o', 'p', 'o', 'r', 't', 's', 'p', 'o', 's', 't', 's', 'p', 'o', 'u', 'n', 'd', 'p', 'o', 'w', 'e', 'r', 'p', 'r', 'e', 's', 's', 'p', 'r', 'i', 'c', 'e', 'p', 'r', 'i', 'd', 'e', 'p', 'r', 'i', 'm', 'e', 'p', 'r', 'i', 'n', 't', 'p', 'r', 'i', 'o', 'r', 'p', 'r', 'i', 'z', 'e', 'p', 'r', 'o', 'b', 'e', 'p', 'r', 'o', 'm', 'o', 'p', 'r', 'o', 'o', 'f', 'p', 'r', 'o', 'u', 'd', 'p', 'r', 'o', 'v', 'e', 'p', 'r', 'o', 'x', 'y', 'p', 'u', 'l', 's', 'e', 'p', 'u', 'm', 'p', 's', 'p', 'u', 'n', 'c', 'h', 'p', 'u', 'p', 'p', 'y', 'p', 'u', 'r', 's', 'e', 'p', 'u', 's', 's', 'y', 'q', 'a', 't', 'a', 'r', 'q', 'u', 'e', 'e', 'n', 'q', 'u', 'e', 'r', 'y', 'q', 'u', 'e', 's', 't', 'q', 'u', 'e', 'u', 'e', 'q', 'u', 'i', 'c', 'k', 'q', 'u', 'i', 'e', 't', 'q', 'u', 'i', 'l', 't', 'q', 'u', 'i', 't', 'e', 'q', 'u', 'o', 't', 'e', 'r', 'a', 'c', 'e', 's', 'r', 'a', 'c', 'k', 's', 'r', 'a', 'd', 'a', 'r', 'r', 'a', 'd', 'i', 'o', 'r', 'a', 'i', 's', 'e', 'r', 'a', 'l', 'l', 'y', 'r', 'a', 'l', 'p', 'h', 'r', 'a', 'n', 'c', 'h', 'r', 'a', 'n', 'd', 'y', 'r', 'a', 'n', 'g', 'e', 'r', 'a', 'n', 'k', 's', 'r', 'a', 'p', 'i', 'd', 'r', 'a', 't', 'e', 'd', 'r', 'a', 't', 'e', 's', 'r', 'a', 't', 'i', 'o', 'r', 'e', 'a', 'c', 'h', 'r', 'e', 'a', 'd', 's', 'r', 'e', 'a', 'd', 'y', 'r', 'e', 'a', 'l', 'm', 'r', 'e', 'b', 'e', 'l', 'r', 'e', 'f', 'e', 'r', 'r', 'e', 'h', 'a', 'b', 'r', 'e', 'l', 'a', 'x', 'r', 'e', 'l', 'a', 'y', 'r', 'e', 'm', 'i', 'x', 'r', 'e', 'n', 'e', 'w', 'r', 'e', 'p', 'l', 'y', 'r', 'e', 's', 'e', 't', 'r', 'e', 't', 'r', 'o', 'r', 'h', 'o', 'd', 'e', 'r', 'i', 'c', 'k', 'y', 'r', 'i', 'd', 'e', 'r', 'r', 'i', 'd', 'e', 's', 'r', 'i', 'd', 'g', 'e', 'r', 'i', 'g', 'h', 't', 'r', 'i', 'n', 'g', 's', 'r', 'i', 's', 'k', 's', 'r', 'i', 'v', 'e', 'r', 'r', 'o', 'a', 'd', 's', 'r', 'o', 'b', 'i', 'n', 'r', 'o', 'b', 'o', 't', 'r', 'o', 'c', 'k', 's', 'r', 'o', 'c', 'k', 'y', 'r', 'o', 'g', 'e', 'r', 'r', 'o', 'l', 'e', 's', 'r', 'o', 'l', 'l', 's', 'r', 'o', 'm', 'a', 'n', 'r', 'o', 'o', 'm', 's', 'r', 'o', 'o', 't', 's', 'r', 'o', 's', 'e', 's', 'r', 'o', 'u', 'g', 'e', 'r', 'o', 'u', 'g', 'h', 'r', 'o', 'u', 'n', 'd', 'r', 'o', 'u', 't', 'e', 'r', 'o', 'v', 'e', 'r', 'r', 'o', 'y', 'a', 'l', 'r', 'u', 'g', 'b', 'y', 'r', 'u', 'l', 'e', 'd', 'r', 'u', 'l', 'e', 's', 'r', 'u', 'r', 'a', 'l', 's', 'a', 'f', 'e', 'r', 's', 'a', 'g', 'e', 'm', 's', 'a', 'i', 'n', 't', 's', 'a', 'l', 'a', 'd', 's', 'a', 'l', 'e', 'm', 's', 'a', 'l', 'e', 's', 's', 'a', 'l', 'l', 'y', 's', 'a', 'l', 'o', 'n', 's', 'a', 'm', 'b', 'a', 's', 'a', 'm', 'o', 'a', 's', 'a', 'n', 'd', 'y', 's', 'a', 'n', 't', 'a', 's', 'a', 'n', 'y', 'o', 's', 'a', 'r', 'a', 'h', 's', 'a', 't', 'i', 'n', 's', 'a', 'u', 'c', 'e', 's', 'a', 'u', 'd', 'i', 's', 'a', 'v', 'e', 'd', 's', 'a', 'v', 'e', 'r', 's', 'a', 'v', 'e', 's', 's', 'b', 'j', 'c', 't', 's', 'c', 'a', 'l', 'e', 's', 'c', 'a', 'r', 'y', 's', 'c', 'e', 'n', 'e', 's', 'c', 'o', 'o', 'p', 's', 'c', 'o', 'p', 'e', 's', 'c', 'o', 'r', 'e', 's', 'c', 'o', 't', 't', 's', 'c', 'o', 'u', 't', 's', 'c', 'r', 'e', 'w', 's', 'c', 'u', 'b', 'a', 's', 'e', 'a', 't', 's', 's', 'e', 'e', 'd', 's', 's', 'e', 'e', 'k', 's', 's', 'e', 'e', 'm', 's', 's', 'e', 'l', 'l', 's', 's', 'e', 'n', 'd', 's', 's', 'e', 'n', 's', 'e', 's', 'e', 'r', 'u', 'm', 's', 'e', 'r', 'v', 'e', 's', 'e', 't', 'u', 'p', 's', 'e', 'v', 'e', 'n', 's', 'h', 'a', 'd', 'e', 's', 'h', 'a', 'f', 't', 's', 'h', 'a', 'k', 'e', 's', 'h', 'a', 'l', 'l', 's', 'h', 'a', 'm', 'e', 's', 'h', 'a', 'p', 'e', 's', 'h', 'a', 'r', 'e', 's', 'h', 'a', 'r', 'k', 's', 'h', 'a', 'r', 'p', 's', 'h', 'e', 'e', 'p', 's', 'h', 'e', 'e', 'r', 's', 'h', 'e', 'e', 't', 's', 'h', 'e', 'l', 'f', 's', 'h', 'e', 'l', 'l', 's', 'h', 'i', 'f', 't', 's', 'h', 'i', 'n', 'e', 's', 'h', 'i', 'p', 's', 's', 'h', 'i', 'r', 't', 's', 'h', 'o', 'c', 'k', 's', 'h', 'o', 'e', 's', 's', 'h', 'o', 'o', 't', 's', 'h', 'o', 'p', 's', 's', 'h', 'o', 'r', 'e', 's', 'h', 'o', 'r', 't', 's', 'h', 'o', 't', 's', 's', 'h', 'o', 'w', 'n', 's', 'h', 'o', 'w', 's', 's', 'i', 'd', 'e', 's', 's', 'i', 'g', 'h', 't', 's', 'i', 'g', 'm', 'a', 's', 'i', 'g', 'n', 's', 's', 'i', 'l', 'l', 'y', 's', 'i', 'm', 'o', 'n', 's', 'i', 'n', 'c', 'e', 's', 'i', 'n', 'g', 'h', 's', 'i', 't', 'e', 's', 's', 'i', 'x', 't', 'h', 's', 'i', 'z', 'e', 'd', 's', 'i', 'z', 'e', 's', 's', 'k', 'i', 'l', 'l', 's', 'k', 'i', 'n', 's', 's', 'k', 'i', 'r', 't', 's', 'k', 'y', 'p', 'e', 's', 'l', 'a', 'v', 'e', 's', 'l', 'e', 'e', 'p', 's', 'l', 'i', 'd', 'e', 's', 'l', 'o', 'p', 'e', 's', 'l', 'o', 't', 's', 's', 'l', 'u', 't', 's', 's', 'm', 'a', 'l', 'l', 's', 'm', 'a', 'r', 't', 's', 'm', 'e', 'l', 'l', 's', 'm', 'i', 'l', 'e', 's', 'm', 'i', 't', 'h', 's', 'm', 'o', 'k', 'e', 's', 'n', 'a', 'k', 'e', 's', 'o', 'c', 'k', 's', 's', 'o', 'l', 'a', 'r', 's', 'o', 'l', 'i', 'd', 's', 'o', 'l', 'v', 'e', 's', 'o', 'n', 'g', 's', 's', 'o', 'n', 'i', 'c', 's', 'o', 'r', 'r', 'y', 's', 'o', 'r', 't', 's', 's', 'o', 'u', 'l', 's', 's', 'o', 'u', 'n', 'd', 's', 'o', 'u', 't', 'h', 's', 'p', 'a', 'c', 'e', 's', 'p', 'a', 'i', 'n', 's', 'p', 'a', 'n', 'k', 's', 'p', 'a', 'r', 'c', 's', 'p', 'a', 'r', 'e', 's', 'p', 'e', 'a', 'k', 's', 'p', 'e', 'c', 's', 's', 'p', 'e', 'e', 'd', 's', 'p', 'e', 'l', 'l', 's', 'p', 'e', 'n', 'd', 's', 'p', 'e', 'n', 't', 's', 'p', 'e', 'r', 'm', 's', 'p', 'i', 'c', 'e', 's', 'p', 'i', 'e', 's', 's', 'p', 'i', 'n', 'e', 's', 'p', 'l', 'i', 't', 's', 'p', 'o', 'k', 'e', 's', 'p', 'o', 'r', 't', 's', 'p', 'o', 't', 's', 's', 'p', 'r', 'a', 'y', 's', 'q', 'u', 'a', 'd', 's', 't', 'a', 'c', 'k', 's', 't', 'a', 'f', 'f', 's', 't', 'a', 'g', 'e', 's', 't', 'a', 'k', 'e', 's', 't', 'a', 'm', 'p', 's', 't', 'a', 'n', 'd', 's', 't', 'a', 'r', 's', 's', 't', 'a', 'r', 't', 's', 't', 'a', 't', 'e', 's', 't', 'a', 't', 's', 's', 't', 'a', 'y', 's', 's', 't', 'e', 'a', 'l', 's', 't', 'e', 'a', 'm', 's', 't', 'e', 'e', 'l', 's', 't', 'e', 'p', 's', 's', 't', 'e', 'v', 'e', 's', 't', 'i', 'c', 'k', 's', 't', 'i', 'l', 'l', 's', 't', 'o', 'c', 'k', 's', 't', 'o', 'n', 'e', 's', 't', 'o', 'o', 'd', 's', 't', 'o', 'p', 's', 's', 't', 'o', 'r', 'e', 's', 't', 'o', 'r', 'm', 's', 't', 'o', 'r', 'y', 's', 't', 'r', 'a', 'p', 's', 't', 'r', 'i', 'p', 's', 't', 'u', 'c', 'k', 's', 't', 'u', 'd', 'y', 's', 't', 'u', 'f', 'f', 's', 't', 'y', 'l', 'e', 's', 'u', 'c', 'k', 's', 's', 'u', 'd', 'a', 'n', 's', 'u', 'g', 'a', 'r', 's', 'u', 'i', 't', 'e', 's', 'u', 'i', 't', 's', 's', 'u', 'n', 'n', 'y', 's', 'u', 'p', 'e', 'r', 's', 'u', 'r', 'g', 'e', 's', 'u', 's', 'a', 'n', 's', 'w', 'e', 'e', 't', 's', 'w', 'i', 'f', 't', 's', 'w', 'i', 'n', 'g', 's', 'w', 'i', 's', 's', 's', 'w', 'o', 'r', 'd', 's', 'y', 'r', 'i', 'a', 't', 'a', 'b', 'l', 'e', 't', 'a', 'h', 'o', 'e', 't', 'a', 'k', 'e', 'n', 't', 'a', 'k', 'e', 's', 't', 'a', 'l', 'e', 's', 't', 'a', 'l', 'k', 's', 't', 'a', 'm', 'i', 'l', 't', 'a', 'm', 'p', 'a', 't', 'a', 'n', 'k', 's', 't', 'a', 'p', 'e', 's', 't', 'a', 's', 'k', 's', 't', 'a', 's', 't', 'e', 't', 'a', 'x', 'e', 's', 't', 'e', 'a', 'c', 'h', 't', 'e', 'a', 'm', 's', 't', 'e', 'a', 'r', 's', 't', 'e', 'd', 'd', 'y', 't', 'e', 'e', 'n', 's', 't', 'e', 'e', 't', 'h', 't', 'e', 'l', 'l', 's', 't', 'e', 'r', 'm', 's', 't', 'e', 'r', 'r', 'y', 't', 'e', 's', 't', 's', 't', 'e', 'x', 'a', 's', 't', 'e', 'x', 't', 's', 't', 'h', 'a', 'n', 'k', 't', 'h', 'a', 't', 's', 't', 'h', 'e', 'f', 't', 't', 'h', 'e', 'i', 'r', 't', 'h', 'e', 'm', 'e', 't', 'h', 'e', 'r', 'e', 't', 'h', 'e', 's', 'e', 't', 'h', 'e', 't', 'a', 't', 'h', 'i', 'c', 'k', 't', 'h', 'i', 'n', 'g', 't', 'h', 'i', 'n', 'k', 't', 'h', 'i', 'r', 'd', 't', 'h', 'o', 'n', 'g', 't', 'h', 'o', 's', 'e', 't', 'h', 'r', 'e', 'e', 't', 'h', 'r', 'o', 'w', 't', 'h', 'u', 'm', 'b', 't', 'i', 'g', 'e', 'r', 't', 'i', 'g', 'h', 't', 't', 'i', 'l', 'e', 's', 't', 'i', 'm', 'e', 'r', 't', 'i', 'm', 'e', 's', 't', 'i', 'o', 'n', 's', 't', 'i', 'r', 'e', 'd', 't', 'i', 'r', 'e', 's', 't', 'i', 't', 'l', 'e', 't', 'o', 'd', 'a', 'y', 't', 'o', 'k', 'e', 'n', 't', 'o', 'k', 'y', 'o', 't', 'o', 'm', 'm', 'y', 't', 'o', 'n', 'e', 'r', 't', 'o', 'n', 'e', 's', 't', 'o', 'o', 'l', 's', 't', 'o', 'o', 't', 'h', 't', 'o', 'p', 'i', 'c', 't', 'o', 't', 'a', 'l', 't', 'o', 'u', 'c', 'h', 't', 'o', 'u', 'g', 'h', 't', 'o', 'u', 'r', 's', 't', 'o', 'w', 'e', 'r', 't', 'o', 'w', 'n', 's', 't', 'o', 'x', 'i', 'c', 't', 'r', 'a', 'c', 'e', 't', 'r', 'a', 'c', 'k', 't', 'r', 'a', 'c', 't', 't', 'r', 'a', 'c', 'y', 't', 'r', 'a', 'd', 'e', 't', 'r', 'a', 'i', 'l', 't', 'r', 'a', 'i', 'n', 't', 'r', 'a', 'n', 's', 't', 'r', 'a', 's', 'h', 't', 'r', 'e', 'a', 't', 't', 'r', 'e', 'e', 's', 't', 'r', 'e', 'n', 'd', 't', 'r', 'i', 'a', 'l', 't', 'r', 'i', 'b', 'e', 't', 'r', 'i', 'c', 'k', 't', 'r', 'i', 'e', 'd', 't', 'r', 'i', 'e', 's', 't', 'r', 'i', 'p', 's', 't', 'r', 'o', 'u', 't', 't', 'r', 'u', 'c', 'k', 't', 'r', 'u', 'l', 'y', 't', 'r', 'u', 'n', 'k', 't', 'r', 'u', 's', 't', 't', 'r', 'u', 't', 'h', 't', 'u', 'b', 'e', 's', 't', 'u', 'l', 's', 'a', 't', 'u', 'm', 'o', 'r', 't', 'u', 'n', 'e', 'r', 't', 'u', 'n', 'e', 's', 't', 'u', 'r', 'b', 'o', 't', 'u', 'r', 'n', 's', 't', 'w', 'i', 'c', 'e', 't', 'w', 'i', 'k', 'i', 't', 'w', 'i', 'n', 's', 't', 'w', 'i', 's', 't', 't', 'y', 'l', 'e', 'r', 't', 'y', 'p', 'e', 's', 'u', 'l', 't', 'r', 'a', 'u', 'n', 'c', 'l', 'e', 'u', 'n', 'd', 'e', 'r', 'u', 'n', 'i', 'o', 'n', 'u', 'n', 'i', 't', 's', 'u', 'n', 'i', 't', 'y', 'u', 'n', 't', 'i', 'l', 'u', 'p', 'p', 'e', 'r', 'u', 'p', 's', 'e', 't', 'u', 'r', 'b', 'a', 'n', 'u', 's', 'a', 'g', 'e', 'u', 's', 'e', 'r', 's', 'u', 's', 'i', 'n', 'g', 'u', 's', 'u', 'a', 'l', 'u', 't', 'i', 'l', 's', 'v', 'a', 'l', 'i', 'd', 'v', 'a', 'l', 'u', 'e', 'v', 'a', 'l', 'v', 'e', 'v', 'a', 'u', 'l', 't', 'v', 'e', 'g', 'a', 's', 'v', 'e', 'n', 'u', 'e', 'v', 'e', 'r', 'd', 'e', 'v', 'e', 'r', 's', 'e', 'v', 'i', 'd', 'e', 'o', 'v', 'i', 'e', 'w', 's', 'v', 'i', 'l', 'l', 'a', 'v', 'i', 'n', 'y', 'l', 'v', 'i', 'r', 'a', 'l', 'v', 'i', 'r', 'u', 's', 'v', 'i', 's', 'i', 't', 'v', 'i', 's', 't', 'a', 'v', 'i', 't', 'a', 'l', 'v', 'o', 'c', 'a', 'l', 'v', 'o', 'i', 'c', 'e', 'v', 'o', 'l', 'v', 'o', 'v', 'o', 't', 'e', 'd', 'v', 'o', 't', 'e', 's', 'v', 's', 'n', 'e', 't', 'w', 'a', 'g', 'e', 's', 'w', 'a', 'g', 'o', 'n', 'w', 'a', 'l', 'e', 's', 'w', 'a', 'l', 'k', 's', 'w', 'a', 'l', 'l', 's', 'w', 'a', 'n', 'n', 'a', 'w', 'a', 'n', 't', 's', 'w', 'a', 's', 't', 'e', 'w', 'a', 't', 'c', 'h', 'w', 'a', 't', 'e', 'r', 'w', 'a', 't', 't', 's', 'w', 'a', 'v', 'e', 's', 'w', 'a', 'y', 'n', 'e', 'w', 'e', 'e', 'k', 's', 'w', 'e', 'i', 'r', 'd', 'w', 'e', 'l', 'l', 's', 'w', 'e', 'l', 's', 'h', 'w', 'e', 'n', 'd', 'y', 'w', 'h', 'a', 'l', 'e', 'w', 'h', 'a', 't', 's', 'w', 'h', 'e', 'a', 't', 'w', 'h', 'e', 'e', 'l', 'w', 'h', 'e', 'r', 'e', 'w', 'h', 'i', 'c', 'h', 'w', 'h', 'i', 'l', 'e', 'w', 'h', 'i', 't', 'e', 'w', 'h', 'o', 'l', 'e', 'w', 'h', 'o', 'r', 'e', 'w', 'h', 'o', 's', 'e', 'w', 'i', 'd', 'e', 'r', 'w', 'i', 'd', 't', 'h', 'w', 'i', 'l', 'e', 'y', 'w', 'i', 'n', 'd', 's', 'w', 'i', 'n', 'e', 's', 'w', 'i', 'n', 'g', 's', 'w', 'i', 'r', 'e', 'd', 'w', 'i', 'r', 'e', 's', 'w', 'i', 't', 'c', 'h', 'w', 'i', 'v', 'e', 's', 'w', 'o', 'm', 'a', 'n', 'w', 'o', 'm', 'e', 'n', 'w', 'o', 'o', 'd', 's', 'w', 'o', 'r', 'd', 's', 'w', 'o', 'r', 'k', 's', 'w', 'o', 'r', 'l', 'd', 'w', 'o', 'r', 'r', 'y', 'w', 'o', 'r', 's', 'e', 'w', 'o', 'r', 's', 't', 'w', 'o', 'r', 't', 'h', 'w', 'o', 'u', 'l', 'd', 'w', 'o', 'u', 'n', 'd', 'w', 'r', 'i', 's', 't', 'w', 'r', 'i', 't', 'e', 'w', 'r', 'o', 'n', 'g', 'w', 'r', 'o', 't', 'e', 'x', 'a', 'n', 'a', 'x', 'x', 'e', 'r', 'o', 'x', 'x', 'h', 't', 'm', 'l', 'y', 'a', 'c', 'h', 't', 'y', 'a', 'h', 'o', 'o', 'y', 'a', 'r', 'd', 's', 'y', 'e', 'a', 'r', 's', 'y', 'e', 'a', 's', 't', 'y', 'e', 'm', 'e', 'n', 'y', 'i', 'e', 'l', 'd', 'y', 'o', 'u', 'n', 'g', 'y', 'o', 'u', 'r', 's', 'y', 'o', 'u', 't', 'h', 'y', 'u', 'k', 'o', 'n', 'z', 'd', 'n', 'e', 't', 'z', 'o', 'n', 'e', 's', 0, 'E', 'n', 't', 'e', 'r', ' ', 'a', ' ', 'w', 'o', 'r', 'd', 10, 0, 'm', 'o', 'n', 'e', 'y', 0, 'C', 'o', 'r', 'r', 'e', 'c', 't', '!', 0, '?', '?', '?', '?', '?', 0, 10, 'T', 'h', 'e', ' ', 'w', 'o', 'r', 'd', ' ', 'w', 'a', 's', 10, 0
 init:
     mov term_reg, 0x9F80
                               
     ld r0, term_reg                
     mov r1, { 11 5 << }
-    st r1, term_reg, 0x42
+    st r1, term_hrange
     mov r1, { 7 5 << }
-    st r1, term_reg, 0x43
-    mov r17, 0x1000
-    st r17, term_reg, 0x44
-    mov r17, 0xF
-    st r17, term_reg, 0x46
-    mov r17, 1
-    st r17, term_reg, 0x45
+    st r1, term_vrange
+    mov r1, 0x1000
+    st r1, term_cursor
+    mov r1, 0xF
+    st r1, term_colour
+    mov r1, 10
+    st r1,  term_nlchar
 
 start:
-    mov stack_pointer,2047
+    mov stack_pointer,8191
 	jmp main
-main:
-	sub stack_pointer, 1
+strcmp:
 	push base_pointer
 	mov base_pointer, stack_pointer
-	mov r1, 101
-	st r1, base_pointer, 1
-.exit_main:
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+	ld r1, base_pointer, 2
+	ld r2, base_pointer, 3
+	mov r3, 0
+	.label_30:
+	cmp r3, 5
+	jge .label_32
+	add r4, r1, r3
+	ld r4, r4
+	add r5, r2, r3
+	ld r5, r5
+	cmp r4, r5
+	jne .label_33
+	jmp .label_31
+	jmp .label_34
+	.label_33:
+	add r1, r1, r3
+	add r2, r2, r3
+	ld r1, r1
+	ld r2, r2
+	cmp r1, r2
+	jge .label_35
+	mov return_reg, 65535
+	jmp .exit_strcmp
+	jmp .label_36
+	.label_35:
+	mov return_reg, 1
+	jmp .exit_strcmp
+	.label_36:
+	.label_34:
+	.label_31:
+	add r3, 1
+	jmp .label_30
+	.label_32:
+	mov return_reg, 0
+	jmp .exit_strcmp
+.exit_strcmp:
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
 	pop base_pointer
+	ret
+fscanf:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	push r4
+	ld r3, base_pointer, 2
+	mov r4, 0
+	.label_10:
+	mov r1, r3
+	ld r1, r1
+	cmp r1, 0
+	je .label_11
+	mov r1, r3
+	ld r1, r1
+	cmp r1, '%'
+	jne .label_12
+	add r3, 1
+	mov r1, r3
+	ld r1, r1
+	cmp r1, 'u'
+	je .label_15
+	cmp r1, 'd'
+	je .label_16
+	cmp r1, 's'
+	je .label_17
+	cmp r1, 'c'
+	je .label_18
+	jmp .label_14
+	.label_15:
+	.label_16:
+	add r1, base_pointer, 3
+	mov r2, r4
+	add r4, 1
+	add r1, r2
+	ld r1, r1
+	push r1
+	call __scan_signed_int
 	add stack_pointer, 1
+	mov r1, return_reg
+	jmp .label_14
+	.label_17:
+	add r1, base_pointer, 3
+	mov r2, r4
+	add r4, 1
+	add r1, r2
+	ld r1, r1
+	push r1
+	call __scan_char_array
+	add stack_pointer, 1
+	mov r1, return_reg
+	jmp .label_14
+	.label_18:
+	add r1, base_pointer, 3
+	mov r2, r4
+	add r4, 1
+	add r1, r2
+	ld r1, r1
+	call getchar
+	mov r2, return_reg
+	st r2, r1
+	add r1, base_pointer, 3
+	mov r2, r4
+	sub r2, 1
+	add r1, r2
+	ld r1, r1
+	ld r22, r1
+	call putchar
+	.label_14:
+	jmp .label_13
+	.label_12:
+	call getchar
+	mov r1, return_reg
+	mov r22, r1
+	call putchar
+	mov r2, r3
+	ld r2, r2
+	cmp r1, r2
+	je .label_19
+	jmp .label_11
+	jmp .label_20
+	.label_19:
+	.label_20:
+	.label_13:
+	add r3, 1
+	jmp .label_10
+	.label_11:
+	mov r1, r3
+	ld r2, base_pointer, 2
+	sub r1, r2
+	mov return_reg, r1
+	jmp .exit_fscanf
+.exit_fscanf:
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
+move_cursor:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	mov r22, 0
+	call set_cursor
+	mov r1, 0
+	.label_42:
+	mov r2, r1
+	ld r3, base_pointer, 3
+	cmp r2, r3
+	jge .label_44
+	mov r22, 10
+	call putchar
+	.label_43:
+	add r1, 1
+	jmp .label_42
+	.label_44:
+	mov r2, 0
+	.label_45:
+	mov r3, r2
+	ld r1, base_pointer, 2
+	cmp r3, r1
+	jge .label_47
+	mov r22, ' '
+	call putchar
+	.label_46:
+	add r2, 1
+	jmp .label_45
+	.label_47:
+.exit_move_cursor:
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
+__scan_char_array:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	ld r2, base_pointer, 2
+	.label_28:
+	call getchar
+	mov r3, return_reg
+	mov r1, r3
+	cmp r3, 10
+	je .label_29
+	mov r22, r1
+	call putchar
+	mov r3, r2
+	add r2, 1
+	st r1, r3
+	jmp .label_28
+	.label_29:
+	mov r1, r2
+	mov r3, 0
+	st r3, r1
+	ld r1, base_pointer, 2
+	sub r2, r1
+	mov return_reg, r2
+	jmp .exit___scan_char_array
+.exit___scan_char_array:
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
+is_letter_in_word:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	ld r1, base_pointer, 3
+	mov r3, 0
+	.label_37:
+	cmp r3, 5
+	jge .label_39
+	ld r1, base_pointer, 3
+	add r1, r3
+	ld r1, r1
+	ld r2, base_pointer, 2
+	cmp r1, r2
+	jne .label_40
+	mov return_reg, 1
+	jmp .exit_is_letter_in_word
+	jmp .label_41
+	.label_40:
+	.label_41:
+	.label_38:
+	add r3, 1
+	jmp .label_37
+	.label_39:
+	mov return_reg, 0
+	jmp .exit_is_letter_in_word
+.exit_is_letter_in_word:
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
+main:
+	sub stack_pointer, 6
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+	push r6
+	push r7
+	push r8
+	mov r1, 6912
+	mov r22, r1
+	call __print_char_array
+	mov r5, 0
+	mov r6, 1
+	.label_48:
+	cmp r6, 6
+	jge .label_50
+	mov r22, ' '
+	call putchar
+	add r1, base_pointer, 1
+	push r1
+	call __scan_char_array
+	add stack_pointer, 1
+	mov r1, return_reg
+	mov r7, 0
+	mov r8, 1381
+	.label_51:
+	cmp r7, r8
+	jg .label_52
+	mov r1, r7
+	mov r2, r8
+	add r1, r2
+	mov r2, 1
+	shr r1, r2
+	mov r2, 1
+	mov r3, r1
+	mull r3, 5
+	add r2, r3
+	push r2
+	add r2, base_pointer, 1
+	push r2
+	call strcmp
+	add stack_pointer, 2
+	mov r2, return_reg
+	mov r3, r2
+	cmp r3, 0
+	jne .label_53
+	push r6
+	mov r1, 1
+	push r1
+	call move_cursor
+	add stack_pointer, 2
+	mov r1, 0
+	mov r2, 0
+	.label_55:
+	cmp r2, 5
+	jge .label_57
+	mov r3, 6926
+	add r3, r2
+	ld r3, r3
+	add r4, base_pointer, 1
+	add r4, r2
+	ld r4, r4
+	cmp r3, r4
+	jne .label_58
+	add r1, 1
+	mov r22, 2
+	call set_colour
+	add r3, base_pointer, 1
+	add r3, r2
+	ld r22, r3
+	call putchar
+	jmp .label_59
+	.label_58:
+	mov r3, 6926
+	push r3
+	add r3, base_pointer, 1
+	add r3, r2
+	ld r3, r3
+	push r3
+	call is_letter_in_word
+	add stack_pointer, 2
+	mov r3, return_reg
+	cmp r3, 0
+	je .label_60
+	mov r22, 6
+	call set_colour
+	add r3, base_pointer, 1
+	add r3, r2
+	ld r22, r3
+	call putchar
+	jmp .label_61
+	.label_60:
+	mov r22, 8
+	call set_colour
+	add r3, base_pointer, 1
+	add r3, r2
+	ld r22, r3
+	call putchar
+	.label_61:
+	.label_59:
+	.label_56:
+	add r2, 1
+	jmp .label_55
+	.label_57:
+	mov r22, 15
+	call set_colour
+	mov r22, 10
+	call putchar
+	cmp r1, 5
+	jne .label_62
+	mov r1, 6932
+	mov r22, r1
+	call __print_char_array
+	mov r5, 1
+	jmp .label_63
+	.label_62:
+	.label_63:
+	jmp .label_52
+	jmp .label_54
+	.label_53:
+	cmp r2, 0
+	jge .label_64
+	sub r1, 1
+	mov r8, r1
+	jmp .label_65
+	.label_64:
+	add r1, 1
+	mov r7, r1
+	.label_65:
+	.label_54:
+	jmp .label_51
+	.label_52:
+	cmp r7, r8
+	jle .label_66
+	push r6
+	mov r1, 1
+	push r1
+	call move_cursor
+	add stack_pointer, 2
+	mov r1, 6941
+	push r1
+	call fancy_print
+	add stack_pointer, 1
+	mov r1, r6
+	add r1, 1
+	push r1
+	mov r1, 0
+	push r1
+	call move_cursor
+	add stack_pointer, 2
+	jmp .label_67
+	.label_66:
+	.label_67:
+	.label_49:
+	add r6, 1
+	jmp .label_48
+	.label_50:
+	mov r1, r5
+	cmp r1, 0
+	jne .label_70
+	mov r1, 0
+	jmp .label_71
+	.label_70:
+	mov r1, 1
+	.label_71:
+	cmp r1, 0
+	je .label_68
+	mov r1, 6947
+	mov r22, r1
+	call __print_char_array
+	mov r1, 6926
+	mov r22, r1
+	call __print_char_array
+	jmp .label_69
+	.label_68:
+	.label_69:
+.exit_main:
+	pop r8
+	pop r7
+	pop r6
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	add stack_pointer, 6
 	hlt
+fancy_print:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	push r4
+	mov r2, 0
+	ld r3, base_pointer, 2
+	.label_0:
+	mov r4, r3
+	ld r1, r4
+	ld r4, r4
+	cmp r4, 0
+	je .label_1
+	mov r4, r1
+	cmp r4, '%'
+	jne .label_2
+	add r3, 1
+	mov r1, r3
+	ld r1, r1
+	cmp r1, 'd'
+	je .label_5
+	cmp r1, 's'
+	je .label_6
+	cmp r1, 'c'
+	je .label_7
+	cmp r1, 'u'
+	je .label_8
+	jmp .label_9
+	.label_5:
+	add r1, base_pointer, 3
+	mov r4, r2
+	add r2, 1
+	add r1, r4
+	ld r22, r1
+	call __print_signed_int
+	jmp .label_4
+	.label_6:
+	add r1, base_pointer, 3
+	mov r4, r2
+	add r2, 1
+	add r1, r4
+	ld r22, r1
+	call __print_char_array
+	jmp .label_4
+	.label_7:
+	add r1, base_pointer, 3
+	mov r4, r2
+	add r2, 1
+	add r1, r4
+	ld r22, r1
+	call putchar
+	jmp .label_4
+	.label_8:
+	add r1, base_pointer, 3
+	mov r4, r2
+	add r2, 1
+	add r1, r4
+	ld r22, r1
+	call __print_unsigned_int
+	jmp .label_4
+	.label_9:
+	mov r1, r3
+	ld r1, r1
+	sub r1, '0'
+	mull r1, 16
+	add r3, 1
+	mov r4, r3
+	ld r4, r4
+	sub r4, '0'
+	add r1, r4
+	mov r22, r1
+	call set_colour
+	jmp .label_4
+	.label_4:
+	jmp .label_3
+	.label_2:
+	mov r22, r1
+	call putchar
+	.label_3:
+	mov r1, r3
+	add r3, 1
+	jmp .label_0
+	.label_1:
+.exit_fancy_print:
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
+__scan_signed_int:
+	push base_pointer
+	mov base_pointer, stack_pointer
+	push r1
+	push r2
+	push r3
+	push r4
+	mov r3, 0
+	mov r4, 1
+	call getchar
+	mov r1, return_reg
+	mov r2, r1
+	cmp r1, '-'
+	jne .label_21
+	mov r4, 65535
+	jmp .label_22
+	.label_21:
+	mov r4, 1
+	mov r1, r2
+	sub r1, '0'
+	mov r3, r1
+	.label_22:
+	mov r22, r2
+	call putchar
+	.label_23:
+	call getchar
+	mov r1, return_reg
+	mov r2, r1
+	cmp r1, '0'
+	jl .label_24
+	cmp r2, '9'
+	jg .label_24
+	mov r22, r2
+	call putchar
+	mov r1, r3
+	mull r1, 10
+	sub r2, '0'
+	add r1, r2
+	mov r3, r1
+	jmp .label_23
+	.label_24:
+	mov r1, r4
+	cmp r1, 65535
+	jne .label_26
+	mov r1, r3
+	xor r1, 65535
+	add r1, 1
+	mov r3, r1
+	jmp .label_27
+	.label_26:
+	.label_27:
+	ld r1, base_pointer, 2
+	st r3, r1
+	mov r1, r2
+	mov return_reg, r1
+	jmp .exit___scan_signed_int
+.exit___scan_signed_int:
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop base_pointer
+	ret
 __print_unsigned_int:
-	test r23, r23
+	test r22, r22
 	jnz .__print_unsigned_int_not_zero
-	mov r23, '0'
-	st r23, term_reg, 0x25
+	mov r22, '0'
+	st r22, term_print
 	jmp .__print_unsigned_int_exit
 .__print_unsigned_int_not_zero:
-	mov r24, 4		; p = 4
+	mov r23, 4		; p = 4
 .__print_unsigned_int_fixed_point:
-	mulh r25, r23, 52429	; q = (n * 52429) >> 16
-	shr r25, 3		; q >>= 3
-	mul r26, r25, 10		; d*q
-	sub r23, r26		; remainder = n - d*q
-	st r23, r24, .__print_unsigned_int_buf		
-	sub r24, 1		; p--;
-	movf r23, r25		; n = q
+	mulh r24, r22, 52429	; q = (n * 52429) >> 16
+	shr r24, 3		; q >>= 3
+	mul r25, r24, 10		; d*q
+	sub r22, r25		; remainder = n - d*q
+	st r22, r23, .__print_unsigned_int_buf		
+	sub r23, 1		; p--;
+	movf r22, r24		; n = q
 	jnz .__print_unsigned_int_fixed_point
 
-	add r24, 1
+	add r23, 1
 .__print_unsigned_int_print_int:
-	ld r23, r24, .__print_unsigned_int_buf
-	add r23, '0'
-	st r23, term_reg, 0x25
-	add r24, 1
-	cmp r24, 5
+	ld r22, r23, .__print_unsigned_int_buf
+	add r22, '0'
+	st r22, term_print
+	add r23, 1
+	cmp r23, 5
 	jne .__print_unsigned_int_print_int
 	
 .__print_unsigned_int_exit:
@@ -96,34 +702,56 @@ __print_unsigned_int:
 	dw 0, 0, 0, 0, 0
 
 __print_signed_int:
-    cmp r23, 0
+    cmp r22, 0
     jge .__print_signed_int_not_negative
-    mov r24, '-'
-    st r24, term_reg, 0x25
-	xor r23, 65535
-    add r23, 1
+    mov r23, '-'
+    st r23, term_print
+	xor r22, 65535
+    add r22, 1
 .__print_signed_int_not_negative:
     call __print_unsigned_int
     ret
     
-printf:
-.printf_loop:
-    ld r24, r23
-    test r24, r24
-    jz .printf_exit
-    st r24, term_reg, 0x25
-    add r23, 1
-    jmp .printf_loop
-.printf_exit:
+__print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz __print_char_array_exit
+    st r23, term_print
+    add r22, 1
+    jmp __print_char_array
+__print_char_array_exit:
     ret
 
 putchar:
-    st r23, term_reg, 0x25
+    st r22, term_print
     ret
 
 getchar:
-    ld return_reg, term_reg
+    ld return_reg, term_input
     test return_reg, return_reg
     jz getchar
     ret
+
+set_colour:
+    st r22, term_colour
+    ret
+
+set_cursor:
+    st r22, term_cursor
+    ret
+
+__scanf_unsigned_int:
+    mov r23, 0
+__scanf_unsigned_int_loop:
+    call getchar
+    sub return_reg, '0'
+    cmp return_reg, 9
+    jg __scanf_unsigned_int_not_digit 
+    mull r23, 10
+    add r23, return_reg
+    jmp __scanf_unsigned_int_loop
+__scanf_unsigned_int_not_digit:
+    st r23, r22
+    ret
+
 

@@ -32,6 +32,9 @@ function Parser.parse(toks)
     function expect(type)
         local t = next_token()
         if not t or t.type ~= TOKEN_TYPES[type] then
+            if(t.pos) then
+                print("at row " .. t.pos.row .. ", column " .. t.pos.col)
+            end
             error("Expected '" .. type .. "', Received '" .. (t and t.value or "EOF") .. "'")
         end
     end
@@ -57,8 +60,11 @@ function Parser.parse(toks)
         end
     end
 
-    function check(type)
+    function check(type, lookahead)
+        lookahead = lookahead or 0
+        i = i + lookahead
         local t = peek_token()
+        i = i - lookahead
         return t and t.type == TOKEN_TYPES[type]
     end
 
@@ -79,6 +85,9 @@ function Parser.parse(toks)
     end
 
     function parse_program()
+        if(#toks <= 0) then
+            error("Empty file")
+        end
         local program_node = Node:new(NODE_TYPES["Program"])
         
         while peek_token().type ~= TOKEN_TYPES["EOF"] do
@@ -128,8 +137,6 @@ function Parser.parse(toks)
         end
         if(multi_check({"[", "("})) then
             abstract_declarator_node.direct_abstract_declarator = parse_direct_abstract_declarator()
-        else
-            error("Invalid type name")
         end
         return abstract_declarator_node
     end
@@ -142,7 +149,7 @@ function Parser.parse(toks)
         end
         while(multi_check({"[", "("})) do
             if(accept("[")) then
-                table.insert(direct_abstract_declarator_node, parse_expression())
+                table.insert(direct_abstract_declarator_node, parse_integer_constant())
                 expect("]")
             elseif(accept("(")) then
                 direct_abstract_declarator_node.parameter_list = parse_parameter_list()
@@ -150,6 +157,12 @@ function Parser.parse(toks)
             end
         end
         return direct_abstract_declarator_node
+    end
+
+    function parse_integer_constant()
+        local int_node = new("INT")
+        int_node.value = next_token().value
+        return int_node
     end
 
     function parse_parameter_list()
@@ -225,6 +238,7 @@ function Parser.parse(toks)
         if accept("=") then
             local rhs = parse_assignment_expression()
             local assignment_expression_node = new("ASSIGNMENT")
+            assert(lhs ~= nil and rhs ~= nil, "Assignment expression must have a lhs and rhs")
             assignment_expression_node.lhs = lhs
             assignment_expression_node.rhs = rhs
             return assignment_expression_node
@@ -429,12 +443,45 @@ function Parser.parse(toks)
             expect(";")
         elseif(check("WHILE")) then
             non_if_statement_node = parse_while()
+        elseif(check("SWITCH")) then
+            non_if_statement_node = parse_switch()
+        elseif(check("CASE")) then
+            non_if_statement_node = parse_case()
+        elseif(check("DEFAULT")) then
+            non_if_statement_node = parse_default()
         else
             non_if_statement_node = parse_expression()
             expect(";")
         end
 
         return non_if_statement_node
+    end
+
+    function parse_switch()
+        local switch_node = new("SWITCH")
+        expect("SWITCH")
+        expect("(")
+        switch_node.condition = parse_expression()
+        expect(")")
+        switch_node.block = parse_block()
+        return switch_node
+    end
+
+    function parse_case()
+        local case_node = new("CASE")
+        expect("CASE")
+        case_node.value = parse_primary_expression()
+        expect(":")
+        case_node.statement = parse_statement()
+        return case_node
+    end
+
+    function parse_default()
+        local default_node = new("DEFAULT")
+        expect("DEFAULT")
+        expect(":")
+        default_node.statement = parse_statement()
+        return default_node
     end
 
     function parse_while()
@@ -447,31 +494,6 @@ function Parser.parse(toks)
         return while_node
     end
 
-    function parse_assignment()
-        local assignment_node = Node:new(NODE_TYPES["Assignment"])
-        if check("*") then
-            assignment_node.indirection_level = 0
-            while accept("*") do
-                assignment_node.indirection_level = assignment_node.indirection_level + 1
-            end
-        end
-
-
-        assignment_node.id = parse_identifier()
-
-        if accept("[") then
-            assignment_node.index = parse_expression()
-            expect("]")
-        end
-
-
-        expect("=")
-        assignment_node.value = parse_expression()
-
-
-        return assignment_node;
-    end
-
     function parse_return()
         local return_node = Node:new(NODE_TYPES["RETURN"])
         next_token()
@@ -480,27 +502,10 @@ function Parser.parse(toks)
         return return_node
     end
 
-
-    function parse_local_declaration()
-        local declaration_node = Node:new(NODE_TYPES["Local_Declaration"])
-
-        declaration_node.type_specifier = parse_type_specifier()
-
-        declaration_node.id = parse_identifier()
-
-        if next_token().type == TOKEN_TYPES["="] then
-            declaration_node.value = parse_assignment_expression()
-        end
-
-        return declaration_node
-    end
-
     function parse_declaration_specifier()
         local declaration_specifier_node = new("DECLARATION_SPECIFIER")
 
-        if(check("STORAGE_CLASS")) then
-            declaration_specifier_node.storage_class = parse_storage_class_specifier()
-        end
+        declaration_specifier_node.storage_class = parse_storage_class_specifier()
 
 
         if(check("TYPE_SPECIFIER")) then
@@ -595,6 +600,8 @@ function Parser.parse(toks)
         if(check("TYPE_SPECIFIER")) then
             if(peek_token().value == "struct" or peek_token().value == "union") then
                 type_specifier_node.kind = parse_struct_or_union_specifier()
+            elseif(peek_token().value == "enum") then
+                type_specifier_node.kind = parse_enum_specifier()
             else
                 type_specifier_node.kind = {}
                 while(check("TYPE_SPECIFIER")) do
@@ -608,13 +615,34 @@ function Parser.parse(toks)
         return type_specifier_node
     end
 
+    function parse_enum_specifier()
+        local enum_specifier_node = new("ENUM_SPECIFIER")
+        expect("TYPE_SPECIFIER")
+        enum_specifier_node.id = parse_identifier()
+        if(accept("{")) then
+            enum_specifier_node.declaration = parse_enum_declaration_list()
+            expect("}")
+        end
+        return enum_specifier_node
+    end
+
+    function parse_enum_declaration_list()
+        local enum_declaration_list_node = new("ENUM_DECLARATION_LIST")
+        table.insert(enum_declaration_list_node, parse_identifier())
+        while(accept(",")) do
+            table.insert(enum_declaration_list_node, parse_identifier())
+        end
+        return enum_declaration_list_node
+    end
+
+
     function parse_struct_declaration()
         local struct_declaration_node = new("STRUCT_DECLARATION")
-        if(multi_check({"void", "char", "int", "struct", "union"})) then
-            struct_declaration_node.type_specifier = parse_type_specifier()
-        else
-            error(string.format("Invalid struct declaration type: '%s'", peek_token()))
-        end
+        -- if(multi_check({"void", "char", "int", "struct", "union"})) then
+        --     struct_declaration_node.type_specifier = parse_type_specifier()
+        -- else
+        --     error(string.format("Invalid struct declaration type: '%s'", peek_token()))
+        -- end
 
         struct_declaration_node.struct_declarator_list = parse_struct_declarator_list()
         
@@ -635,36 +663,18 @@ function Parser.parse(toks)
         if(check("STORAGE_CLASS")) then
             storage_class_specifier_node.kind = next_token().value
         else
-            error(string.format("Invalid storage class: '%s'", peek_token().value))
+            storage_class_specifier_node.kind = "auto"
         end
 
         return storage_class_specifier_node
     end
 
-    -- function parse_type_specifier()
-    --     local type_specifier_node = Node:new(NODE_TYPES["Type_Specifier"])
-
-    --     local token = next_token()
-
-    --     if token.value == "int" or token.value == "char" or token.value == "void" then
-    --         type_specifier_node.kind = token.value
-    --     else
-    --         error("Unexpected type specifier: " .. token.value)
-    --     end
-    --     type_specifier_node.indirection_level = 0;
-
-    --     while accept("*") do
-    --         type_specifier_node.indirection_level = type_specifier_node.indirection_level + 1
-    --     end
-
-    --     return type_specifier_node
-    --  end
-
     function parse_identifier()
         local identifier_node = Node:new(NODE_TYPES["Identifier"])
 
         local token = next_token()
-
+        identifier_node.pos = token.pos
+        --identifier_node.pos = token.pos
         if token.type == TOKEN_TYPES["ID"] then
             identifier_node.id = token.value
         else
@@ -681,6 +691,7 @@ function Parser.parse(toks)
             local sum_expression_node = Node:new(NODE_TYPES["SUM_EXPRESSION"])
             table.insert(sum_expression_node, term)
             while check("+") or check("-") do
+
                 table.insert(sum_expression_node, next_token())
                 table.insert(sum_expression_node, parse_term())
             end
@@ -701,7 +712,7 @@ function Parser.parse(toks)
             while check("*") or check("/") do
                 
                 table.insert(multiplicative_expression_node, next_token())
-                table.insert(multiplicative_expression_node, parse_cast_expression())
+               table.insert(multiplicative_expression_node, parse_cast_expression())
             end
 
             return multiplicative_expression_node
@@ -715,7 +726,7 @@ function Parser.parse(toks)
         if(check("(") and multi_check({"TYPE_SPECIFIER", "struct", "union"}, 1)) then
             local cast_expression_node = new("CAST_EXPRESSION")
             expect("(")
-            cast_expression_node.type_specifier = parse_type_specifier()
+            cast_expression_node.type_specifier = parse_type_name()
             cast_expression_node.pointer_level = 0
             while(accept("*")) do
                 cast_expression_node.pointer_level = cast_expression_node.pointer_level + 1
@@ -734,9 +745,15 @@ function Parser.parse(toks)
             unary_expression_node.operator = next_token().value
             unary_expression_node.child = parse_unary_expression()
         elseif(accept("SIZEOF")) then
-            unary_expression_node.child = parse_type_specifier()
+            if(check("(") and check("TYPE_SPECIFIER", 1)) then
+                expect("(")
+                unary_expression_node.child = parse_type_name()
+                expect(")")
+            else
+                unary_expression_node.child = parse_unary_expression()
+            end
             unary_expression_node.operator = "SIZEOF"
-            error("Change this to parse_type_name()")
+
         elseif(multi_check(unary_operators)) then
             unary_expression_node.operator = next_token().value
             unary_expression_node.child = parse_cast_expression()
@@ -895,7 +912,7 @@ function Parser.parse(toks)
         expect("FOR")
         expect("(")
 
-        if(check("TYPE_SPECIFIER")) then
+        if(check("TYPE_SPECIFIER") or check("STORAGE_CLASS")) then
             for_node.initialization = parse_declaration()
         else
             for_node.initialization = parse_expression()

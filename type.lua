@@ -18,7 +18,10 @@ Type.BASE_KINDS = {
     ["VOID"]=1,
     ["CHAR"]=1,
     ["INT"]=1,
-    ["FUNCTION"]=1
+    ["FUNCTION"]=1,
+    ["STRUCT"]=1,
+    ["UNION"]=1,
+    ["ENUM"]=1
 }
 
 Type.KINDS = util.invert_table(Type.INVERTED_KINDS)
@@ -73,6 +76,9 @@ end
 
     function Type.struct(id, members)
         return Type:new({kind = Type.KINDS["STRUCT"], id = id, members = members or {}})
+    end
+    function Type.enum(id, members)
+        return Type:new({kind = Type.KINDS["ENUM"], id = id, members = members or {}})
     end
 
     function Type.union(id, members)
