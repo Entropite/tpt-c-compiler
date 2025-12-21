@@ -1,5 +1,7 @@
 local Token = require('token')
 local Node = require('node')
+local Diagnostics = require("diagnostics")
+local Message = require("message")
 
 local Parser = {}
 
@@ -10,7 +12,6 @@ function Parser.parse(toks)
     local node_check = Node.node_check
 
     local unary_operators = {"&", "*", "+", "-", "~", "!"}
-    local type_specifiers = {"void", "char", "int", "struct", "union"}
 
     function new(type)
         return Node:new(NODE_TYPES[type])
@@ -93,7 +94,9 @@ function Parser.parse(toks)
         while peek_token().type ~= TOKEN_TYPES["EOF"] do
 
             table.insert(program_node, parse_declaration())
-            accept(";") -- temp solution
+            if(not (program_node[#program_node].is_function and program_node[#program_node].block)) then
+                expect(";")
+            end
         end
 
         return program_node
@@ -171,6 +174,10 @@ function Parser.parse(toks)
             return parameter_list_node
         end
         table.insert(parameter_list_node, parse_parameter_declaration())
+        if(not parameter_list_node[1].id and parameter_list_node[1].type_specifier.kind[1] == "void") then
+            parameter_list_node[1] = nil
+            return parameter_list_node
+        end
         while(accept(",")) do
             if(accept("...")) then
                 if(parameter_list_node.is_variadic) then
@@ -234,11 +241,14 @@ function Parser.parse(toks)
 
     function parse_assignment_expression()
         local lhs = parse_ternary_expression()
-
-        if accept("=") then
+        if multi_check({"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>="}) then
+            local pos = peek_token().pos
+            local op = next_token().value
             local rhs = parse_assignment_expression()
-            local assignment_expression_node = new("ASSIGNMENT")
             assert(lhs ~= nil and rhs ~= nil, "Assignment expression must have a lhs and rhs")
+            local assignment_expression_node = new("ASSIGNMENT")
+            assignment_expression_node.pos = pos
+            assignment_expression_node.op = op
             assignment_expression_node.lhs = lhs
             assignment_expression_node.rhs = rhs
             return assignment_expression_node
@@ -507,11 +517,10 @@ function Parser.parse(toks)
 
         declaration_specifier_node.storage_class = parse_storage_class_specifier()
 
-
         if(check("TYPE_SPECIFIER")) then
                 declaration_specifier_node.type_specifier = parse_type_specifier()
         else
-            error(string.format("Invalid declaration specifier: '%s'", peek_token().value))
+            Diagnostics.submit(Message.error(string.format("Invalid declaration specifier: '%s'", peek_token().value), peek_token().pos))
         end
 
         return declaration_specifier_node
@@ -573,7 +582,7 @@ function Parser.parse(toks)
         direct_declarator_node.dimensions = {}
         while(multi_check({"[", "("})) do
             if(accept("[")) then
-                if(check("INT")) then
+                if(check("INT") or check("UNSIGNED_INT")) then
                     table.insert(direct_declarator_node.dimensions, next_token().value)
                 else
                     if(#direct_declarator_node.dimensions == 0) then
@@ -628,11 +637,25 @@ function Parser.parse(toks)
 
     function parse_enum_declaration_list()
         local enum_declaration_list_node = new("ENUM_DECLARATION_LIST")
-        table.insert(enum_declaration_list_node, parse_identifier())
+        table.insert(enum_declaration_list_node, parse_enum_member_declaration())
         while(accept(",")) do
-            table.insert(enum_declaration_list_node, parse_identifier())
+            table.insert(enum_declaration_list_node, parse_enum_member_declaration())
         end
         return enum_declaration_list_node
+    end
+
+
+    function parse_enum_member_declaration()
+        local enum_member_declaration_node = new("ENUM_MEMBER_DECLARATION")
+        enum_member_declaration_node.id = parse_identifier()
+        if(accept("=")) then
+            if(check("INT")) then
+                enum_member_declaration_node.value = next_token().value
+            else
+                error("Can only assign constant integer values to enum members")
+            end
+        end
+        return enum_member_declaration_node
     end
 
 
@@ -800,6 +823,10 @@ function Parser.parse(toks)
         if(check("INT")) then
             node = new("INT")
             node.value = next_token().value
+        elseif(check("UNSIGNED_INT")) then
+            node = new("INT")
+            node.is_unsigned = true
+            node.value = next_token().value
         elseif(check("ID")) then
             node = new("IDENTIFIER")
             node.value = next_token().value
@@ -813,31 +840,10 @@ function Parser.parse(toks)
             node = parse_expression()
             expect(")")
         else
-            error("Unexpected token: " .. peek_token().value)
+            Diagnostics.submit(Message.error("Unexpected token: " .. peek_token().value, peek_token().pos))
         end
 
         return node
-    end
-
-    function parse_dereference()
-        local dereference_node = new("DEREFERENCE")
-        expect("*")
-        dereference_node.value = parse_sum_expression()
-
-        return dereference_node
-    end
-
-    function parse_address_of()
-        local address_of_node = new("ADDRESS_OF")
-        expect("&")
-        
-        if check("ID") then
-            address_of_node.id = next_token().value
-        else
-            error("Can only perform an address of operation on a variable")
-        end
-
-        return address_of_node
     end
 
 

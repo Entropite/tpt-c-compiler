@@ -1,5 +1,4 @@
 local Operand = require("operand")
-local serpent = require("serpent")
 local Standard_Library = require("standard_library")
 local CodeGen = {
     size=8191,
@@ -70,7 +69,6 @@ function CodeGen:emit_get_address(symbol, dest)
         return string.format("mov %s, %s", reg, self.as_reg(symbol))
     else
         print(symbol.type)
-        print(serpent.line(dest))
         error("Invalid symbol type")
     end
 end
@@ -132,6 +130,7 @@ function CodeGen:generate(code, symbol_table)
 %define term_reg r28
 %define return_addr_reg r27
 
+; Initialization and defining basic macros, most of this is the same as what LBPHacker did for his demo
 %define term_base 0x9F80
 
 %eval term_input  term_base 0x00 +
@@ -616,6 +615,7 @@ function CodeGen:allocate_registers(tac)
 end
 
 function CodeGen:peephole(tac)
+    -- Peephole optimization
     local removals = 0
     for i = #tac - 1, 1, -1 do
         local c = tac[i]
@@ -644,7 +644,7 @@ function CodeGen:peephole(tac)
         --     --table.remove(tac, i)
         end
     end
-    print("Removed", removals, "instructions")
+    print("[OPTIMIZER] Removed", removals, "instructions")
 end
 
 

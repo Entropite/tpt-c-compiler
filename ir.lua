@@ -3,7 +3,8 @@ local Token = require('token')
 local Operand = require('operand')
 local util = require('util')
 local Type = require('type')
-local serpent = require('serpent')
+local Diagnostics = require('diagnostics')
+local Message = require('message')
 
 -- Intermediate representation code generation
 
@@ -319,28 +320,71 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         n.place = n[#n].place
     end
 
+    local symbol_to_operation_type = {
+        ["+="] = "add",
+        ["-="] = "sub",
+        ["*="] = "mull",
+        ["/="] = "div",
+        ["%="] = "mod",
+        ["&="] = "and",
+        ["|="] = "or",
+        ["^="] = "xor",
+        ["<<="] = "shl",
+        [">>="] = "shr",
+    }
+
+    function d_assert(condition, message)
+        if(not condition) then
+            Diagnostics.submit(message)
+        end
+    end
+
     function emit_assignment_expression(n)
         if (n.lhs) then 
             emit_ternary_expression(n.lhs)
-            -- n.lhs.place.type = "g"
             emit_assignment_expression(n.rhs)
-            n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
+            if(n.op == "=") then
+                n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
+            else
+                d_assert(symbol_to_operation_type[n.op], Message.internal_error("Unsupported assignment operator: " .. n.op, n.pos))
+                local lhs_place = n.lhs.place
+                local rhs_place = n.rhs.place
+                if(not reg_rvalue_operands[n.lhs.place.type]) then
+                    lhs_place = load_operand_into_register(n.lhs.place)
+                end
+                if(not reg_rvalue_operands[n.rhs.place.type]) then
+                    rhs_place = load_operand_into_register(n.rhs.place)
+                end
+                local operation_type = symbol_to_operation_type[n.op]
+                table.insert(tac[self.method.id], {type=operation_type, source=rhs_place, dest=lhs_place})
+                if(lhs_place ~= n.lhs.place) then
+                    emit_move(lhs_place, n.lhs.place)
+                end
+                n.place = lhs_place -- returns the destination
+            end
 
         else
             emit_ternary_expression(n)
-            -- n.place is assumed to have been updated in either emit_ternary_expression or somewhere in the chain of function calls
         end
 
     end
 
     function emit_ternary_expression(n)
         if(node_check(n, "TERNARY")) then
-            emit_logical_or_expression(n.condition)
-            n.place = load_operand_into_register(n.condition.place)
-            table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
             local false_label = operand.lb()
             local end_label = operand.lb()
-            table.insert(tac[self.method.id], {type="je", target=false_label})
+            -- This might blow up
+            -- if it is too much trouble, don't simplify
+            if(is_condition_simplifiable(n.condition)) then
+                emit_simplified_condition(n.condition, false_label, end_label)
+                n.place = load_operand_into_register(n.condition.place or operand.t())
+            else
+                emit_logical_or_expression(n.condition)
+                n.place = load_operand_into_register(n.condition.place) -- n.condition will have a place
+                table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
+
+                table.insert(tac[self.method.id], {type="je", target=false_label})
+            end
             emit_assignment_expression(n.true_case)
             emit_move(n.true_case.place, n.place) -- should n.place be a t only?
             table.insert(tac[self.method.id], {type="jmp", target=end_label})
@@ -361,6 +405,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
             for i = 1, #n do
                 if(is_condition_simplifiable(n[i])) then
                     emit_simplified_condition(n[i], false_label, end_label)
+                    table.insert(tac[self.method.id], {type="jmp", target=true_label})
                 else
                     emit_logical_and_expression(n[i])
                     n.place = load_operand_into_register(n[i].place)
@@ -375,6 +420,8 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                 table.insert(tac[self.method.id], {type="label", target=true_label})
                 emit_move(operand.i(1), n.place)
                 table.insert(tac[self.method.id], {type="label", target=end_label})
+            else
+                table.insert(tac[self.method.id], {type="label", target=true_label})
             end
         else
             emit_logical_and_expression(n)
@@ -707,7 +754,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
     end
 
     function is_condition_simplifiable(n)
-        return #n <= 3 and (node_check(n, "LOGICAL_AND_EXPRESSION") or (node_check(n, "RELATIONAL_EXPRESSION") or node_check(n, "EQUALITY_EXPRESSION")))
+        return #n <= 3 and (node_check(n, "LOGICAL_AND_EXPRESSION") or (node_check(n, "RELATIONAL_EXPRESSION") or node_check(n, "EQUALITY_EXPRESSION")) or node_check(n, "LOGICAL_OR_EXPRESSION"))
     end
 
     function emit_simplified_condition(n, false_label, end_label)
@@ -717,6 +764,8 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
             emit_equality_expression(n, false_label, end_label)
         elseif(node_check(n, "LOGICAL_AND_EXPRESSION")) then
             emit_logical_and_expression(n, false_label, end_label)
+        elseif(node_check(n, "LOGICAL_OR_EXPRESSION")) then
+            emit_logical_or_expression(n, false_label, end_label)
         end
     end
 
@@ -1156,7 +1205,6 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     -- offset is i; place is lvalue
     function emit_offset_lvalue(offset, place, size)
-        print(self.method.id)
         assert(lvalue_operands[place.type] or place.type == "i", "place must be an lvalue")
         assert(offset.type == "i", "offset must be an immediate value")
         if(place.type == "pr") then

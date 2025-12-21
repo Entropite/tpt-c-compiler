@@ -64,13 +64,19 @@ Node.INVERTED_NODE_TYPES = {
     "CASE",
     "DEFAULT",
     "ENUM_SPECIFIER",
-    "ENUM_DECLARATION_LIST"
+    "ENUM_DECLARATION_LIST",
+    "ENUM_MEMBER_DECLARATION"
 }
 
 
 Node.NODE_TYPES = util.invert_table(Node.INVERTED_NODE_TYPES)
 setmetatable(Node.NODE_TYPES, {__index = function (t, x)
-    return t[string.upper(x)]
+    local upper = string.upper(x)
+    if(upper ~= x) then
+        return t[upper]
+    else
+        error("Invalid node type: " .. x)
+    end
 end})
 Node.__index = Node
 

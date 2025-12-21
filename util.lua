@@ -25,6 +25,14 @@ function Utils.split_string(str, delimiter)
     return result
 end
 
+function Utils.to_int(str)
+    if(string.sub(str, #str, #str) == "u") then
+        return Utils.to_int(string.sub(str, 1, #str - 1))
+    else
+        return tonumber(str)
+    end
+end
+
 function Utils.string_to_array(str)
     local result = {}
     for i = 1, #str do

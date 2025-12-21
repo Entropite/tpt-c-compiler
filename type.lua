@@ -50,6 +50,8 @@ end
             if(#kind == 1) then
                 return Type:new({kind = Type.KINDS[string.upper(kind[1])], signed = true})
             elseif(#kind == 2) then
+                -- first kind is signedness
+                -- second kind is the base type
                 local first_kind = string.upper(kind[1])
                 local second_kind = string.upper(kind[2])
                 assert((first_kind == "SIGNED" or first_kind == "UNSIGNED") and second_kind == "INT", "Invalid type specifier")

@@ -36,11 +36,22 @@ function Lexer.lex(s)
         return str:gsub("\\.", function(ch) return string_escape_map[ch] end)
     end
 
+    function handle_comments(pos, c)
+        for i = 1, #c do
+            if(c[i] == "\n") then
+                rows = rows + 1
+                last_newline_pos = pos + i
+            end
+        end
+    end
+
     s = s:gsub("/%*.-%*/", "") -- remove comments
     -- Integers
-    local integers = lpeg.C(lpeg.R("09")^1) 
-    integers = lpeg.Cp() * integers / function(pos, n) return Token:new(TOKEN_TYPES["INT"], tonumber(n), {row=rows, col=pos - last_newline_pos}) end
+    local integers = lpeg.C(lpeg.R("09")^1 * lpeg.P("u")^-1) 
+    integers = lpeg.Cp() * integers / function(pos, n) return Token:new(string.sub(n, #n, #n) == "u" and TOKEN_TYPES["UNSIGNED_INT"] or TOKEN_TYPES["INT"], util.to_int(n), {row=rows, col=pos - last_newline_pos}) end
 
+    local hex_integers = lpeg.C(lpeg.P("0x") * lpeg.R("09", "af", "AF")^1 * lpeg.P("u")^-1)
+    hex_integers = lpeg.Cp() * hex_integers / function(pos, n) return Token:new(string.sub(n, #n, #n) == "u" and TOKEN_TYPES["UNSIGNED_INT"] or TOKEN_TYPES["INT"], util.to_int(n), {row=rows, col=pos - last_newline_pos}) end
     -- Floats
     local floats = lpeg.C(loc.digit^1 * "." * loc.digit^1) 
     floats = lpeg.Cp() * floats / function(pos, f) return Token:new(TOKEN_TYPES["FLOAT"], tonumber(f), {row=rows, col=pos - last_newline_pos}) end
@@ -61,7 +72,7 @@ function Lexer.lex(s)
 
 
     -- Operators
-    local non_bool_ops = lpeg.C(lpeg.P("++") + lpeg.P("--") + lpeg.P("->") + lpeg.P("...") + lpeg.P("<<") + lpeg.P(">>") + "sizeof" + lpeg.S("+-*/%!<=>&?:.^|~")) 
+    local non_bool_ops = lpeg.C(lpeg.P("++") + lpeg.P("--") + lpeg.P("->") + lpeg.P("...") + lpeg.P("<<")*-lpeg.P("=") + lpeg.P(">>")*-lpeg.P("=") + "sizeof" + "+=" + "-=" + "*=" + "/=" + "%=" + "&=" + "|=" + "^=" + "<<=" + ">>=" + lpeg.S("+-*/%!<=>&?:.^|~")) 
     non_bool_ops = lpeg.Cp() * non_bool_ops / function(pos, o) return Token:new(TOKEN_TYPES[string.upper(o)], o, {row=rows, col=pos - last_newline_pos}) end
 
     local bool_ops = lpeg.C(lpeg.P("&&") + "||" + "==" + "!=" + "<=" + ">=") 
@@ -84,7 +95,7 @@ function Lexer.lex(s)
     local newline = lpeg.Cp() *lpeg.C(lpeg.P("\n")) / function(pos, n) last_newline_pos = pos; rows = rows + 1 end
 
     -- LPEG is greedy so floats must be checked before integers else, integers will match the integer part of the float
-    local token = S * ((newline + reserved + storage_class + op +type_specifier + id + string_lit + character + floats + integers + punctuation) * S)^0
+    local token = S * ((newline + reserved + storage_class + op +type_specifier + id + string_lit + character + hex_integers + integers + punctuation) * S)^0
     
     tokens = {token:match(s)}
     setmetatable(tokens, {__tostring = function(s) return util.array_to_string(s, " ") end })

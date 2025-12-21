@@ -1,74 +1,11 @@
 char data_string[] = "aaronaboutaboveabuseacidsacresactoracuteadamsaddedadminadmitadobeadoptadultafteragainagentagingagreeaheadaimedalarmalbumalertaliasalicealienalignalikealiveallahallanallenallowalloyalonealongalphaalteramberamendaminoamongangelangerangleangryanimeannexannieapartapnicappleapplyaprilarborareasarenaarguearisearmedarmorarrayarrowarubaasciiasianasideaskedassetatlasaudioauditautosavoidawardawareawfulbabesbaconbadgebadlybakerballsbandsbanksbarrybasedbasesbasicbasinbasisbatchbathsbeachbeadsbeansbearsbeastbeatsbeganbeginbegunbeingbellebellybelowbeltsbenchberrybettybiblebikesbillsbillybingobirdsbirthbisonblackbladeblairblakeblameblankblastblendblessblindblinkblockblogsblondbloodbloombluesboardboatsbobbybondsbonesbonusboobsbooksboostboothbootsbootyboredboundboxedboxesbrainbrakebrandbrassbravebreadbreakbreedbrianbrickbridebriefbringbroadbrokebrookbrownbrucebrushbryanbucksbuddybuildbuiltbunchbunnyburkeburnsburstbusesbustybuttsbuyerbytescabincablecachecakescallscamelcampscanalcandycanoncardscareycargocarlocarolcarrycasescaseycasiocatchcausecedarcellscentschainchairchaoscharmchartchasecheapcheatcheckchesschestchevychickchiefchildchilechinachipschoirchosechrischuckcindyciscocitedciviccivilclaimclaraclarkclasscleanclearclerkclickcliffclimbclipsclockclonecloseclothcloudclubscoachcoastcockscodescohencoinscolincoloncolorcombocomescomiccondocongoconstcoralcorpscostacostscouldcountcourtcovercrackcraftcraigcrapscrashcrazycreamcreekcrestcrimecropscrosscrowdcrowncrudecubiccurvecybercycleczechdaddydailydairydaisydancedannydateddatesdaviddavisdealsdealtdeathdebugdebutdecordelaydelhideltadensedepotdepthderbyderekdeveldevildevondianadianediarydickedicksdiegodiffsdigitdildodirtydiscodiscsdisksdodgedoingdollsdonnadonordoorsdoubtdoverdozendraftdraindramadrawndrawsdreamdressdrieddrilldrinkdrivedropsdrovedrugsdrumsdrunkdryerdubaidutchdyingdylaneagleearlyearthebonyebookeddieedgaredgesegypteightelderelecteliteellenelliselvisemacsemailemilyemptyendedendifenemyenjoyenterentryepsonequalerroressayessexeurosevanseventeveryexactexamsexcelexistextrafacedfacesfactsfailsfairyfaithfallsfalsefancyfaresfarmsfatalfattyfaultfavorfearsfeedsfeelsfenceferryfeverfewerfiberfibrefieldfifthfiftyfightfiledfilesfilmefilmsfinalfindsfiredfiresfirmsfirstfixedfixesflagsflameflashfleetfleshfloatfloodfloorflourflowsfloydfluidflushflyerfocalfocusfolksfontsfoodsforceforgeformsforthfortyforumfotosfoundframefrankfraudfreshfrontfrostfruitfullyfundsfunkyfunnyfuzzygainsgamesgammagatesgaugegenesgenreghanaghostgiantgiftsgirlsgivengivesglassglennglobeglorygnomegoalsgoinggonnagoodsgottagracegradegraingramsgrandgrantgraphgrassgravegreatgreekgreengrillgrossgroupgrovegrowngrowsguardguessguestguideguildhairyhaitihandshandyhappyharryhavenhayesheadsheardheartheathheavyhelenhellohelpshencehenryherbshighshillshinduhintshiredhobbyholdsholeshollyhomeshondahoneyhonorhopedhopeshornyhorsehostshotelhourshousehowtohumanhumoriconsidahoidealideasimageinboxindexindiaindieinnerinputintelinterintroiraqiirishisaacislamissueitalyitemsivoryjacobjamesjamiejanetjapanjasonjeansjennyjerryjessejesusjeweljimmyjohnsjoinsjointjokesjonesjoycejudgejuicejuliajuliekarenkarmakathykatiekeepskeithkellykennykenyakerrykevinkillskindakindskingskittykleinknifeknockknownknowskodakkorealabellaborladenlakeslampslancelandslaneslankalargelarrylaserlaterlatexlatinlaughlauralayerleadslearnleaseleastleaveleedslegallemonleonelevellewislexuslightlikedlikeslimitlindalinedlineslinkslinuxlionslistslivedliverliveslloydloadsloanslobbylocallockslodgeloganlogicloginlogoslooksloopslooselopezlotuslouislovedloverloveslowerlucaslucialuckylunchlycoslyinglyricmacromagicmailsmainemajormakermakesmalesmaltamambomangamanormaplemarchmarcomardimariamariemariomarksmarshmasonmatchmaybemayormazdamealsmeansmeantmedalmediameetsmenusmercymergemeritmerrymetalmetermetromeyermiamimicromightmilanmilesmilfsmillsmindsminesminorminusmixedmixermodelmodemmodesmoneymontemonthmooremoralmosesmotelmotormountmousemouthmovedmovesmoviempegsmsgidmultimusicmyersmysqlnailsnakednamednamesnancynastynavalneedsnepalnervenevernewernewlynigernightnikonnoblenodesnoisenokianorthnotednotesnotrenovelnursenylonoasisoccuroceanofferoftenolderoliveomahaomegaonionopensoperaorbitorderorganoscarotheroughtouterownedowneroxideozonepackspagespaintpairspanelpanicpantspaperpapuaparisparkspartspartypastapastepatchpathspatiopaxilpeacepearlpeerspenalpennyperryperthpeterphasephonephotophpbbpianopickspiecepillspilotpipespitchpixelpizzaplaceplainplaneplansplantplateplaysplazaplotspoemspointpokerpolarpollspoolspornoportspostspoundpowerpresspriceprideprimeprintpriorprizeprobepromoproofproudproveproxypulsepumpspunchpuppypursepussyqatarqueenqueryquestqueuequickquietquiltquitequoteracesracksradarradioraiserallyralphranchrandyrangeranksrapidratedratesratioreachreadsreadyrealmrebelreferrehabrelaxrelayremixrenewreplyresetretrorhoderickyriderridesridgerightringsrisksriverroadsrobinrobotrocksrockyrogerrolesrollsromanroomsrootsrosesrougeroughroundrouteroverroyalrugbyruledrulesruralsafersagemsaintsaladsalemsalessallysalonsambasamoasandysantasanyosarahsatinsaucesaudisavedsaversavessbjctscalescaryscenescoopscopescorescottscoutscrewscubaseatsseedsseeksseemssellssendssenseserumservesetupsevenshadeshaftshakeshallshameshapesharesharksharpsheepsheersheetshelfshellshiftshineshipsshirtshockshoesshootshopsshoreshortshotsshownshowssidessightsigmasignssillysimonsincesinghsitessixthsizedsizesskillskinsskirtskypeslavesleepslideslopeslotsslutssmallsmartsmellsmilesmithsmokesnakesockssolarsolidsolvesongssonicsorrysortssoulssoundsouthspacespainspanksparcsparespeakspecsspeedspellspendspentspermspicespiesspinesplitspokesportspotsspraysquadstackstaffstagestakestampstandstarsstartstatestatsstaysstealsteamsteelstepsstevestickstillstockstonestoodstopsstorestormstorystrapstripstuckstudystuffstylesuckssudansugarsuitesuitssunnysupersurgesusansweetswiftswingswissswordsyriatabletahoetakentakestalestalkstamiltampatankstapestaskstastetaxesteachteamstearsteddyteensteethtellstermsterryteststexastextsthankthatsthefttheirthemetherethesethetathickthingthinkthirdthongthosethreethrowthumbtigertighttilestimertimestionstiredtirestitletodaytokentokyotommytonertonestoolstoothtopictotaltouchtoughtourstowertownstoxictracetracktracttracytradetrailtraintranstrashtreattreestrendtrialtribetricktriedtriestripstrouttrucktrulytrunktrusttruthtubestulsatumortunertunesturboturnstwicetwikitwinstwisttylertypesultrauncleunderunionunitsunityuntilupperupseturbanusageusersusingusualutilsvalidvaluevalvevaultvegasvenueverdeversevideoviewsvillavinylviralvirusvisitvistavitalvocalvoicevolvovotedvotesvsnetwageswagonwaleswalkswallswannawantswastewatchwaterwattswaveswayneweeksweirdwellswelshwendywhalewhatswheatwheelwherewhichwhilewhitewholewhorewhosewiderwidthwileywindswineswingswiredwireswitchwiveswomanwomenwoodswordsworksworldworryworseworstworthwouldwoundwristwritewrongwrotexanaxxeroxxhtmlyachtyahooyardsyearsyeastyemenyieldyoungyoursyouthyukonzebrazones";
-int letter_boundaries[] = {0, 79, 187, 298, 368, 408, 487, 534, 577, 599, 622, 645, 717, 794, 821, 844, 923, 933, 993, 1169, 1273, 1288, 1311, 1366, 1369, 1380, 1382}
+int letter_boundaries[] = {0, 79, 187, 298, 368, 408, 487, 534, 577, 599, 622, 645, 717, 794, 821, 844, 923, 933, 993, 1169, 1273, 1288, 1311, 1366, 1369, 1380, 1382};
 
 char __scan_signed_int(int *num);
 int __scan_char_array(char *str);
-/*
-void fancy_print(char * string, ...) {
-    register char c;
-    register int arg_index = 0;
-    register char *str = string;
-    while(c = *str) {
-        if(c == '%'){
-            switch(*(++str)) {
-                case 'd':
-                    __print_signed_int(((int*)va_args)[arg_index++]);
-                    break;
-                case 's':
-                    __print_char_array(((char**)va_args)[arg_index++]);
-                    break;
-                case 'c':
-                    putchar(((char*)va_args)[arg_index++]);
-                    break;
-                case 'u':
-                    __print_unsigned_int(((int*)va_args)[arg_index++]);
-                    break;
-                default:
-                    set_colour((*(str) - '0') * 16 + (*(++str) - '0'));
-                    break;
-            }
-        }else{
-            putchar(c);
-        }
-        str++;
-    }
-}
-
-
-
-int fscanf(char *format, ...) {
-    register char c;
-    register char *ptr = format;
-    register int arg_index = 0;
-    while(*ptr) {
-        if(*ptr == '%') {
-            switch(*(++ptr)) {
-                case 'u':
-                case 'd':
-                    __scan_signed_int(((int**)va_args)[arg_index++]);
-                    break;
-                case 's':
-                    __scan_char_array(((char**)va_args)[arg_index++]);
-                    break;
-                case 'c':
-                    {
-                    *((char**)va_args)[arg_index++] = getchar();
-                    putchar(*((char**)va_args)[arg_index-1]);
-                    }
-            }
-        }else{
-            c = getchar();
-            putchar(c);
-            if(c != *ptr){
-                break;
-            }
-        }
-        ++ptr;
-    }
-    return (int)(ptr - format);
-}*/
 
 char __scan_signed_int(int *num) {
+    /* Register variables can be more efficiently accessed and updated than local variables */
     register char c;
     register int res = 0;
     register int sign = 1;
@@ -92,6 +29,7 @@ char __scan_signed_int(int *num) {
     return c;
 }
 
+
 int __scan_char_array(char *str) {
     register char c;
     register char *ptr = str;
@@ -104,34 +42,10 @@ int __scan_char_array(char *str) {
 
     return (int)(ptr - str);
 }
-/*
-int strcmp(char *str1, char *str2) {
-    register char *str1_ptr = str1;
-    register char *str2_ptr = str2;
-    for(register int i = 0; i < 4; ++i) {
-        if(str1_ptr[i] == str2_ptr[i]) {
-            continue;
-        }else if(str1_ptr[i] < str2_ptr[i]){
-            return -1;
-        }else{
-            return 1;
-        }
-    }
 
-    return 0;
-}*/
-
-int is_letter_in_word(char letter, char *word) {
-    register char *ptr = word;
-    for(register int i = 0; i < 5; ++i) {
-        if(word[i] == letter) {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 void move_cursor(int x, int y) {
+    /* Idk how to configure the terminal properly so that set_cursor works predictably so this is fine for now */
     set_cursor(0);
     for(register int k = 0; k < y; ++k) {
         putchar('\n');
@@ -146,102 +60,129 @@ void clear_screen() {
     __print_char_array("                                                                                                ");
 }
 
+enum Colour { YELLOW = 6, GREY = 8, GREEN = 2, WHITE = 15};
+
+int is_letter_in_word[26];
 int main() {
-    __print_char_array("Enter a\nnumber to\nhelp\nrandomize:\n(1-100): ");
+    __print_char_array("Enter a\nnumber to\nhelp\nrandomize\n(1-100): ");
     int mnum;
-    __scan_signed_int(&mnum);
+    __scan_signed_int(&mnum);  /* Cannot take address of register operand, so must use a local variable instead*/
+
+    /* Compute a pseudo-random number from the input*/
+    /* Gets a value between 0 and 1023 */
     register int num = mnum;
-    num = ((num ^ (num << 5)) * 313);
-    num = (num ^ (num >> 3)) & 1023;
+    num ^= (num << 5);
+    num *= 313;
+    num ^= (num >> 3);
+    num &= 1023;
     clear_screen();
+
+    /* Get the word pointed to by the random number and update the is_letter_in_word_array*/
     register char *word = data_string + num * 5;
+    /* Avoid overhead by unrolling the loop*/
+    register int word_base = (int)word;
+    is_letter_in_word[word[0] - 'a'] = 1;
+    is_letter_in_word[word[1] - 'a'] = 1;
+    is_letter_in_word[word[2] - 'a'] = 1;
+    is_letter_in_word[word[3] - 'a'] = 1;
+    is_letter_in_word[word[4] - 'a'] = 1;
+
     __print_char_array("Enter a word\n");
     
-    /* Yellow == 06, Grey == 08, Green == 02 
-    fancy_print("%00X%00X%00X%00X%00X%0?");*/
-    char query[6];
+    
+    /* User enters their guess into query */
+    char query[10];
     register int word_found = 0;
-    for(register int i = 1;i < 6; ++i) {
-    putchar(' ');
-    putchar(' ');
-    putchar(' ');
-    query[0] = getchar();
-    register int diff = *query - 'a';
-    putchar(*query);
-    register int l = letter_boundaries[diff];
-    register int h = letter_boundaries[diff + 1] - 1;
+    for(register int i = 1;i < 6 && !word_found; ++i) {
+
+        putchar(' ');
+        putchar(' ');
+        putchar(' ');
+
+        /* Use the first letter to narrow down the search */
+        query[0] = getchar();
+        register int diff = *query - 'a';
+        putchar(*query);
+        register int l = letter_boundaries[diff];
+        register int h = letter_boundaries[diff + 1] - 1;
 
 
-    
-    query[1] = getchar();
-    putchar(query[1]);
-    register int mid = (l + h) >> 1;
-    register char mid_char = data_string[mid * 5 + 1];
-    if(query[1] > mid_char) {
-        l = mid + 1;
-    } else if(query[1] < mid_char) {
-        h = mid - 1;
-    }
-    
-
-
-
-
-
-
-    __scan_char_array(query + 2);
-    while(l <= h) {
-        mid = (l + h) >> 1;
-        register int result = 0;
-        if(query[1] != data_string[mid * 5 + 1]) {
-            result = query[1] - data_string[mid * 5 + 1];
-        }else
-        if(query[2] != data_string[mid * 5 + 2]) {
-            result = query[2] - data_string[mid * 5 + 2];
-        }else
-        if(query[3] != data_string[mid * 5 + 3]) {
-            result = query[3] - data_string[mid * 5 + 3];
-        }else
-        if(query[4] != data_string[mid * 5 + 4]) {
-            result = query[4] - data_string[mid * 5 + 4];
+        /* Can simply compare the next letter to narrow down search even more */
+        /* Cannot do this for the second letter since we can't expect query[1] and word[1] to match */
+        query[1] = getchar();
+        putchar(query[1]);
+        register int mid = (l + h) >> 1;
+        register char mid_char = data_string[mid * 5 + 1];
+        if(query[1] > mid_char) {
+            l = mid + 1;
+        } else if(query[1] < mid_char) {
+            h = mid - 1;
         }
 
-        if(result == 0) {
+        /* Let user enter the remainder of their guess */
+        __scan_char_array(query + 2);
+
+        /* Binary search */
+        register int result;
+        while(l <= h) {
+            result = 0;
+            mid = (l + h) >> 1;
+
+            /* Avoid overhead of strcmp() (I used to have it here) by avoiding function call and unrolling the loop */
+            register int temp_mid = mid * 5;
+            /* We already know that query[0] == word[0] */
+            if(query[1] != data_string[temp_mid + 1]) {
+                result = query[1] - data_string[temp_mid + 1];
+            }else
+            if(query[2] != data_string[temp_mid + 2]) {
+                result = query[2] - data_string[temp_mid + 2];
+            }else
+            if(query[3] != data_string[temp_mid + 3]) {
+                result = query[3] - data_string[temp_mid + 3];
+            }else
+            if(query[4] != data_string[temp_mid + 4]) {
+                result = query[4] - data_string[temp_mid + 4];
+            }
+
+            
+            if(result == 0) { /* If the word is found */
+                break;
+            }else if(result < 0) {
+                h = mid - 1;
+            } else {
+                l = mid + 1;
+            }
+        }
+
+        /* If the word is not in the vocabulary */
+        if((l > h)) {
+            move_cursor(3, i);
+            __print_char_array("?????");
+            move_cursor(0, i + 1);
+        } else {
             move_cursor(3, i);
             register int cnt = 0;
             for(register int j = 0; j < 5; ++j) {
                 if(word[j] == query[j]) {
                     ++cnt;
-                    set_colour(2);
-                    putchar(query[j]);
-                }else if(is_letter_in_word(query[j], word)) {
-                    set_colour(6);
-                    putchar(query[j]);
+                    set_colour(GREEN);
+                }else if(is_letter_in_word[query[j] - 'a']) {
+                    set_colour(YELLOW);
                 }else{
-                    set_colour(8);
-                    putchar(query[j]);
+                    set_colour(GREY);
                 }
+                putchar(query[j]);
             }
-            set_colour(15);
+            set_colour(WHITE);
             putchar('\n');
+            /* If every letter in the word is a match, the word has been found*/
             if(cnt == 5) {
                 __print_char_array("Correct!");
                 word_found = 1;
+                break;
             }
-            break;
-        }else if(result < 0) {
-            h = mid - 1;
-        } else {
-            l = mid + 1;
         }
     }
-
-    if(l > h) {
-        move_cursor(3, i);
-        __print_char_array("?????");
-        move_cursor(0, i + 1);
-    }
-}
 
     if(!word_found) {
         __print_char_array("The word was\n");

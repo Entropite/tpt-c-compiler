@@ -1,6 +1,5 @@
 local Node = require('node')
 local util = require('util')
-local serpent = require('serpent')
 local Type = require('type')
 local Operand = require('operand')
 local Type_Checker = {}
@@ -83,9 +82,11 @@ function Type_Checker:type_check(ast, symbol_table)
         if(n.declaration) then
             local type = enum(n.id.id)
             for i, value in ipairs(n.declaration) do
-                type.members[value.id] = {type=base("INT", false)}
-                type.members[value.id].place = Operand:new("i", i - 1)
-                add_symbol(value.id, type.members[value.id], symbol_table.ordinary)
+                local identifier = value.id
+                local value = value.value or i - 1
+                type.members[identifier.id] = {type=base("INT", false)}
+                type.members[identifier.id].place = Operand:new("i", value)
+                add_symbol(identifier.id, type.members[identifier.id], symbol_table.ordinary)
             end
             add_symbol(n.id.id, {type = type}, symbol_table.tag)
         end
@@ -159,6 +160,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(n.block) then
             new_scope(n.declarator.direct_declarator.id.id)
             for _, child in ipairs(n.declarator.direct_declarator.parameter_list) do
+                
                 add_symbol(child.id.id, {type = child.value_type}, symbol_table.ordinary)
                 child.handle = get_symbol(child.id.id, symbol_table.ordinary)
             end
@@ -816,7 +818,7 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_primary_expression(n)
         if(node_check(n, "INT")) then
-            n.value_type = base("INT")
+            n.value_type = base({n.is_unsigned and "UNSIGNED" or "SIGNED", "INT"})
         elseif(node_check(n, "IDENTIFIER")) then
             n.handle = get_symbol(n.value, symbol_table.ordinary)
             if(n.handle == nil) then
