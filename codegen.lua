@@ -93,7 +93,6 @@ CodeGen.emission_map = {
     ["ret"]=function(c) return c.type end,
     ["label"]=function(c) return c.target.value..":" end,
     ["cmp"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.first), c.second.type == "i" and c.second.value or CodeGen.as_reg(c.second)) end,
-    ["!get_address"]=function(c) return CodeGen:emit_get_address(c.target, c.dest) end,
     ["nop"]=function(c) return c.type end,
     ["add3"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
     ["ldoffset"]=function(c) return string.format("%s %s, %s, %s", "ld", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end
