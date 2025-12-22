@@ -180,11 +180,12 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         for i = 1, n.value_type.length do 
             local char = 0
             if(i <= #n.value) then
-                if(string.sub(n.value, i, i) < ' ') then
+                char = string.format("%d", string.byte(string.sub(n.value, i, i)))
+                --[[if(string.sub(n.value, i, i) < ' ') then
                     char = string.format("%d", string.byte(string.sub(n.value, i, i)))
                 else
                     char = string.format("'%s'", string.sub(n.value, i, i))
-                end
+                end]]
             end
 
             self:register_global_word(char, start)
