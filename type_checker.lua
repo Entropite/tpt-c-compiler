@@ -63,10 +63,8 @@ function Type_Checker:type_check(ast, symbol_table)
                         if(child.type_specifier.kind.id) then
                             base_type = get_symbol(child.type_specifier.kind.id.id, symbol_table.tag).type
                         else
-                            print(Node.INVERTED_NODE_TYPES[child.type_specifier.kind.type])
                             check_struct_or_union_type(child.type_specifier.kind)
                             base_type = child.type_specifier.kind.value_type
-                            print(to_string_pretty(base_type))
                         end
                     else
                         base_type = base(child.type_specifier.kind)
@@ -824,7 +822,9 @@ function Type_Checker:type_check(ast, symbol_table)
         for i, argument in ipairs(arguments) do
             local argument_type = check_assignment_expression(argument)
             if(not (parameter_types.is_variadic or can_coerce(argument_type, parameter_types[i]))) then
+                print(to_string_pretty(argument_type) .. " " .. to_string_pretty(parameter_types[i]))
                 error("Argument type does not match parameter type")
+                
             end
         end
     end

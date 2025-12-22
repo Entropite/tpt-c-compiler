@@ -71,7 +71,8 @@ function Lexer.lex(s)
 
     local hex_integers = lpeg.C(lpeg.P("0x") * lpeg.R("09", "af", "AF")^1 * lpeg.P("u")^-1)
     hex_integers = lpeg.Cp() * hex_integers / function(pos, n) return Token:new(string.sub(n, #n, #n) == "u" and TOKEN_TYPES["UNSIGNED_INT"] or TOKEN_TYPES["INT"], util.to_int(n), get_pos(pos)) end
-    -- Floats
+    
+    -- Floats (not supported yet)
     local floats = lpeg.C(loc.digit^1 * "." * loc.digit^1) 
     floats = lpeg.Cp() * floats / function(pos, f) return Token:new(TOKEN_TYPES["FLOAT"], tonumber(f), get_pos(pos)) end
 
@@ -80,7 +81,7 @@ function Lexer.lex(s)
     reserved = lpeg.Cp() * reserved / function(pos, r) return Token:new(TOKEN_TYPES[string.upper(r)], r, get_pos(pos)) end
 
     -- Type specifiers
-    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -loc.alnum) 
+    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -(loc.alnum + "_")) 
     type_specifier = lpeg.Cp() * type_specifier / function(pos, ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts, get_pos(pos)) end
 
     local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static") * -loc.alnum) / function(sc) return Token:new(TOKEN_TYPES["STORAGE_CLASS"], sc) end

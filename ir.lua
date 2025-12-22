@@ -205,8 +205,10 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         local offset = 0
         for i, member in ipairs(type.members) do
             member.offset = offset
-            if(member.type.kind == Type.KINDS["STRUCT"] or member.type.kind == Type.KINDS["UNION"]) then
+            if(member.type.kind == Type.KINDS["STRUCT"]) then
                 compute_struct_layout(member.type)
+            elseif(member.type.kind == Type.KINDS["UNION"]) then
+                compute_union_layout(member.type)
             end
             offset = offset + self:sizeof(member.type)
         end
@@ -218,6 +220,11 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         local size = 0
         for i, member in ipairs(type.members) do
             member.offset = 0
+            if(member.type.kind == Type.KINDS["STRUCT"]) then
+                compute_struct_layout(member.type)
+            elseif(member.type.kind == Type.KINDS["UNION"]) then
+                compute_union_layout(member.type)
+            end
             size = math.max(size, self:sizeof(member.type))
         end
         type.size = size
@@ -1181,6 +1188,9 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                     pr.type = "pr"
                     n.place = pr
                     n.place = emit_offset_lvalue(operand.i(n.value_types[i-1].members[operation.value.id].offset), n.place, 1)
+                    if(member_type.kind == Type.KINDS["ARRAY"]) then -- Might remove
+                        n.place = emit_address_of(n.place)
+                    end
                     -- if(n.place.type ~= "pr") then
                     --     local next_reg = operand.pr()
                     --     table.insert(tac[self.method.id], {type="!get_address", target=n.place, dest=next_reg})

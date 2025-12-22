@@ -579,7 +579,7 @@ function Parser.parse(toks)
         elseif(multi_check({",", ")"})) then
             error("Abstract function prototypes are not supported yet")
         else
-            error(string.format("Unexpected token: '%s'", peek_token()))
+            Diagnostics.submit(Message.error(string.format("Unexpected token: '%s'", peek_token().value), peek_token().pos))
         end
 
         direct_declarator_node.dimensions = {}
@@ -851,8 +851,6 @@ function Parser.parse(toks)
 
         return node
     end
-
-
 
 
     function parse_function_call()
