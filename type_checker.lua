@@ -2,6 +2,8 @@ local Node = require('node')
 local util = require('util')
 local Type = require('type')
 local Operand = require('operand')
+local Diagnostics = require("diagnostics")
+local Message = require("message")
 local Type_Checker = {}
 
 
@@ -121,7 +123,7 @@ function Type_Checker:type_check(ast, symbol_table)
         end
 
         if(n.value_type.kind == Type.KINDS["VOID"]) then
-            error("Cannot declare a variable of type void")
+            Diagnostics.submit(Message.error("Cannot declare a variable of type void", n.pos))
         end
 
         if(n.initializer) then
@@ -131,14 +133,14 @@ function Type_Checker:type_check(ast, symbol_table)
                 end
                 -- checks whether the initializer list can be morphed into the target type
                 if(not match_initializer_list(n.initializer, n.value_type)) then
-                    error("Initializer list does not match the declared type")
+                    Diagnostics.submit(Message.error("Initializer list does not match the declared type", n.pos))
                 end
                 n.initializer.value_type = n.value_type
             else
                 
                 if(not can_coerce(check_initializer(n.initializer), n.value_type, true)) then
                     print(to_string_pretty(n.initializer.value_type))
-                    error("Initializer does not match the declared type")
+                    Diagnostics.submit(Message.error("Initializer does not match the declared type", n.initializer.pos))
                 end
 
                 if(n.initializer.value and node_check(n.initializer.value, "STRING_LITERAL")) then
@@ -190,7 +192,9 @@ function Type_Checker:type_check(ast, symbol_table)
     end
 
     function can_coerce_array_to_struct(initializer, n)
-        assert(initializer.value_type.kind == Type.KINDS["ARRAY"] and n.value_type.kind == Type.KINDS["STRUCT"], "Can only coerce array to struct")
+        if(not (initializer.value_type.kind == Type.KINDS["ARRAY"] and n.value_type.kind == Type.KINDS["STRUCT"])) then
+            Diagnostics.submit(Message.error("Can only coerce array to struct", initializer.pos))
+        end
         -- coerce array to struct
         for i, member in ipairs(n.value_type.members) do
             if(i > initializer.value_type.length) then
@@ -253,14 +257,14 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_switch(n)
         if(not can_coerce(check_expression(n.condition), base("INT"))) then
-            error("The condition for a switch statement must be coercible to an int")
+            Diagnostics.submit(Message.error("The condition for a switch statement must be coercible to an int", n.condition.pos))
         end
         check_block(n.block)
     end
 
     function check_case(n)
         if(not can_coerce(check_primary_expression(n.value), base("INT"))) then
-            error("The value of a case statement must be coercible to an int")
+            Diagnostics.submit(Message.error("The value of a case statement must be coercible to an int", n.value.pos))
         end
         check_statement(n.statement)
     end
@@ -277,7 +281,7 @@ function Type_Checker:type_check(ast, symbol_table)
             check_expression(n.initialization)
         end
         if(not can_coerce(check_expression(n.condition), base("INT"))) then
-            error("The condition for a for statement must be an int")
+            Diagnostics.submit(Message.error("The condition for a for statement must be an int", n.condition.pos))
         end
         check_statement(n.statement)
         check_expression(n.update)
@@ -286,14 +290,14 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_while(n)
         if(not can_coerce(check_expression(n.condition), base("INT"))) then
-            error("The condition for a while statement must be an int")
+            Diagnostics.submit(Message.error("The condition for a while statement must be an int", n.condition.pos))
         end
         check_statement(n.statement)
     end
 
     function check_if(n)
         if(not can_coerce(check_expression(n.condition), base("INT"))) then
-            error("The condition in an if statement must be an int")
+            Diagnostics.submit(Message.error("The condition in an if statement must be an int", n.condition.pos))
         end
         check_statement(n.true_case)
         if(n.false_case) then
@@ -408,7 +412,7 @@ function Type_Checker:type_check(ast, symbol_table)
                     same_type = can_coerce(check_initializer(child), target_type.points_to)
                 end
             else
-                error()
+                Diagnostics.submit(Message.error("Invalid initializer", child.pos))
             end
 
             if(not same_type) then
@@ -444,7 +448,7 @@ function Type_Checker:type_check(ast, symbol_table)
             local rhs_type = check_assignment_expression(n.rhs)
             assert(lhs_type ~= nil and rhs_type ~= nil, "Assignment expression must have a lhs and rhs")
             if(not same_type_chain(lhs_type, rhs_type, true) and not lhs_type.kind == Type.KINDS["VOID"] and not rhs_type.kind == Type.KINDS["VOID"]) then
-                error("Assignment types do not match")
+                Diagnostics.submit(Message.error("Assignment types do not match", n.pos))
             end
             n.value_type = lhs_type
         else
@@ -460,7 +464,7 @@ function Type_Checker:type_check(ast, symbol_table)
             local true_case_type = check_assignment_expression(n.true_case)
             local false_case_type = check_logical_or_expression(n.false_case)
             if(not same_type_chain(false_case_type, true_case_type, true)) then
-                error("Ternary false and true case types do not match")
+                Diagnostics.submit(Message.error("Ternary false and true case types do not match", n.pos))
             end
             n.value_type = true_case_type
         else
@@ -475,7 +479,7 @@ function Type_Checker:type_check(ast, symbol_table)
             for i=1, #n do
         
                 if(not can_coerce(check_logical_and_expression(n[i]), base("INT"))) then
-                    error("Logical or expression terms must be ints")
+                    Diagnostics.submit(Message.error("Logical or expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -489,7 +493,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "LOGICAL_AND_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_or_expression(n[i]), base("INT"))) then
-                    error("Logical and expression terms must be ints")
+                    Diagnostics.submit(Message.error("Logical and expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -503,7 +507,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_OR_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_xor_expression(n[i]), base("INT"))) then
-                    error("Bitwise inclusive or expression terms must be ints")
+                    Diagnostics.submit(Message.error("Bitwise inclusive or expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -517,7 +521,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_XOR_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_and_expression(n[i]), base("INT"))) then
-                    error("Bitwise inclusive xor expression terms must be ints")
+                    Diagnostics.submit(Message.error("Bitwise inclusive xor expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -531,7 +535,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_AND_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_equality_expression(n[i]), base("INT"))) then
-                    error("Bitwise inclusive and expression terms must be ints")
+                    Diagnostics.submit(Message.error("Bitwise inclusive and expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -546,7 +550,7 @@ function Type_Checker:type_check(ast, symbol_table)
             for i=1, #n, 2 do
                 -- might extend equality to non-int types later
                 if(not can_coerce(check_relational_expression(n[i]), base("INT"))) then
-                    error("Equality expression terms must be ints")
+                    Diagnostics.submit(Message.error("Equality expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -560,7 +564,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "RELATIONAL_EXPRESSION")) then
             for i=1, #n, 2 do
                 if(not can_coerce(check_shift_expression(n[i]), base("INT"))) then
-                    error("Relational expression terms must be ints")
+                    Diagnostics.submit(Message.error("Relational expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -574,7 +578,7 @@ function Type_Checker:type_check(ast, symbol_table)
         if(node_check(n, "SHIFT_EXPRESSION")) then
             for i=1, #n, 2 do
                 if(not can_coerce(check_sum_expression(n[i]), base("INT"))) then
-                    error("Shift expression terms must be ints")
+                    Diagnostics.submit(Message.error("Shift expression terms must be ints", n[i].pos))
                 end
             end
             n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
@@ -594,7 +598,7 @@ function Type_Checker:type_check(ast, symbol_table)
                 if(term_type.kind == Type.KINDS["POINTER"]) then
                     pointer_type = term_type
                 elseif(term_type.kind ~= Type.KINDS["INT"] and term_type.kind ~= Type.KINDS["CHAR"]) then
-                    error("Sum expression term types must be ints or pointers")
+                    Diagnostics.submit(Message.error("Sum expression term types must be ints or pointers", term.pos))
                 end
             end
             if(pointer_type == nil) then
@@ -626,10 +630,10 @@ function Type_Checker:type_check(ast, symbol_table)
                 local factor_type = check_cast_expression(factor)
                 if(factor_type.kind == Type.KINDS["POINTER"]) then
                     if(#n > 1) then
-                        error("Cannot multiply or divide a pointer")
+                        Diagnostics.submit(Message.error("Cannot multiply or divide a pointer", factor.pos))
                     end
                 elseif(factor_type.kind ~= Type.KINDS["INT"]) then
-                    error("Can only multiply or divide an int by an int")
+                    Diagnostics.submit(Message.error("Can only multiply or divide an int by an int", factor.pos))
                 end
             end
 
@@ -674,7 +678,7 @@ function Type_Checker:type_check(ast, symbol_table)
                 if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
                     n.value_type = n.child.value_type
                 else
-                    error("pre-increment/decrement is only valid for ints or pointers")
+                    Diagnostics.submit(Message.error("pre-increment/decrement is only valid for ints or pointers", n.child.pos))
                 end
             elseif(n.operator == "SIZEOF") then
                 n.value_type = base("INT")
@@ -683,12 +687,12 @@ function Type_Checker:type_check(ast, symbol_table)
             elseif(n.operator == "*") then
                 if(n.child.value_type.kind == Type.KINDS["POINTER"] or n.child.value_type.kind == Type.KINDS["ARRAY"]) then
                     if(n.child.value_type.points_to.kind == Type.KINDS["VOID"]) then
-                        error("Cannot dereference a void pointer")
+                        Diagnostics.submit(Message.error("Cannot dereference a void pointer", n.child.pos))
                     else
                         n.value_type = n.child.value_type.points_to
                     end
                 else
-                    error("The dereference operator can only be performed on either a pointer or an array")
+                    Diagnostics.submit(Message.error("The dereference operator can only be performed on either a pointer or an array", n.child.pos))
                 end
             elseif(n.operator == "!") then
                 n.value_type = base("INT")
@@ -698,16 +702,16 @@ function Type_Checker:type_check(ast, symbol_table)
                 if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
                     n.value_type = n.child.value_type
                 else
-                    error("unary minus is only valid for ints or pointers")
+                    Diagnostics.submit(Message.error("unary minus is only valid for ints or pointers", n.child.pos))
                 end
             elseif(n.operator == "+") then
                 if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
                     n.value_type = n.child.value_type
                 else
-                    error("unary plus is only valid for ints or pointers")
+                    Diagnostics.submit(Message.error("unary plus is only valid for ints or pointers", n.child.pos))
                 end
             else
-                error()
+                Diagnostics.submit(Message.error("Invalid unary operator", n.pos))
             end
         else
             check_postfix_expression(n)
@@ -764,13 +768,13 @@ function Type_Checker:type_check(ast, symbol_table)
                             if(can_coerce(index_type, base("INT"))) then
                                 table.insert(n.value_types, n.value_types[i-1].points_to) -- use the previous type to generate a new type
                             else
-                                error("Array index must be an int")
+                                Diagnostics.submit(Message.error("Array index must be an int", operation.value.pos))
                             end
                         else
-                            error("Cannot index a void pointer or array")
+                            Diagnostics.submit(Message.error("Cannot index a void pointer or array", operation.value.pos))
                         end
                     else
-                        error("Can only index a pointer or an array")
+                        Diagnostics.submit(Message.error("Can only index a pointer or an array", operation.value.pos))
                     end
                 elseif(operation.type == "(") then
                     n.value_types[i-1] = n.value_types[i-1].kind == Type.KINDS["POINTER"] and n.value_types[i-1].points_to or n.value_types[i-1]
@@ -779,16 +783,16 @@ function Type_Checker:type_check(ast, symbol_table)
                         check_argument_list(operation.value, n.value_types[i-1].parameter_types)
                         table.insert(n.value_types, n.value_types[i-1].return_type)
                     else
-                        error("Function call can only be performed on a function")
+                        Diagnostics.submit(Message.error("Function call can only be performed on a function", operation.value.pos))
                     end
                 elseif(operation.type == "++" or operation.type == "--") then
                     if(n.value_types[i-1].kind ~= Type.KINDS["INT"] and n.value_types[i-1].kind ~= Type.KINDS["POINTER"]) then
-                        error("Post-increment/decrement can only be performed on integers or pointers")
+                        Diagnostics.submit(Message.error("Post-increment/decrement can only be performed on integers or pointers", operation.value.pos))
                     end
                     table.insert(n.value_types, n.value_types[i-1])
                 elseif(operation.type == ".") then
                     if(n.value_types[i-1].kind ~= Type.KINDS["STRUCT"] and n.value_types[i-1].kind ~= Type.KINDS["UNION"]) then
-                        error("Can only perform the member access operation on a struct or union")
+                        Diagnostics.submit(Message.error("Can only perform the member access operation on a struct or union", operation.value.pos))
                     end
                     local member_type = n.value_types[i-1].members[operation.value.id].type
                     if(member_type.kind == Type.KINDS["ARRAY"]) then
@@ -797,11 +801,11 @@ function Type_Checker:type_check(ast, symbol_table)
                     table.insert(n.value_types, member_type)
                 elseif(operation.type == "->") then
                     if(n.value_types[i-1].kind ~= Type.KINDS["POINTER"] or n.value_types[i-1].points_to.kind ~= Type.KINDS["STRUCT"] and n.value_types[i-1].points_to.kind ~= Type.KINDS["UNION"]) then
-                        error("Can only perform the arrow operation on a pointer to a struct or union")
+                        Diagnostics.submit(Message.error("Can only perform the arrow operation on a pointer to a struct or union", operation.value.pos))
                     end
                     table.insert(n.value_types, n.value_types[i-1].points_to.members[operation.value.id].type) -- might add array handling
                 else
-                    error()
+                    Diagnostics.submit(Message.error("Invalid postfix operation", operation.pos))
                 end
             end
             -- shift value type array left so that value_types[i] is the type expected after the operation i has taken place
@@ -816,14 +820,14 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_argument_list(arguments, parameter_types)
         if((parameter_types.is_variadic and #arguments < #parameter_types) or (not parameter_types.is_variadic and #arguments ~= #parameter_types)) then
-            error("Argument list length does not match the parameter list length")
+            Diagnostics.submit(Message.error("Argument list length does not match the parameter list length", arguments.pos))
         end
 
         for i, argument in ipairs(arguments) do
             local argument_type = check_assignment_expression(argument)
             if(not (parameter_types.is_variadic or can_coerce(argument_type, parameter_types[i]))) then
                 print(to_string_pretty(argument_type) .. " " .. to_string_pretty(parameter_types[i]))
-                error("Argument type does not match parameter type")
+                Diagnostics.submit(Message.error("Argument type does not match parameter type", argument.pos))
                 
             end
         end
@@ -835,7 +839,7 @@ function Type_Checker:type_check(ast, symbol_table)
         elseif(node_check(n, "IDENTIFIER")) then
             n.handle = get_symbol(n.value, symbol_table.ordinary)
             if(n.handle == nil) then
-                error("Symbol '" .. n.value .. "' used before definition")
+                Diagnostics.submit(Message.error("Symbol '" .. n.value .. "' used before definition", n.pos))
             end
             if(n.handle.type.kind == Type.KINDS["ARRAY"]) then
                 n.value_type = pointer(n.handle.type.points_to)
@@ -854,7 +858,7 @@ function Type_Checker:type_check(ast, symbol_table)
             n.value_type = check_expression(n)
         else
             print(n.type)
-            error()
+            Diagnostics.submit(Message.error("Invalid primary expression", n.pos))
         end
         return n.value_type
     end
@@ -912,7 +916,7 @@ function Type_Checker:type_check(ast, symbol_table)
         return parameter_types
     end
 
-    return check_program(ast)
+    return check_program(ast), symbol_table
 end
 
 

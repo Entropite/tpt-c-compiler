@@ -111,10 +111,9 @@ function Lexer.lex(s)
     local character = lpeg.C(lpeg.P("'") * (lpeg.P(1) - "'")^0 * "'") 
     character = lpeg.Cp() * character / function(pos, s) return Token:new(TOKEN_TYPES["CHARACTER"], check_for_escape_sequence(tostring(s)), get_pos(pos)) end
 
-    --local other = lpeg.Cp() * lpeg.C((lpeg.P(1) - S)^1) / function(pos, o) return Token:new(TOKEN_TYPES["OTHER"], o, get_pos(pos)) end
+    local other = lpeg.Cp() * lpeg.C((lpeg.P(1) - lpeg.S(" \n\t\r"))^1) / function(pos, o) return Token:new(TOKEN_TYPES["OTHER"], o, get_pos(pos)) end
     -- LPEG is greedy so floats must be checked before integers else, integers will match the integer part of the float
-    local token = S * ((singleline_comments + multiline_comments + reserved + storage_class + op +type_specifier + id + string_lit + character + hex_integers + integers + punctuation) * S)^0 
-    
+    local token = S * ((singleline_comments + multiline_comments + reserved + storage_class + op +type_specifier + id + string_lit + character + hex_integers + integers + punctuation + other) * S)^1
     tokens = {token:match(s)}
     setmetatable(tokens, {__tostring = function(s) return util.array_to_string(s, " ") end })
 

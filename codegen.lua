@@ -1,5 +1,6 @@
 local Operand = require("operand")
 local Standard_Library = require("standard_library")
+local Diagnostics = require("diagnostics")
 local CodeGen = {
     size=8191,
     global_addr=1,

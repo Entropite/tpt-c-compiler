@@ -11,6 +11,18 @@ function Diagnostics.submit(message)
     end
 end
 
+Diagnostics.node_tallies = {}
+function Diagnostics.ast_size(ast)
+    local count = 1
+    Diagnostics.node_tallies[ast.type] = (Diagnostics.node_tallies[ast.type] or 0) + 1
+    for _, child in pairs(ast) do
+        if(type(child) == "table" and child.is_node) then
+            count = count + Diagnostics.ast_size(child)
+        end
+    end
+    return count
+end
+
 function Diagnostics.default_on_panic(message, pos)
     print(message)
     Diagnostics.recover()

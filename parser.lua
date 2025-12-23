@@ -14,7 +14,10 @@ function Parser.parse(toks)
     local unary_operators = {"&", "*", "+", "-", "~", "!"}
 
     function new(type)
-        return Node:new(NODE_TYPES[type])
+        if(type == nil or NODE_TYPES[type] == nil) then
+            error("Invalid node type: " .. type)
+        end
+        return Node:new(NODE_TYPES[type], peek_token().pos)
     end
     --local symbol_table = {}
     local ast = {}
@@ -86,8 +89,8 @@ function Parser.parse(toks)
         if(#toks <= 0) then
             error("Empty file")
         end
-        local program_node = Node:new(NODE_TYPES["Program"])
-        
+        local program_node = new("PROGRAM")
+    
         while peek_token().type ~= TOKEN_TYPES["EOF"] do
 
             table.insert(program_node, parse_declaration())
@@ -166,7 +169,7 @@ function Parser.parse(toks)
     end
 
     function parse_parameter_list()
-        local parameter_list_node = Node:new(NODE_TYPES["PARAMETER_LIST"])
+        local parameter_list_node = new("PARAMETER_LIST")
         if(check(")")) then
             return parameter_list_node
         end
@@ -178,7 +181,7 @@ function Parser.parse(toks)
         while(accept(",")) do
             if(accept("...")) then
                 if(parameter_list_node.is_variadic) then
-                    error("Variadic parameters must be the last parameter")
+                    Diagnostics.submit(Message.error("Variadic parameters must be the last parameter", peek_token().pos))
                 end
                 parameter_list_node.is_variadic = true
             else
@@ -242,7 +245,9 @@ function Parser.parse(toks)
             local pos = peek_token().pos
             local op = next_token().value
             local rhs = parse_assignment_expression()
-            assert(lhs ~= nil and rhs ~= nil, "Assignment expression must have a lhs and rhs")
+            if(not (lhs ~= nil and rhs ~= nil)) then
+                Diagnostics.submit(Message.error("Assignment expression must have a lhs and rhs", peek_token().pos))
+            end
             local assignment_expression_node = new("ASSIGNMENT")
             assignment_expression_node.pos = pos
             assignment_expression_node.op = op
@@ -396,7 +401,7 @@ function Parser.parse(toks)
     end
 
     function parse_parameter()
-        local parameter_node = Node:new(NODE_TYPES["PARAMETER"])
+        local parameter_node = new("PARAMETER")
         parameter_node.type_specifier = parse_type_specifier()
         parameter_node.id = parse_identifier()
 
@@ -404,7 +409,7 @@ function Parser.parse(toks)
     end
 
     function parse_block()
-        local block_node = Node:new(NODE_TYPES["Block"])
+        local block_node = new("BLOCK")
 
         if accept("{") then
             while not check("}") do
@@ -412,7 +417,7 @@ function Parser.parse(toks)
             end
             expect("}")
         else
-            error("Expected '{' to start block")
+            Diagnostics.submit(Message.error("Expected '{' to start block", peek_token().pos))
         end
 
         return block_node
@@ -505,7 +510,7 @@ function Parser.parse(toks)
     end
 
     function parse_return()
-        local return_node = Node:new(NODE_TYPES["RETURN"])
+        local return_node = new("RETURN")
         next_token()
         return_node.value = parse_expression()
 
@@ -577,7 +582,7 @@ function Parser.parse(toks)
             direct_declarator_node.id = direct_declarator_node.declarator.direct_declarator.id
             expect(")")
         elseif(multi_check({",", ")"})) then
-            error("Abstract function prototypes are not supported yet")
+            Diagnostics.submit(Message.error("Abstract function prototypes are not supported yet", peek_token().pos))
         else
             Diagnostics.submit(Message.error(string.format("Unexpected token: '%s'", peek_token().value), peek_token().pos))
         end
@@ -591,7 +596,7 @@ function Parser.parse(toks)
                     if(#direct_declarator_node.dimensions == 0) then
                         table.insert(direct_declarator_node.dimensions, -1)
                     else
-                        error("Array dimensions must be specified for all dimensions except the first one")
+                        Diagnostics.submit(Message.error("Array dimensions must be specified for all dimensions except the first one", peek_token().pos))
                     end
                 end
                 expect("]")
@@ -696,7 +701,7 @@ function Parser.parse(toks)
     end
 
     function parse_identifier()
-        local identifier_node = Node:new(NODE_TYPES["Identifier"])
+        local identifier_node = new("IDENTIFIER")
 
         local token = next_token()
         identifier_node.pos = token.pos
@@ -704,7 +709,7 @@ function Parser.parse(toks)
         if token.type == TOKEN_TYPES["ID"] then
             identifier_node.id = token.value
         else
-            error("Unexpected identifier: " .. token.value)
+            Diagnostics.submit(Message.error("Unexpected identifier: " .. token.value, token.pos))
         end
 
         return identifier_node
@@ -714,7 +719,7 @@ function Parser.parse(toks)
 
         local term = parse_term()
         if(check("+") or check("-")) then
-            local sum_expression_node = Node:new(NODE_TYPES["SUM_EXPRESSION"])
+            local sum_expression_node = new("SUM_EXPRESSION")
             table.insert(sum_expression_node, term)
             while check("+") or check("-") do
 
@@ -732,7 +737,7 @@ function Parser.parse(toks)
     function parse_term()
         local factor = parse_cast_expression()
         if(check("*") or check("/")) then
-            local multiplicative_expression_node = Node:new(NODE_TYPES["MULTIPLICATIVE_EXPRESSION"])
+            local multiplicative_expression_node = new("MULTIPLICATIVE_EXPRESSION")
             table.insert(multiplicative_expression_node, factor)
 
             while check("*") or check("/") do
@@ -864,7 +869,7 @@ function Parser.parse(toks)
     end
 
     function parse_argument_list()
-        local argument_list_node = Node:new(NODE_TYPES["ARGUMENT_LIST"])
+        local argument_list_node = new("ARGUMENT_LIST")
         if peek_token().type == TOKEN_TYPES[")"] then
             return argument_list_node
         end

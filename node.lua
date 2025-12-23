@@ -80,15 +80,15 @@ setmetatable(Node.NODE_TYPES, {__index = function (t, x)
     end
 end})
 Node.__index = Node
-
+Node.is_node = true
 
 
 function Node.node_check(n, node_string)
     return n.type == Node.NODE_TYPES[node_string]
 end
 
-function Node:new(ty)
-    local t = {type=ty}
+function Node:new(ty, pos)
+    local t = {type=ty, pos=pos}
     setmetatable(t, Node)
     return t
 end

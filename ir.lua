@@ -262,7 +262,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                         if(not aggregate_types[Type.INVERTED_KINDS[n.initializer.value_type.kind]]) then
                             initializer_place = operand.vr()
                         else
-                            error("Cannot store aggregate type in register")
+                            Diagnostics.submit(Message.error("Cannot store aggregate type in register", n.initializer.pos))
                         end
                     else
                         initializer_place = static_allocate_place(self:sizeof(n.initializer.value_type))
@@ -727,7 +727,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
     function emit_case(n)
         emit_primary_expression(n.value)
         if(n.value.place.type ~= "i") then
-            error("Case values must be constants")
+            Diagnostics.submit(Message.error("Case values must be constants", n.value.pos))
         end
 
         local true_label = operand.lb()
@@ -1267,7 +1267,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     emit_program(ast)
 
-    return self
+    return self, symbol_table
 end
 
 return IRVisitor
