@@ -7,10 +7,16 @@ local symbol_table = require("symbol_table")
 local util = require("util")
 
 if(#arg < 1) then
-    print("Usage: lua cli.lua input.c output.asm")
+    print("Usage: lua cli.lua input.c output.asm [Optional: offset]")
     os.exit(1)
 end
 
+if (#arg > 2) then
+    local suc,msg = pcall(function() codegen.global_addr = codegen.global_addr + tonumber(arg[3]) end)
+    if not suc then
+        error("Invalid offset argument: '"..arg[3].."'")
+    end
+end
 
 
 local file = io.open(arg[1], "r")
