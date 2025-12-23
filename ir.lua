@@ -27,8 +27,8 @@ local operand = {
     i=function(v) return Operand:new("i", v) end,                      -- immediate
     t=function() return Operand:new("t", IRVisitor:next_temp()) end,    -- temporary    
     r=function(v) return Operand:new("r", v) end,                        -- binded register
-    lb=function() return Operand:new("i", string.format(".label_%d", IRVisitor:next_label())) end,
-    vr=function() return Operand:new("vr", IRVisitor:next_temp()) end
+    lb=function() return Operand:new("i", string.format(".label_%d", IRVisitor:next_label())) end, --label
+    vr=function() return Operand:new("vr", IRVisitor:next_temp()) end -- variable register (used for variables residing in registers), should not be confused with "virtual register"
 }
 IRVisitor.standard_function_arguments = {operand.r("r22")}
 IRVisitor.RETURN_REG = operand.r("return_reg")
@@ -356,9 +356,27 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
             if(n.op == "=") then
                 n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
             elseif(n.op == "/=") then
-                error()
+                local lhs_place = n.lhs.place
+                if(not reg_rvalue_operands[n.lhs.place.type]) then
+                    lhs_place = load_operand_into_register(n.lhs.place)
+                end
+                local rhs_place = n.rhs.place
+                if(not reg_rvalue_operands[n.rhs.place.type]) then
+                    rhs_place = load_operand_into_register(n.rhs.place)
+                end
+                local quotient = emit_division(lhs_place, rhs_place)
+                emit_move(quotient, n.lhs.place)
             elseif(n.op == "%=") then
-                error()
+                local lhs_place = n.lhs.place
+                if(not reg_rvalue_operands[n.lhs.place.type]) then
+                    lhs_place = load_operand_into_register(n.lhs.place)
+                end
+                local rhs_place = n.rhs.place
+                if(not reg_rvalue_operands[n.rhs.place.type]) then
+                    rhs_place = load_operand_into_register(n.rhs.place)
+                end
+                local _, remainder = emit_division(lhs_place, rhs_place)
+                emit_move(remainder, n.lhs.place)
             else
                 d_assert(symbol_to_operation_type[n.op], Message.internal_error("Unsupported assignment operator: " .. n.op, n.pos))
                 local lhs_place = n.lhs.place
@@ -976,17 +994,67 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         for i = 3, #n, 2 do
             
             emit_cast_expression(n[i])
-            -- factor
+        
             if(lvalue_operands[n[i].place.type]) then
                 n[i].place = load_operand_into_register(n[i].place)
             end
 
             if(n[i-1].type == TOKEN_TYPES['*']) then
                 table.insert(tac[self.method.id], {type="mull", source = n[i].place, dest=n.place})
-            else
-                table.insert(tac[self.method.id], {type="div", source = n[i].place, dest=n.place})
+            elseif(n[i-1].type == TOKEN_TYPES['/']) then
+                if(n[i].place.type == "i") then
+                    n[i].place = load_operand_into_register(n[i].place)
+                end
+                n.place = emit_division(n.place, n[i].place)
+            elseif(n[i-1].type == TOKEN_TYPES['%']) then
+                if(n[i].place.type == "i") then
+                    n[i].place = load_operand_into_register(n[i].place)
+                end
+                _, n.place = emit_division(n.place, n[i].place)
             end
         end
+    end
+
+    -- performs unsigned division using binary long division
+    function emit_division(dividend, divisor)
+        assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
+        assert(reg_rvalue_operands[divisor.type], "divisor must be an rvalue oriented operand in a register")
+
+        local quotient = operand.t()
+        local remainder = operand.t()
+        local bit_index = operand.t()
+        local loop_label = operand.lb()
+        local temp = operand.t()
+        local r_lt_d_label = operand.lb()
+        local end_label = operand.lb()
+        local instructions = {
+            {type="mov", source=operand.i(0), dest=quotient},
+            {type="mov", source=operand.i(0), dest=remainder},
+            {type="mov", source=operand.i(15), dest=bit_index},
+            {type="label", target=loop_label},
+            {type="cmp", first=bit_index, second=operand.i(0)},
+            {type="jl", target=end_label},
+            {type="shl", source=operand.i(1), dest=remainder},
+            {type="shr3", source=dividend, third=bit_index, dest=temp},
+            {type="and", source=operand.i(1), dest=temp},
+            {type="or", source=temp, dest=remainder},
+            {type="cmp", first=remainder, second=divisor},
+            {type="jl", target=r_lt_d_label},
+            {type="sub", source=divisor, dest=remainder},
+            {type="mov", source=operand.i(1), dest=temp},
+            {type="shl", source=bit_index, dest=temp},
+            {type="or", source=temp, dest=quotient},
+            {type="label", target=r_lt_d_label},
+            {type="sub", source=operand.i(1), dest=bit_index},
+            {type="jmp", target=loop_label},
+            {type="label", target=end_label}
+        }
+
+        for _, instruction in ipairs(instructions) do
+            table.insert(tac[self.method.id], instruction)
+        end
+
+        return quotient, remainder
     end
 
     function emit_cast_expression(n)

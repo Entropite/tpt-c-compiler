@@ -628,11 +628,7 @@ function Type_Checker:type_check(ast, symbol_table)
             for i=1, #n, 2 do
                 local factor = n[i]
                 local factor_type = check_cast_expression(factor)
-                if(factor_type.kind == Type.KINDS["POINTER"]) then
-                    if(#n > 1) then
-                        Diagnostics.submit(Message.error("Cannot multiply or divide a pointer", factor.pos))
-                    end
-                elseif(factor_type.kind ~= Type.KINDS["INT"]) then
+                if(factor_type.kind ~= Type.KINDS["INT"]) then
                     Diagnostics.submit(Message.error("Can only multiply or divide an int by an int", factor.pos))
                 end
             end

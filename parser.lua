@@ -736,11 +736,11 @@ function Parser.parse(toks)
 
     function parse_term()
         local factor = parse_cast_expression()
-        if(check("*") or check("/")) then
+        if(check("*") or check("/") or check("%")) then
             local multiplicative_expression_node = new("MULTIPLICATIVE_EXPRESSION")
             table.insert(multiplicative_expression_node, factor)
 
-            while check("*") or check("/") do
+            while check("*") or check("/") or check("%") do
                 
                 table.insert(multiplicative_expression_node, next_token())
                table.insert(multiplicative_expression_node, parse_cast_expression())

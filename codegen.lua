@@ -95,7 +95,7 @@ CodeGen.emission_map = {
     ["label"]=function(c) return c.target.value..":" end,
     ["cmp"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.first), c.second.type == "i" and c.second.value or CodeGen.as_reg(c.second)) end,
     ["nop"]=function(c) return c.type end,
-    ["add3"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
+    ["add3"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end, -- might remove this later since the __index metamethod can handle 3 operand instructions
     ["ldoffset"]=function(c) return string.format("%s %s, %s, %s", "ld", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end
 }
 
@@ -103,7 +103,9 @@ CodeGen.emission_map = {
 setmetatable(CodeGen.emission_map, {
     __index=function(t, x)
                 return function(c) 
-                    if(string.sub(c.type, 1, 1) == "j") then
+                    if(string.sub(c.type, #c.type, #c.type) == "3") then
+                        return string.format("%s %s, %s, %s", string.sub(c.type, 1, #c.type - 1), CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third))
+                    elseif(string.sub(c.type, 1, 1) == "j") then
                         return string.format("%s %s", c.type, c.target.value)
                     else
                         return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen:as_memory(c.source)) 
@@ -289,6 +291,7 @@ CodeGen.use_def_map = {
     ["mull"]=function(c) return {c.source, c.dest}, {c.dest} end,
     ["shl"]=function(c) return {c.source, c.dest}, {c.dest} end,
     ["shr"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["shr3"]=function(c) return {c.source, c.third}, {c.dest} end,
     ["xor"]=function(c) return {c.source, c.dest}, {c.dest} end,
     ["and"]=function(c) return {c.source, c.dest}, {c.dest} end,
     ["or"]=function(c) return {c.source, c.dest}, {c.dest} end
