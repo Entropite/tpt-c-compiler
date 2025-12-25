@@ -88,7 +88,7 @@ end
     end
 
     function Type.is_base_type(type)
-        return Type.BASE_KINDS[Type.INVERTED_KINDS[type.kind]]
+        return Type.BASE_KINDS[string.upper(Type.INVERTED_KINDS[type.kind])]
     end
 
     function Type.to_string(type)
@@ -139,8 +139,15 @@ end
                     result = result .. Type.to_string_pretty(param) .. ", "
                 end
                 result = result .. ") -> " .. Type.to_string_pretty(type.return_type) .. ")"
-            else
+            elseif(Type.INVERTED_KINDS[type.kind]) then
                 result = result .. Type.INVERTED_KINDS[type.kind]
+            else
+                local potential_symbol = get_symbol(type.kind, symbol_table.ordinary)
+                if(potential_symbol) then
+                    result = result .. Type.to_string_pretty(potential_symbol.type)
+                else
+                    error()
+                end
             end
 
             i = i - 1

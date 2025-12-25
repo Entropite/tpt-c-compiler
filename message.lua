@@ -22,6 +22,7 @@ function Message.internal_error(message, pos)
 end
 
 function Message:new(mtype, message, pos)
+    pos = pos or {row="unknown", col="unknown"}
     assert(mtype and Message.INVERTED_TYPES[mtype], "Invalid message type")
     assert(message and type(message) == "string", "Message must be a string")
     assert(pos and pos.row and pos.col, "Position must be a table with row and col fields")

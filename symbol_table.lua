@@ -28,10 +28,11 @@ symbol_table.namespace_set = {
 }
 
 function symbol_table.new_scope(id)
-        local new_scope = {level = symbol_table.current_scope.level + 1, parent = symbol_table.current_scope, tag_symbols = {}, ordinary_symbols = {}}
-        symbol_table.current_scope["s" ..id] = new_scope
-        symbol_table.current_scope = new_scope
-    end
+    id = id or "default"
+    local new_scope = {level = symbol_table.current_scope.level + 1, parent = symbol_table.current_scope, tag_symbols = {}, ordinary_symbols = {}}
+    symbol_table.current_scope["s" ..id] = new_scope
+    symbol_table.current_scope = new_scope
+end
 
 function symbol_table.exit_scope()
     symbol_table.current_scope = symbol_table.current_scope.level == 0 and symbol_table.current_scope or symbol_table.current_scope.parent

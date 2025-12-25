@@ -28,7 +28,7 @@ else
     error("Failed to open file")
 end
 
-local asm = codegen:generate(irv:generate_ir_code(type_checker:type_check(parser.parse(lexer.lex(code)), symbol_table)))
+local asm = codegen:generate(irv:generate_ir_code(type_checker:type_check(parser.parse(lexer.lex(code), symbol_table))))
 local out_file = io.open(arg[2] or string.sub(arg[1], 1, #arg[1] - 2) .. ".asm", "w")
 out_file:write(asm)
 out_file:close()

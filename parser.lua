@@ -5,7 +5,7 @@ local Message = require("message")
 
 local Parser = {}
 
-function Parser.parse(toks)
+function Parser.parse(toks, symbol_table)
     local TOKEN_TYPES = Token.TOKEN_TYPES
     local INVERTED_TOKENS = Token.INVERTED_TOKENS
     local NODE_TYPES = Node.NODE_TYPES
@@ -19,18 +19,25 @@ function Parser.parse(toks)
         end
         return Node:new(NODE_TYPES[type], peek_token().pos)
     end
-    --local symbol_table = {}
-    local ast = {}
+
+    function update_if_type_name(token)
+        if(token.type == TOKEN_TYPES["ID"]) then
+            local potential_type_name = symbol_table.get_symbol(token.value, symbol_table.ordinary)
+            if(potential_type_name and potential_type_name.is_type_name) then
+                token.type = TOKEN_TYPES["TYPE_SPECIFIER"]
+            end
+        end
+        return token
+    end
     
     local i = 0
     function next_token()
         i = i + 1
-        return toks[i]
+        return update_if_type_name(toks[i])
     end
 
     function peek_token()
-        -- The very last token is guaranteed to be EOF
-        return toks[i + 1]
+        return update_if_type_name(toks[i + 1])
     end
 
     function expect(type)
@@ -120,6 +127,10 @@ function Parser.parse(toks)
                     declaration_node.initializer = parse_initializer()
                 end
             end
+        end
+
+        if(declaration_node.specifier.storage_class.kind == "typedef") then
+            symbol_table.add_symbol(declaration_node.id.id, {is_type_name = true}, symbol_table.ordinary)
         end
         return declaration_node
     end
@@ -412,10 +423,12 @@ function Parser.parse(toks)
         local block_node = new("BLOCK")
 
         if accept("{") then
+            symbol_table.new_scope()
             while not check("}") do
                 table.insert(block_node, parse_statement())
             end
             expect("}")
+            symbol_table.exit_scope()
         else
             Diagnostics.submit(Message.error("Expected '{' to start block", peek_token().pos))
         end
@@ -696,7 +709,6 @@ function Parser.parse(toks)
         else
             storage_class_specifier_node.kind = "auto"
         end
-
         return storage_class_specifier_node
     end
 
@@ -848,9 +860,6 @@ function Parser.parse(toks)
             node = parse_expression()
             expect(")")
         else
-            
-            local serpent = require("serpent")
-            print(serpent.block(peek_token()))
             Diagnostics.submit(Message.error("Unexpected token: " .. peek_token().value, peek_token().pos))
         end
 
@@ -948,7 +957,7 @@ function Parser.parse(toks)
         return for_node
     end
 
-    return parse_program()
+    return parse_program(), symbol_table
 end
 
 

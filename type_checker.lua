@@ -35,6 +35,11 @@ function Type_Checker:type_check(ast, symbol_table)
         return n
     end
 
+    function check_typedef(n)
+        local type = base(n.specifier.type_specifier.kind)
+        get_symbol(n.id.id, symbol_table.ordinary).type = type
+    end
+
     function fill_array_dimensions(target_type, initializer_type)
         while(target_type ~= nil and initializer_type ~= nil) do
             if(target_type.kind == Type.KINDS["ARRAY"] and initializer_type.kind == Type.KINDS["ARRAY"] and target_type.length == -1) then
@@ -113,9 +118,12 @@ function Type_Checker:type_check(ast, symbol_table)
             check_enum_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
         else
-            base_type = base(n.specifier.type_specifier.kind)
+            if(not Type.BASE_KINDS[string.upper(n.specifier.type_specifier.kind[1])]) then
+                base_type = get_symbol(n.specifier.type_specifier.kind[1], symbol_table.ordinary).type
+            else
+                base_type = base(n.specifier.type_specifier.kind)
+            end
         end
-
         if(n.declarator) then
             n.value_type = build_declarator(n.declarator, base_type)
         else
@@ -139,7 +147,7 @@ function Type_Checker:type_check(ast, symbol_table)
             else
                 
                 if(not can_coerce(check_initializer(n.initializer), n.value_type, true)) then
-                    print(to_string_pretty(n.initializer.value_type))
+                    print(to_string_pretty(n.initializer.value_type), to_string_pretty(n.value_type))
                     Diagnostics.submit(Message.error("Initializer does not match the declared type", n.initializer.pos))
                 end
 
@@ -157,7 +165,12 @@ function Type_Checker:type_check(ast, symbol_table)
             if(n.is_function and not n.block) then
                 add_symbol(n.id.id, {type = n.value_type, is_prototype = true}, symbol_table.ordinary)
             else
-                add_symbol(n.id.id, {type = n.value_type}, symbol_table.ordinary)
+                local potential_symbol = get_symbol(n.id.id, symbol_table.ordinary)
+                if(potential_symbol) then
+                    potential_symbol.type = n.value_type
+                else
+                    add_symbol(n.id.id, {type = n.value_type}, symbol_table.ordinary)
+                end
             end
             n.handle = get_symbol(n.id.id, symbol_table.ordinary)
         else
@@ -598,6 +611,7 @@ function Type_Checker:type_check(ast, symbol_table)
                 if(term_type.kind == Type.KINDS["POINTER"]) then
                     pointer_type = term_type
                 elseif(term_type.kind ~= Type.KINDS["INT"] and term_type.kind ~= Type.KINDS["CHAR"]) then
+                    print("TERM TYPE: " .. term_type.kind)
                     Diagnostics.submit(Message.error("Sum expression term types must be ints or pointers", term.pos))
                 end
             end
@@ -896,14 +910,18 @@ function Type_Checker:type_check(ast, symbol_table)
                 local base_type = nil
                 if(node_check(child.type_specifier.kind, "STRUCT_OR_UNION_SPECIFIER")) then
                     base_type = get_symbol(child.type_specifier.kind.id.id, symbol_table.tag).type
-                else
+                elseif(Type.BASE_KINDS[string.upper(child.type_specifier.kind[1])]) then
                     base_type = base(child.type_specifier.kind)
+                else
+                    base_type = get_symbol(child.type_specifier.kind[1], symbol_table.ordinary).type
+                    print("BASE TYPE: " .. to_string_pretty(base_type))
                 end
                 table.insert(parameter_types, build_declarator(child.declarator, base_type))
                 if(parameter_types[#parameter_types].kind == Type.KINDS["ARRAY"]) then
                     parameter_types[#parameter_types] = pointer(parameter_types[#parameter_types].points_to)
                 end
             else
+                -- prototype
                 table.insert(parameter_types, base(child.type_specifier.kind))
             end
             child.value_type = parameter_types[#parameter_types]
