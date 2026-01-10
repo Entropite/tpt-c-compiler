@@ -5,5 +5,5 @@ The compiler is roughly based around ANSI C89 although some C features have not 
 # Dependencies
 [LPEG 1.1.0](https://luarocks.org/modules/gvvaughan/lpeg)
 # Usage
-lua cli.lua input.c output.asm
+lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--offset offset]
 
