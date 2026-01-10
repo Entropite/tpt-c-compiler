@@ -68,6 +68,20 @@ set_colour:
     st %1, term_colour
     ret
 
+__send_raw:
+    st %1, %2
+    ret
+
+__set_zero_char:
+    exh %2, r0, %2
+    mov %1, %2, %1
+    st %1, term_print_e
+    exh %4, r0, %4
+    mov %3, %4, %3
+    st %3, term_print_o
+    ret
+
+
 set_cursor:
     st %1, term_cursor
     ret

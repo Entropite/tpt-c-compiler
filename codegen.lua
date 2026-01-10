@@ -2,7 +2,7 @@ local Operand = require("operand")
 local Standard_Library = require("standard_library")
 local Diagnostics = require("diagnostics")
 local CodeGen = {
-    size=8191,
+    size=2047,
     global_addr=1,
     symbol_table={},
     available_registers={},
@@ -143,19 +143,21 @@ function CodeGen:generate(code, symbol_table)
 %define term_reg r28
 %define return_addr_reg r27
 
-; Initialization and defining basic macros, most of this is the same as what LBPHacker did for his demo
+; Initialization and defining basic macros
 %define term_base 0x9F80
 
 %eval term_input  term_base 0x00 +
 %eval term_raw    term_base 0x04 +
 %eval term_single term_base 0x05 +
 %eval term_print  term_base 0x25 +
-%eval term_term   term_base 0x35 +
+%eval term_term   term_base 0x26 +
 %eval term_hrange term_base 0x42 +
 %eval term_vrange term_base 0x43 +
 %eval term_cursor term_base 0x44 +
 %eval term_nlchar term_base 0x45 +
 %eval term_colour term_base 0x46 +
+%eval term_print_e term_base 0x40 +
+%eval term_print_o term_base 0x41 +
 
 
 %macro push thing
@@ -662,6 +664,12 @@ function CodeGen:peephole(tac)
             tac[i] = {type="add3", source = base_pointer, dest=c.dest, offset = Operand:new("i", c.offset.value + nc.source.value)}
             table.remove(tac, i + 1)
             removals = removals + 1
+        elseif(c.type == "jmp" and nc.type == "label" and c.target.value == nc.target.value) then
+            table.remove(tac, i)
+            removals = removals + 1
+        elseif(c.type == "mov" and nc.type == "cmp" and c.dest == nc.second) then
+            tac[i] = {type="cmp", first=nc.first, second=c.source}
+            table.remove(tac, i + 1)
         end
         
     end

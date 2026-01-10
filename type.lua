@@ -8,6 +8,7 @@ Type.INVERTED_KINDS = {
     "VOID",
     "CHAR",
     "INT",
+    "LONG",
     "STRUCT",
     "UNION",
     "POINTER",
@@ -18,6 +19,9 @@ Type.BASE_KINDS = {
     ["VOID"]=1,
     ["CHAR"]=1,
     ["INT"]=1,
+    ["LONG"]=1,
+    ["SIGNED"]=1,
+    ["UNSIGNED"]=1,
     ["FUNCTION"]=1,
     ["STRUCT"]=1,
     ["UNION"]=1,
@@ -54,7 +58,7 @@ end
                 -- second kind is the base type
                 local first_kind = string.upper(kind[1])
                 local second_kind = string.upper(kind[2])
-                assert((first_kind == "SIGNED" or first_kind == "UNSIGNED") and second_kind == "INT", "Invalid type specifier")
+                assert((first_kind == "SIGNED" or first_kind == "UNSIGNED"), "Invalid type specifier")
                 return Type:new({kind = Type.KINDS[second_kind], signed = first_kind == "SIGNED"})
             else
                 error()

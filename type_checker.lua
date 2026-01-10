@@ -52,7 +52,6 @@ function Type_Checker:type_check(ast, symbol_table)
     end
 
     function check_struct_or_union_type(n)
-
         if(n.declaration) then
             local type = nil
             if(n.is_struct) then
@@ -303,6 +302,7 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_while(n)
         if(not can_coerce(check_expression(n.condition), base("INT"))) then
+            print("while condition: " .. to_string_pretty(check_expression(n.condition).value_type))
             Diagnostics.submit(Message.error("The condition for a while statement must be an int", n.condition.pos))
         end
         check_statement(n.statement)

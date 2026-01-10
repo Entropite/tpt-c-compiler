@@ -139,7 +139,7 @@ int main() {
 
         // Let user enter the remainder of their guess
         __scan_char_array(query + 2);
-
+        
         // Binary search
         register int result;
         while(l <= h) {

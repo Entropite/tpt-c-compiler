@@ -81,7 +81,7 @@ function Lexer.lex(s)
     reserved = lpeg.Cp() * reserved / function(pos, r) return Token:new(TOKEN_TYPES[string.upper(r)], r, get_pos(pos)) end
 
     -- Type specifiers
-    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -(loc.alnum + "_")) 
+    local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "long" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -(loc.alnum + "_")) 
     type_specifier = lpeg.Cp() * type_specifier / function(pos, ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts, get_pos(pos)) end
 
     local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static" + "typedef") * -loc.alnum)

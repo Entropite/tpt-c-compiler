@@ -30,7 +30,7 @@ local operand = {
     lb=function() return Operand:new("i", string.format(".label_%d", IRVisitor:next_label())) end, --label
     vr=function() return Operand:new("vr", IRVisitor:next_temp()) end -- variable register (used for variables residing in registers), should not be confused with "virtual register"
 }
-IRVisitor.standard_function_arguments = {operand.r("r22")}
+IRVisitor.standard_function_arguments = {operand.r("r22"), operand.r("r23"), operand.r("r24"), operand.r("r25")}
 IRVisitor.RETURN_REG = operand.r("return_reg")
 IRVisitor.STACK_POINTER = operand.r("stack_pointer")
 IRVisitor.BASE_POINTER = operand.r("base_pointer")
@@ -117,6 +117,13 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
     local rvalue_operands = {["i"]=1, ["t"]=1, ["r"]=1, ["vr"]=1} -- has r value without lvalue; may or may not have a register
     local aggregate_types = {["ARRAY"]=1, ["STRUCT"]=1, ["UNION"]=1}
     
+    local logical_expressions = {
+        ["LOGICAL_AND_EXPRESSION"] = 1,
+        ["LOGICAL_OR_EXPRESSION"] = 1,
+        ["RELATIONAL_EXPRESSION"] = 1,
+        ["EQUALITY_EXPRESSION"] = 1
+    }
+
     function emit_program(n)
         for _, child in ipairs(n) do
             emit_declaration(child)
@@ -152,7 +159,11 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         if(node_check(n, "INITIALIZER")) then
             local element = n.value
             if(node_check(element, "INT")) then
-                initialize_word(element.value, start)
+                if(n.value_type.kind == Type.KINDS["LONG"]) then
+                    initialize_word(element.value, start)
+                else
+                    initialize_word(element.value, start)
+                end
             elseif(node_check(element, "CHARACTER")) then
                 initialize_word(element.value, start)
             elseif(node_check(element, "STRING_LITERAL")) then
@@ -258,8 +269,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                 if(n.initializer.value and node_check(n.initializer.value, "STRING_LITERAL")) then
                     initializer_place = operand.g(n.initializer.value_type.length) -- string literals are stored in global memory
                 else
-                
-                    if(n.specifier.storage_class.kind.value == "register") then
+                    if(n.specifier.storage_class.kind == "register") then
                         if(not aggregate_types[Type.INVERTED_KINDS[n.initializer.value_type.kind]]) then
                             initializer_place = operand.vr()
                         else
@@ -284,7 +294,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                     place=initializer_place -- object itself
                 end
             else
-                if(n.specifier.storage_class.kind.value == "register") then
+                if(n.specifier.storage_class.kind == "register") then
                     place = operand.vr()
                 else
                     place=static_allocate_place(self:sizeof(n.value_type)) -- no initializer
@@ -342,6 +352,25 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         ["<<="] = "shl",
         [">>="] = "shr",
     }
+
+    local symbol_to_signed_comparison_type = {
+        ["=="] = "je",
+        ["!="] = "jne",
+        ["<"] = "jl",
+        [">"] = "jg",
+        ["<="] = "jle",
+        [">="] = "jge"
+    }
+
+    local symbol_to_unsigned_comparison_type = {
+        ["=="] = "je",
+        ["!="] = "jne",
+        ["<"] = "jb",
+        [">"] = "ja",
+        ["<="] = "jbe",
+        [">="] = "jae"
+    }
+
 
     function d_assert(condition, message)
         if(not condition) then
@@ -401,93 +430,165 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     end
 
+    function emit_bool_rvalue(n)
+        if(not logical_expressions[Node.INVERTED_NODE_TYPES[n.type]]) then
+            if(Node.INVERTED_NODE_TYPES[n.type] == "INCLUSIVE_OR_EXPRESSION") then
+                emit_inclusive_or_expression(n)
+            elseif(Node.INVERTED_NODE_TYPES[n.type] == "INCLUSIVE_XOR_EXPRESSION") then
+                emit_inclusive_xor_expression(n)
+            elseif(Node.INVERTED_NODE_TYPES[n.type] == "INCLUSIVE_AND_EXPRESSION") then
+                emit_inclusive_and_expression(n)
+            else
+                emit_shift_expression(n)
+            end
+            return copy_place(n.place)
+        end
+
+        local false_label = operand.lb()
+        local true_label = operand.lb()
+        local end_label = operand.lb()
+        emit_bool_control_flow(n, true_label, false_label)
+        local temp_place = operand.t()
+        table.insert(tac[self.method.id], {type="label", target=true_label})
+        table.insert(tac[self.method.id], {type="mov", source=operand.i(1), dest=temp_place})
+        table.insert(tac[self.method.id], {type="jmp", target=end_label})
+        table.insert(tac[self.method.id], {type="label", target=false_label})
+        table.insert(tac[self.method.id], {type="mov", source=operand.i(0), dest=temp_place})
+        table.insert(tac[self.method.id], {type="label", target=end_label})
+        return temp_place
+    end
+
+    function emit_bool_control_flow(n, true_label, false_label)
+        if(logical_expressions[Node.INVERTED_NODE_TYPES[n.type]]) then
+            if(node_check(n, "EQUALITY_EXPRESSION")) then
+                emit_equality_expression(n, true_label, false_label)
+            elseif(node_check(n, "RELATIONAL_EXPRESSION")) then
+                emit_relational_expression(n, true_label, false_label)
+            elseif(node_check(n, "LOGICAL_AND_EXPRESSION")) then
+                emit_logical_and_expression(n, true_label, false_label)
+            elseif(node_check(n, "LOGICAL_OR_EXPRESSION")) then
+                emit_logical_or_expression(n, true_label, false_label)
+            else
+                error()
+            end
+        else
+            local temp_place = load_operand_into_read_only_register(emit_bool_rvalue(n))
+            table.insert(tac[self.method.id], {type="cmp", first=temp_place, second=operand.i(0)})
+            table.insert(tac[self.method.id], {type="je", target=false_label})
+            table.insert(tac[self.method.id], {type="jmp", target=true_label})
+        end
+    end
+
+    function load_operand_into_read_only_register(place)
+        if(not reg_rvalue_operands[place.type]) then
+            return load_operand_into_register(place)
+        end
+        return place
+    end
+
+    function emit_logical_and_expression(n, true_label, false_label)
+        if(node_check(n, "LOGICAL_AND_EXPRESSION")) then
+            for i = 1, #n-1 do
+                local temp_true_label = operand.lb()
+                emit_bool_control_flow(n[i], temp_true_label, false_label)
+                table.insert(tac[self.method.id], {type="label", target=temp_true_label})
+            end
+            emit_bool_control_flow(n[#n], true_label, false_label)
+        else
+
+            emit_bool_control_flow(n, true_label, false_label) -- process inclusive or expression with potential materialization of the boolean value
+        end
+    end
+
+    function emit_logical_or_expression(n, true_label, false_label)
+        if(node_check(n, "LOGICAL_OR_EXPRESSION")) then
+            for i = 1, #n - 1 do
+                local temp_false_label = operand.lb()
+                emit_bool_control_flow(n[i], true_label, temp_false_label)
+                table.insert(tac[self.method.id], {type="label", target=temp_false_label})
+            end
+            emit_bool_control_flow(n[#n], true_label, false_label)
+        else
+            emit_logical_and_expression(n, true_label, false_label)
+        end
+    end
+
+    function emit_equality_expression(n, true_label, false_label)
+        if(node_check(n, "EQUALITY_EXPRESSION")) then
+            local temp_place = load_operand_into_register(emit_bool_rvalue(n[1]))
+
+            for i = 2, #n - 3, 2 do
+                local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
+                local jump_type = symbol_to_signed_comparison_type[n[i].value]
+                if(not jump_type) then
+                    Diagnostics.submit(Message.internal_error("Invalid signed comparison operator", n[i].pos))
+                end
+                emit_conditional_evaluation(temp_place, next_reg, temp_place, jump_type)
+            end
+            local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[#n]))
+            table.insert(tac[self.method.id], {type="cmp", first=temp_place, second=next_reg})
+            table.insert(tac[self.method.id], {type=symbol_to_signed_comparison_type[n[#n - 1].value], target=true_label})
+            table.insert(tac[self.method.id], {type="jmp", target=false_label})
+        else
+            emit_relational_expression(n, true_label, false_label)
+        end
+    end
+
+    function emit_conditional_evaluation(first, second, result_place, jump_type)
+        local true_label = operand.lb()
+        local end_label = operand.lb()
+        table.insert(tac[self.method.id], {type="cmp", first=first, second=second})
+        table.insert(tac[self.method.id], {type=jump_type, target=true_label})
+        emit_move(operand.i(0), result_place)
+        table.insert(tac[self.method.id], {type="jmp", target=end_label})
+        table.insert(tac[self.method.id], {type="label", target=true_label})
+        emit_move(operand.i(1), result_place)
+        table.insert(tac[self.method.id], {type="label", target=end_label})
+    end
+
+    function emit_conditional_result_jump(result_place, true_label, false_label)
+        table.insert(tac[self.method.id], {type="cmp", first=result_place, second=operand.i(0)})
+        table.insert(tac[self.method.id], {type="je", target=false_label})
+        table.insert(tac[self.method.id], {type="jmp", target=true_label})
+    end
+
+    function emit_relational_expression(n, true_label, false_label)
+        if(node_check(n, "RELATIONAL_EXPRESSION")) then
+            local temp_place = load_operand_into_register(emit_bool_rvalue(n[1]))
+            for i = 2, #n - 3, 2 do
+                local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
+                local jump_type = symbol_to_signed_comparison_type[n[i].value]
+                emit_conditional_evaluation(temp_place, next_reg, temp_place, jump_type)
+            end
+            local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[#n]))
+            table.insert(tac[self.method.id], {type="cmp", first=temp_place, second=next_reg})
+            table.insert(tac[self.method.id], {type=symbol_to_signed_comparison_type[n[#n - 1].value], target=true_label})
+            table.insert(tac[self.method.id], {type="jmp", target=false_label})
+        else
+            emit_shift_expression(n)
+        end
+    end
+
+
     function emit_ternary_expression(n)
         if(node_check(n, "TERNARY")) then
             local false_label = operand.lb()
+            local true_label = operand.lb()
             local end_label = operand.lb()
-            -- This might blow up
-            -- if it is too much trouble, don't simplify
-            if(is_condition_simplifiable(n.condition)) then
-                emit_simplified_condition(n.condition, false_label, end_label)
-                n.place = load_operand_into_register(n.condition.place or operand.t())
-            else
-                emit_logical_or_expression(n.condition)
-                n.place = load_operand_into_register(n.condition.place) -- n.condition will have a place
-                table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-
-                table.insert(tac[self.method.id], {type="je", target=false_label})
-            end
+            emit_bool_control_flow(n.condition, true_label, false_label)
+            table.insert(tac[self.method.id], {type="label", target=true_label})
             emit_assignment_expression(n.true_case)
-            emit_move(n.true_case.place, n.place) -- should n.place be a t only?
+            n.place = operand.t()
+            emit_move(n.true_case.place, n.place)
             table.insert(tac[self.method.id], {type="jmp", target=end_label})
             table.insert(tac[self.method.id], {type="label", target=false_label})
-            emit_logical_or_expression(n.false_case)
-            emit_move(n.false_case.place, n.place)
+            emit_move(emit_bool_rvalue(n.false_case), n.place)
             table.insert(tac[self.method.id], {type="label", target=end_label})
         else
-            emit_logical_or_expression(n)
+            n.place = copy_place(emit_bool_rvalue(n))
         end
     end
 
-    function emit_logical_or_expression(n, outer_false_label, outer_end_label)
-        if(node_check(n, "LOGICAL_OR_EXPRESSION")) then
-            local true_label = operand.lb()
-            local false_label = outer_false_label or operand.lb()
-            local end_label = outer_end_label or operand.lb()
-            for i = 1, #n do
-                if(is_condition_simplifiable(n[i])) then
-                    emit_simplified_condition(n[i], false_label, end_label)
-                    table.insert(tac[self.method.id], {type="jmp", target=true_label})
-                else
-                    emit_logical_and_expression(n[i])
-                    n.place = load_operand_into_register(n[i].place)
-                    table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-                    table.insert(tac[self.method.id], {type="jne", target=true_label})
-                end
-            end
-            if(not outer_false_label or not outer_end_label) then
-                table.insert(tac[self.method.id], {type="label", target=false_label})
-                emit_move(operand.i(0), n.place)
-                table.insert(tac[self.method.id], {type="jmp", target=end_label})
-                table.insert(tac[self.method.id], {type="label", target=true_label})
-                emit_move(operand.i(1), n.place)
-                table.insert(tac[self.method.id], {type="label", target=end_label})
-            else
-                table.insert(tac[self.method.id], {type="label", target=true_label})
-            end
-        else
-            emit_logical_and_expression(n)
-        end
-    end
-
-    function emit_logical_and_expression(n, outer_false_label, outer_end_label)
-        if(node_check(n, "LOGICAL_AND_EXPRESSION")) then
-            local true_label = operand.lb()
-            local false_label = outer_false_label or operand.lb()
-            local end_label = outer_end_label or operand.lb()
-            for i = 1, #n do
-                if(is_condition_simplifiable(n[i])) then
-                    emit_simplified_condition(n[i], false_label, end_label)
-                else
-                    emit_inclusive_or_expression(n[i])
-                    n.place = load_operand_into_register(n[i].place)
-                    table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-                    table.insert(tac[self.method.id], {type="je", target=false_label})
-                end
-            end
-            if(not outer_false_label or not outer_end_label) then
-                n.place = n.place or operand.t()
-                table.insert(tac[self.method.id], {type="label", target=true_label})
-                emit_move(operand.i(1), n.place)
-                table.insert(tac[self.method.id], {type="jmp", target=end_label})
-                table.insert(tac[self.method.id], {type="label", target=false_label})
-                emit_move(operand.i(0), n.place)
-                table.insert(tac[self.method.id], {type="label", target=end_label})
-            end
-        else
-            emit_inclusive_or_expression(n)
-        end
-    end
 
     function emit_inclusive_or_expression(n)
         if(node_check(n, "INCLUSIVE_OR_EXPRESSION")) then
@@ -531,43 +632,6 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         end
     end
 
-    function emit_equality_expression(n, outer_false_label, outer_end_label)
-        if(node_check(n, "EQUALITY_EXPRESSION")) then
-            emit_relational_expression(n[1])
-            if(#n == 3 and outer_false_label and n[1].place.type == "vr") then
-                n.place = n[1].place 
-            else
-                n.place = load_operand_into_register(n[1].place)
-            end
-            local next_reg = nil
-            for i = 3, #n, 2 do
-                emit_relational_expression(n[i])
-                
-                next_reg = (n[i].place.type == "i" or n[i].place.type == "vr") and n[i].place or load_operand_into_register(n[i].place)
-
-                local false_label = outer_false_label or operand.lb()
-                local end_label = outer_end_label or operand.lb()
-
-                
-                table.insert(tac[self.method.id], {type="cmp", first=n.place, second=next_reg})
-                if(n[i - 1].type == TOKEN_TYPES['==']) then
-                    table.insert(tac[self.method.id], {type="jne", target=false_label})
-                else
-                    table.insert(tac[self.method.id], {type="je", target=false_label})
-                end
-                if(not outer_false_label or not outer_end_label) then
-                    emit_move(operand.i(1), n.place) -- true case
-                    table.insert(tac[self.method.id], {type="jmp", target=end_label})
-                    table.insert(tac[self.method.id], {type="label", target=false_label})
-                    emit_move(operand.i(0), n.place)
-                    table.insert(tac[self.method.id], {type="label", target=end_label})
-                end
-            end
-        else
-            emit_relational_expression(n)
-        end
-    end
-
     function emit_children(n, child_function)
         local place = nil
         for i, v in ipairs(n) do
@@ -583,48 +647,6 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         return place or operand.t()
     end
 
-
-
-    function emit_relational_expression(n, outer_false_label, outer_end_label)
-        if(node_check(n, "RELATIONAL_EXPRESSION")) then
-            emit_shift_expression(n[1])
-            if(#n == 3 and outer_false_label and n[1].place.type == "vr") then
-                n.place = n[1].place 
-            else
-                n.place = load_operand_into_register(n[1].place)
-            end
-            local next_reg = nil
-            for i = 3, #n, 2 do
-                emit_shift_expression(n[i])
-                
-                next_reg = (n[i].place.type == "i" or n[i].place.type == "vr") and n[i].place or load_operand_into_register(n[i].place)
-                
-                local false_label = outer_false_label or operand.lb()
-                local end_label = outer_end_label or operand.lb()
-
-                
-                table.insert(tac[self.method.id], {type="cmp", first=n.place, second=next_reg})
-                if(n[i - 1].type == TOKEN_TYPES['<']) then
-                    table.insert(tac[self.method.id], {type=n.value_type.signed and "jge" or "jae", target=false_label})
-                elseif(n[i - 1].type == TOKEN_TYPES['<=']) then
-                    table.insert(tac[self.method.id], {type=n.value_type.signed and "jg" or "ja", target=false_label})
-                elseif(n[i - 1].type == TOKEN_TYPES['>']) then
-                    table.insert(tac[self.method.id], {type=n.value_type.signed and "jle" or "jbe", target=false_label})
-                elseif(n[i - 1].type == TOKEN_TYPES['>=']) then
-                    table.insert(tac[self.method.id], {type=n.value_type.signed and "jl" or "jb", target=false_label})
-                end
-                if(not outer_false_label or not outer_end_label) then
-                    emit_move(operand.i(1), n.place) -- true case
-                    table.insert(tac[self.method.id], {type="jmp", target=end_label})
-                    table.insert(tac[self.method.id], {type="label", target=false_label})
-                    emit_move(operand.i(0), n.place)
-                    table.insert(tac[self.method.id], {type="label", target=end_label})
-                end
-            end
-        else
-            emit_shift_expression(n)
-        end
-    end
 
     function emit_shift_expression(n)
         if(node_check(n, "SHIFT_EXPRESSION")) then
@@ -708,7 +730,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     function emit_statement(n)
         if(n.child.type == NODE_TYPES["DECLARATION"]) then
-            if(n.child.specifier.storage_class.kind.value == "static") then
+            if(n.child.specifier.storage_class.kind == "static") then
                 local temp_method = self.method
                 self.method = self.global_method
                 emit_declaration(n.child)
@@ -787,9 +809,11 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         table.remove(self.loop_labels)
     end
 
-    function is_condition_simplifiable(n)
-        return #n <= 3 and (node_check(n, "LOGICAL_AND_EXPRESSION") or (node_check(n, "RELATIONAL_EXPRESSION") or node_check(n, "EQUALITY_EXPRESSION")) or node_check(n, "LOGICAL_OR_EXPRESSION"))
-    end
+    -- function is_condition_simplifiable(n)
+    --     return #n <= 3 and (node_check(n, "LOGICAL_AND_EXPRESSION") or (node_check(n, "RELATIONAL_EXPRESSION") or node_check(n, "EQUALITY_EXPRESSION")) or node_check(n, "LOGICAL_OR_EXPRESSION"))
+    -- end
+
+
 
     function emit_simplified_condition(n, false_label, end_label)
         if(node_check(n, "RELATIONAL_EXPRESSION")) then
@@ -805,17 +829,10 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     function emit_if(n)
         local false_label = operand.lb()
+        local true_label = operand.lb()
         local end_label = operand.lb()
-        if(is_condition_simplifiable(n.condition[1])) then
-            emit_simplified_condition(n.condition[1], false_label, end_label)
-        else
-            emit_expression(n.condition)
-        end
-        if(not is_condition_simplifiable(n.condition[1])) then
-            n.place = load_operand_into_register(n.condition.place)
-            table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-            table.insert(tac[self.method.id], {type="je", target=false_label})
-        end
+        emit_bool_control_flow(n.condition[1], true_label, false_label) -- should handle this by checking whether the condition is logical or not
+        table.insert(tac[self.method.id], {type="label", target=true_label})
         emit_statement(n.true_case)
         table.insert(tac[self.method.id], {type="jmp", target=end_label})
         table.insert(tac[self.method.id], {type="label", target=false_label})
@@ -837,16 +854,9 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         end
         table.insert(tac[self.method.id], {type="label", target=start_label})
         -- For optimization purposes, the condition's false and end labels are associated with the for loop itself
-        if(is_condition_simplifiable(n.condition[1])) then
-            emit_simplified_condition(n.condition[1], end_label, end_label)
-        else
-            emit_expression(n.condition)
-        end
-        if(not is_condition_simplifiable(n.condition[1])) then
-            n.place = load_operand_into_register(n.condition.place)
-            table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-            table.insert(tac[self.method.id], {type="je", target=end_label})
-        end
+        local true_label = operand.lb()
+        emit_bool_control_flow(n.condition[1], true_label, end_label)
+        table.insert(tac[self.method.id], {type="label", target=true_label})
         emit_statement(n.statement)
         table.insert(tac[self.method.id], {type="label", target=update_label})
         emit_expression(n.update)
@@ -860,16 +870,9 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
         local end_label = operand.lb()
         table.insert(self.loop_labels, {update_lb=start_label, end_lb=end_label})
         table.insert(tac[self.method.id], {type="label", target=start_label})
-        if(is_condition_simplifiable(n.condition[1])) then
-            emit_simplified_condition(n.condition[1], end_label, end_label)
-        else
-            emit_expression(n.condition)
-        end
-        if(not is_condition_simplifiable(n.condition[1])) then
-            n.place = load_operand_into_register(n.condition.place)
-            table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-            table.insert(tac[self.method.id], {type="je", target=end_label})
-        end
+        local true_label = operand.lb()
+        emit_bool_control_flow(n.condition[1], true_label, end_label)
+        table.insert(tac[self.method.id], {type="label", target=true_label})
         emit_statement(n.statement)
         table.insert(tac[self.method.id], {type="jmp", target=start_label})
         table.insert(tac[self.method.id], {type="label", target=end_label})
@@ -923,7 +926,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                 table.insert(tac[self.method.id], {type="push", target=a.place})
         
             else
-                emit_move(a.place, self.standard_function_arguments[#self.standard_function_arguments - i + 1])
+                emit_move(a.place, self.standard_function_arguments[i])
             end
         end
     end
@@ -1113,15 +1116,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
             elseif(n.operator == "!") then
                 emit_cast_expression(n.child)
                 n.place = load_operand_into_register(n.child.place)
-                local false_label = operand.lb()
-                local end_label = operand.lb()
-                table.insert(tac[self.method.id], {type="cmp", first=n.place, second=operand.i(0)})
-                table.insert(tac[self.method.id], {type="je", target=false_label})
-                emit_move(operand.i(0), n.place)
-                table.insert(tac[self.method.id], {type="jmp", target=end_label})
-                table.insert(tac[self.method.id], {type="label", target=false_label})
-                emit_move(operand.i(1), n.place)
-                table.insert(tac[self.method.id], {type="label", target=end_label})
+                emit_conditional_evaluation(n.place, operand.i(0), n.place, "je")
             else
                 error()
             end
@@ -1329,8 +1324,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
             register_string_literal(n, temp)
             n.place = emit_address_of(temp) -- some r value registers can hold an address; however, the address cannot be used to store data except when used with an indexing operator
         else
-            print(Node.INVERTED_NODE_TYPES[n.type])
-            error()
+            Diagnostics.submit(Message.internal_error("Invalid primary expression", n.pos))
         end
     end
 

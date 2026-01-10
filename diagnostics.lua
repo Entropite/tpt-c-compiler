@@ -4,7 +4,7 @@ local Diagnostics = {messages = {}, tolerance = Message.TYPES["ERROR"]}
 
 
 function Diagnostics.submit(message)
-    if(message.type >= Diagnostics.tolerance) then
+    if(message.type <= Diagnostics.tolerance) then
         Diagnostics.on_panic(message)
     else
         table.insert(Diagnostics.messages, message)
