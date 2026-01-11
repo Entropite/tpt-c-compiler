@@ -78,7 +78,7 @@ Many of the methods in this library have the prefix "`--`" which usually indicat
 ## `void __print_unsigned_int(int i)`
 Displays an unsigned integer.
 - **Parameters**
-	-  `i` --- The integer (interpreted as unsigned) to display
+	-  `i` — The integer (interpreted as unsigned) to display
 - **Returns**
 	- `void`
 	
@@ -86,7 +86,7 @@ Displays an unsigned integer.
 Displays a signed integer.
 
 - **Parameters**
-	-  `i` --- The integer (interpreted as signed) to display
+	-  `i` — The integer (interpreted as signed) to display
 - **Returns**
 	- `void`
 
@@ -147,7 +147,7 @@ Moves the cursor to a specified position.
 
 ## `void __send_raw(int value, int location)`
 
-Stores the value 'a' at the address represented by the value 'b'.
+Stores the value 'value' at the address represented by 'location'.
 This method is mostly only used for debugging or for efficient manipulation of the terminal.
 
 - **Parameters**
