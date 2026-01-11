@@ -6,7 +6,7 @@ local type_checker = require("type_checker")
 local symbol_table = require("symbol_table")
 local util = require("util")
 
-local usage = "Usage: lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--offset offset] " 
+local usage = "Usage: lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--offset offset]" 
 if(#arg < 1) then
     print(usage)
     os.exit(1)

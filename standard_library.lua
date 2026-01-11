@@ -90,9 +90,12 @@ __scan_unsigned_int:
     mov %2, 0
 __scan_unsigned_int_loop:
     call getchar
+    st return_reg, term_print
     sub return_reg, '0'
     cmp return_reg, 9
-    jg __scan_unsigned_int_not_digit 
+    jg __scan_unsigned_int_not_digit
+    cmp return_reg, 0
+    jl __scan_unsigned_int_not_digit
     mull %2, 10
     add %2, return_reg
     jmp __scan_unsigned_int_loop

@@ -51,6 +51,9 @@ void sweep_cell(int rowin, int colin) {
         set_cursor(0);
         set_colour(0x04);
         __print_char_array("Kaboom! You lose!");
+        set_colour(0x09);
+        set_cursor((row << 5) + col);
+        putchar(0);
         while(1) {}
     }
 
@@ -229,18 +232,27 @@ int main() {
     
     has_mine[0][0] = 9;
     register int has_mine_base = (int)has_mine;
+
+    __print_char_array("# of mines\n(6-12): ");
+    int mines_auto;
+    __scan_signed_int(&mines_auto);
+    register int mines = mines_auto;
+    register int cells_to_clear = 96 - mines;
     int num;
-    __print_char_array("Enter a\nnumber to\nhelp\nrandomize\n(1-100): ");
+    set_colour(0x0E);
+    __print_char_array("\nEnter a\nnumber to\nhelp\nrandomize\n(1-100): ");
     __scan_signed_int(&num);
     register int rnum = -num;
     
+    
     putchar('\n');
     set_colour(0x88);
+    set_cursor(0xE0);
     __print_char_array("            ");
-    set_cursor(0xA0);
+    set_cursor(0xE0);
     set_colour(0x22);
 
-    for(register int i = 0; i < 12; i++) {
+    for(register int i = 0; i < mines; i++) {
         rnum ^= (rnum + 1) << 3;
         rnum ^= rnum >> 5;
         rnum ^= rnum << 2;
@@ -252,7 +264,7 @@ int main() {
             candidate = rnum & 127;
         }
 
-        ((int*)(has_mine_base + candidate))[0] = 9;
+        ((int*)(has_mine_base + candidate))[0] += 9;
         // update has_mine map
         register int row = row_map[candidate];
         register int col = candidate - row * 12;
@@ -364,7 +376,7 @@ int main() {
                 is_first_sweep = 0;
             }
             sweep_cell(row, col);
-            if(revealed_cells >= 84) {
+            if(revealed_cells >= cells_to_clear) {
                 set_cursor(0);
                 set_colour(0x02);
                 __print_char_array("You win!");

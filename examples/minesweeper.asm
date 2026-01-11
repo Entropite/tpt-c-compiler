@@ -50,7 +50,7 @@
 
 jmp init
 global_data_section:
-    dw 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 119, 121, 114, 124, 113, 116, 118, 117, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 75, 97, 98, 111, 111, 109, 33, 32, 89, 111, 117, 32, 108, 111, 115, 101, 33, 0, 69, 110, 116, 101, 114, 32, 97, 10, 110, 117, 109, 98, 101, 114, 32, 116, 111, 10, 104, 101, 108, 112, 10, 114, 97, 110, 100, 111, 109, 105, 122, 101, 10, 40, 49, 45, 49, 48, 48, 41, 58, 32, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 89, 111, 117, 32, 119, 105, 110, 33, 0
+    dw 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 119, 121, 114, 124, 113, 116, 118, 117, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 75, 97, 98, 111, 111, 109, 33, 32, 89, 111, 117, 32, 108, 111, 115, 101, 33, 0, 35, 32, 111, 102, 32, 109, 105, 110, 101, 115, 10, 40, 54, 45, 49, 50, 41, 58, 32, 0, 10, 69, 110, 116, 101, 114, 32, 97, 10, 110, 117, 109, 98, 101, 114, 32, 116, 111, 10, 104, 101, 108, 112, 10, 114, 97, 110, 100, 111, 109, 105, 122, 101, 10, 40, 49, 45, 49, 48, 48, 41, 58, 32, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 89, 111, 117, 32, 119, 105, 110, 33, 0
 init:
     mov term_reg, 0x9F80
                               
@@ -233,6 +233,15 @@ sweep_cell:
 	mov r3, 395
 	mov r22, r3
 	call __print_char_array
+	mov r22, 9
+	call set_colour
+	mov r3, r1
+	shl r3, 5
+	add r3, r2
+	mov r22, r3
+	call set_cursor
+	mov r22, 0
+	call putchar
 	.label_24:
 	mov r3, 1
 	cmp r3, 0
@@ -970,7 +979,7 @@ add_to_surrounding_cells:
 	ld r5, base_pointer, 3
 	mov r1, r4
 	sub r1, 1
-	mov r2, r1
+	mov r3, r1
 	mov r1, r5
 	sub r1, 1
 	mov r6, r1
@@ -991,32 +1000,34 @@ add_to_surrounding_cells:
 	jmp .label_133
 	.label_134:
 	mov r1, 97
-	mov r3, r2
-	mull r3, 12
-	add r1, r3
+	mov r2, r3
+	mull r2, 12
+	add r1, r2
 	add r1, r6
-	ld r3, r1
+	ld r2, r1
 	ld r9, base_pointer, 4
-	add r3, r9
-	st r3, r1
+	add r2, r9
+	st r2, r1
 	jmp .label_135
 	.label_133:
 	.label_135:
 	mov r1, 97
-	mov r3, r2
-	mull r3, 12
-	add r1, r3
-	add r1, r5
-	ld r3, r1
-	ld r9, base_pointer, 4
-	add r3, r9
-	st r3, r1
-	mov r3, r5
-	cmp r3, 11
+	mov r2, r3
+	mull r2, 12
+	add r1, r2
+	mov r2, r1
+	add r2, r5
+	ld r9, r2
+	ld r1, base_pointer, 4
+	add r9, r1
+	st r9, r2
+	mov r1, r5
+	cmp r1, 11
 	jl .label_137
 	jmp .label_136
 	.label_137:
 	mov r1, 97
+	mov r2, r3
 	mull r2, 12
 	add r1, r2
 	add r1, r8
@@ -1128,7 +1139,7 @@ add_to_surrounding_cells:
 	pop base_pointer
 	ret
 main:
-	sub stack_pointer, 1
+	sub stack_pointer, 2
 	push base_pointer
 	mov base_pointer, stack_pointer
 	push r1
@@ -1143,6 +1154,8 @@ main:
 	push r10
 	push r11
 	push r12
+	push r13
+	push r14
 	mov r1, 97
 	mov r2, 9
 	st r2, r1
@@ -1156,211 +1169,229 @@ main:
 	add stack_pointer, 1
 	mov r2, return_reg
 	ld r2, base_pointer, 1
-	xor r2, 65535
-	add r2, 1
+	mov r3, 96
+	sub r3, r2
+	mov r4, r3
+	mov r22, 14
+	call set_colour
+	mov r3, 433
+	mov r22, r3
+	call __print_char_array
+	add r3, base_pointer, 2
+	push r3
+	call __scan_signed_int
+	add stack_pointer, 1
+	mov r3, return_reg
+	ld r3, base_pointer, 2
+	xor r3, 65535
+	add r3, 1
 	mov r22, 10
 	call putchar
 	mov r22, 136
 	call set_colour
-	mov r3, 456
-	mov r22, r3
+	mov r22, 224
+	call set_cursor
+	mov r5, 477
+	mov r22, r5
 	call __print_char_array
-	mov r22, 160
+	mov r22, 224
 	call set_cursor
 	mov r22, 34
 	call set_colour
-	mov r3, 0
+	mov r5, 0
 	.label_154:
-	mov r4, r3
-	cmp r4, 12
+	mov r6, r5
+	cmp r6, r2
 	jl .label_157
 	jmp .label_156
 	.label_157:
-	mov r4, r2
-	add r4, 1
-	shl r4, 3
-	xor r2, r4
-	mov r4, r2
-	shr r4, 5
-	xor r2, r4
-	mov r4, r2
-	shl r4, 2
-	xor r2, r4
-	mov r4, r2
-	mov r5, 127
-	and r4, r5
+	mov r6, r3
+	add r6, 1
+	shl r6, 3
+	xor r3, r6
+	mov r6, r3
+	shr r6, 5
+	xor r3, r6
+	mov r6, r3
+	shl r6, 2
+	xor r3, r6
+	mov r6, r3
+	mov r7, 127
+	and r6, r7
 	.label_158:
-	mov r5, r4
-	cmp r5, 96
+	mov r7, r6
+	cmp r7, 96
 	jge .label_160
 	.label_161:
-	mov r5, r1
-	add r5, r4
-	ld r5, r5, 0
-	cmp r5, 9
+	mov r7, r1
+	add r7, r6
+	ld r7, r7, 0
+	cmp r7, 9
 	jge .label_160
 	jmp .label_159
 	.label_160:
-	mov r4, r2
-	add r4, 1
-	shl r4, 3
-	xor r2, r4
-	mov r4, r2
-	shr r4, 5
-	xor r2, r4
-	mov r4, r2
-	shl r4, 2
-	xor r2, r4
-	mov r4, r2
-	mov r5, 127
-	and r4, r5
+	mov r6, r3
+	add r6, 1
+	shl r6, 3
+	xor r3, r6
+	mov r6, r3
+	shr r6, 5
+	xor r3, r6
+	mov r6, r3
+	shl r6, 2
+	xor r3, r6
+	mov r6, r3
+	mov r7, 127
+	and r6, r7
 	jmp .label_158
 	.label_159:
-	mov r5, r1
-	add r5, r4
-	mov r6, 9
-	st r6, r5
-	mov r5, 299
-	ld r5, r5, r4
-	mov r6, r5
-	mull r6, 12
-	sub r4, r6
-	mov r6, r5
-	sub r6, 1
-	mov r7, r4
-	sub r7, 1
-	mov r8, r5
-	add r8, 1
-	mov r9, r4
-	add r9, 1
-	mov r10, r5
-	cmp r10, 0
+	mov r7, r1
+	add r7, r6
+	ld r8, r7
+	mov r9, 9
+	add r8, r9
+	st r8, r7
+	mov r7, 299
+	ld r7, r7, r6
+	mov r8, r7
+	mull r8, 12
+	sub r6, r8
+	mov r8, r7
+	sub r8, 1
+	mov r9, r6
+	sub r9, 1
+	mov r10, r7
+	add r10, 1
+	mov r11, r6
+	add r11, 1
+	mov r12, r7
+	cmp r12, 0
 	jg .label_163
 	jmp .label_162
 	.label_163:
-	mov r10, r4
-	cmp r10, 0
+	mov r12, r6
+	cmp r12, 0
 	jg .label_166
 	jmp .label_165
 	.label_166:
-	mov r10, 97
-	mov r11, r6
-	mull r11, 12
-	add r10, r11
-	add r10, r7
-	ld r11, r10
-	mov r12, 1
-	add r11, r12
-	st r11, r10
+	mov r12, 97
+	mov r13, r8
+	mull r13, 12
+	add r12, r13
+	add r12, r9
+	ld r13, r12
+	mov r14, 1
+	add r13, r14
+	st r13, r12
 	jmp .label_167
 	.label_165:
 	.label_167:
-	mov r10, 97
-	mov r11, r6
-	mull r11, 12
-	add r10, r11
-	add r10, r4
-	ld r11, r10
-	mov r12, 1
-	add r11, r12
-	st r11, r10
-	mov r10, r4
-	cmp r10, 11
+	mov r12, 97
+	mov r13, r8
+	mull r13, 12
+	add r12, r13
+	add r12, r6
+	ld r13, r12
+	mov r14, 1
+	add r13, r14
+	st r13, r12
+	mov r12, r6
+	cmp r12, 11
 	jl .label_169
 	jmp .label_168
 	.label_169:
-	mov r10, 97
-	mull r6, 12
-	add r10, r6
-	mov r6, r10
-	add r6, r9
-	ld r10, r6
-	mov r11, 1
-	add r10, r11
-	st r10, r6
+	mov r12, 97
+	mull r8, 12
+	add r12, r8
+	mov r8, r12
+	add r8, r11
+	ld r12, r8
+	mov r13, 1
+	add r12, r13
+	st r12, r8
 	jmp .label_170
 	.label_168:
 	.label_170:
 	jmp .label_164
 	.label_162:
 	.label_164:
-	mov r6, r4
-	cmp r6, 0
+	mov r8, r6
+	cmp r8, 0
 	jg .label_172
 	jmp .label_171
 	.label_172:
-	mov r6, 97
-	mov r10, r5
-	mull r10, 12
-	add r6, r10
-	add r6, r7
-	ld r10, r6
-	mov r11, 1
-	add r10, r11
-	st r10, r6
+	mov r8, 97
+	mov r12, r7
+	mull r12, 12
+	add r8, r12
+	add r8, r9
+	ld r12, r8
+	mov r13, 1
+	add r12, r13
+	st r12, r8
 	jmp .label_173
 	.label_171:
 	.label_173:
-	mov r6, r4
-	cmp r6, 11
+	mov r8, r6
+	cmp r8, 11
 	jl .label_175
 	jmp .label_174
 	.label_175:
-	mov r6, 97
-	mov r10, r5
-	mull r10, 12
-	add r6, r10
-	add r6, r9
-	ld r10, r6
-	mov r11, 1
-	add r10, r11
-	st r10, r6
+	mov r8, 97
+	mov r12, r7
+	mull r12, 12
+	add r8, r12
+	add r8, r11
+	ld r12, r8
+	mov r13, 1
+	add r12, r13
+	st r12, r8
 	jmp .label_176
 	.label_174:
 	.label_176:
-	cmp r5, 7
+	cmp r7, 7
 	jl .label_178
 	jmp .label_177
 	.label_178:
-	mov r5, r4
-	cmp r5, 0
+	mov r7, r6
+	cmp r7, 0
 	jg .label_181
 	jmp .label_180
 	.label_181:
-	mov r5, 97
-	mov r6, r8
-	mull r6, 12
-	add r5, r6
-	add r5, r7
-	ld r6, r5
-	mov r7, 1
-	add r6, r7
-	st r6, r5
+	mov r7, 97
+	mov r8, r10
+	mull r8, 12
+	add r7, r8
+	add r7, r9
+	ld r8, r7
+	mov r9, 1
+	add r8, r9
+	st r8, r7
 	jmp .label_182
 	.label_180:
 	.label_182:
-	mov r5, 97
-	mov r6, r8
-	mull r6, 12
-	add r5, r6
-	add r5, r4
-	ld r6, r5
-	mov r7, 1
-	add r6, r7
-	st r6, r5
-	cmp r4, 11
+	mov r7, 97
+	mov r8, r10
+	mull r8, 12
+	add r7, r8
+	add r7, r6
+	ld r8, r7
+	mov r9, 1
+	add r8, r9
+	st r8, r7
+	cmp r6, 11
 	jl .label_184
 	jmp .label_183
 	.label_184:
-	mov r4, 97
-	mov r5, r8
-	mull r5, 12
-	add r4, r5
-	add r4, r9
-	ld r5, r4
-	mov r6, 1
-	add r5, r6
-	st r5, r4
+	mov r6, 97
+	mov r7, r10
+	mull r7, 12
+	add r6, r7
+	add r6, r11
+	ld r7, r6
+	mov r8, 1
+	add r7, r8
+	st r7, r6
 	jmp .label_185
 	.label_183:
 	.label_185:
@@ -1370,8 +1401,8 @@ main:
 	mov r22, '.'
 	call putchar
 	.label_155:
-	mov r4, r3
-	add r3, 1
+	mov r6, r5
+	add r5, 1
 	jmp .label_154
 	.label_156:
 	mov r1, 97
@@ -1406,26 +1437,26 @@ main:
 	.label_188:
 	mov r22, 0
 	call set_cursor
-	mov r4, 0
 	mov r5, 0
+	mov r6, 0
 	mov r3, 1
 	.label_190:
 	mov r1, 1
 	cmp r1, 0
 	je .label_191
 	.label_192:
-	mov r1, r4
+	mov r1, r5
 	shl r1, 5
-	add r1, r5
+	add r1, r6
 	mov r22, r1
 	call set_cursor
 	mov r22, 9
 	call set_colour
 	mov r1, 1
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	ld r1, r1, r5
+	ld r1, r1, r6
 	mov r2, r1
 	cmp r2, 'F'
 	je .label_194
@@ -1487,10 +1518,10 @@ main:
 	.label_195:
 	call getchar
 	mov r2, return_reg
-	mov r6, r2
-	mov r2, r4
+	mov r7, r2
+	mov r2, r5
 	shl r2, 5
-	add r2, r5
+	add r2, r6
 	mov r22, r2
 	call set_cursor
 	mov r2, r1
@@ -1542,9 +1573,9 @@ main:
 	jmp .label_213
 	.label_211:
 	mov r2, 289
-	mov r7, r1
-	sub r7, '0'
-	add r2, r7
+	mov r8, r1
+	sub r8, '0'
+	add r2, r8
 	ld r22, r2
 	call set_colour
 	mov r22, r1
@@ -1552,105 +1583,103 @@ main:
 	.label_213:
 	.label_210:
 	.label_207:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 'a'
 	je .label_217
 	jmp .label_214
 	.label_217:
-	mov r1, r5
+	mov r1, r6
 	cmp r1, 0
 	jg .label_215
 	jmp .label_214
 	.label_215:
-	mov r1, r5
+	mov r1, r6
 	sub r1, 1
-	mov r5, r1
+	mov r6, r1
 	jmp .label_216
 	.label_214:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 'd'
 	je .label_221
 	jmp .label_218
 	.label_221:
-	mov r1, r5
+	mov r1, r6
 	cmp r1, 11
 	jl .label_219
 	jmp .label_218
 	.label_219:
-	mov r1, r5
+	mov r1, r6
 	add r1, 1
-	mov r5, r1
+	mov r6, r1
 	jmp .label_220
 	.label_218:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 'w'
 	je .label_225
 	jmp .label_222
 	.label_225:
-	mov r1, r4
+	mov r1, r5
 	cmp r1, 0
 	jg .label_223
 	jmp .label_222
 	.label_223:
-	mov r1, r4
+	mov r1, r5
 	sub r1, 1
-	mov r4, r1
+	mov r5, r1
 	jmp .label_224
 	.label_222:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 's'
 	je .label_229
 	jmp .label_226
 	.label_229:
-	mov r1, r4
+	mov r1, r5
 	cmp r1, 7
 	jl .label_227
 	jmp .label_226
 	.label_227:
-	mov r1, r4
+	mov r1, r5
 	add r1, 1
-	mov r4, r1
+	mov r5, r1
 	jmp .label_228
 	.label_226:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 'f'
 	je .label_231
 	jmp .label_230
 	.label_231:
 	mov r1, 1
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	ld r1, r1, r5
+	ld r1, r1, r6
 	cmp r1, 'F'
 	je .label_234
 	jmp .label_233
 	.label_234:
 	mov r1, 1
-	mov r2, r1
-	mov r1, r4
-	mull r1, 12
-	add r2, r1
-	mov r1, r2
-	add r1, r5
+	mov r2, r5
+	mull r2, 12
+	add r1, r2
+	add r1, r6
 	mov r2, 0
 	st r2, r1
 	jmp .label_235
 	.label_233:
 	mov r1, 1
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	ld r1, r1, r5
+	ld r1, r1, r6
 	cmp r1, 0
 	je .label_237
 	jmp .label_236
 	.label_237:
 	mov r1, 1
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	add r1, r5
+	add r1, r6
 	mov r2, 'F'
 	st r2, r1
 	jmp .label_238
@@ -1659,11 +1688,11 @@ main:
 	.label_235:
 	jmp .label_232
 	.label_230:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 10
 	je .label_240
 	.label_242:
-	mov r1, r6
+	mov r1, r7
 	cmp r1, 'r'
 	je .label_240
 	jmp .label_239
@@ -1672,27 +1701,27 @@ main:
 	je .label_243
 	.label_244:
 	mov r1, 97
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	ld r1, r1, r5
+	ld r1, r1, r6
 	cmp r1, 9
 	jge .label_247
 	jmp .label_246
 	.label_247:
 	mov r1, 97
-	mov r2, r4
+	mov r2, r5
 	mull r2, 12
 	add r1, r2
-	add r1, r5
+	add r1, r6
 	ld r2, r1
 	mov r3, 9
 	sub r2, r3
 	st r2, r1
 	mov r1, 65535
 	push r1
+	push r6
 	push r5
-	push r4
 	call add_to_surrounding_cells
 	add stack_pointer, 3
 	jmp .label_248
@@ -1702,12 +1731,12 @@ main:
 	jmp .label_245
 	.label_243:
 	.label_245:
+	push r6
 	push r5
-	push r4
 	call sweep_cell
 	add stack_pointer, 2
 	ld r1, 298
-	cmp r1, 84
+	cmp r1, r4
 	jge .label_250
 	jmp .label_249
 	.label_250:
@@ -1715,7 +1744,7 @@ main:
 	call set_cursor
 	mov r22, 2
 	call set_colour
-	mov r1, 469
+	mov r1, 490
 	mov r22, r1
 	call __print_char_array
 	mov return_reg, 0
@@ -1734,6 +1763,8 @@ main:
 	jmp .label_190
 	.label_191:
 .exit_main:
+	pop r14
+	pop r13
 	pop r12
 	pop r11
 	pop r10
@@ -1747,7 +1778,7 @@ main:
 	pop r2
 	pop r1
 	pop base_pointer
-	add stack_pointer, 1
+	add stack_pointer, 2
 	hlt
 __print_unsigned_int:
 	test r22, r22
@@ -1838,9 +1869,12 @@ __scan_unsigned_int:
     mov r23, 0
 __scan_unsigned_int_loop:
     call getchar
+    st return_reg, term_print
     sub return_reg, '0'
     cmp return_reg, 9
-    jg __scan_unsigned_int_not_digit 
+    jg __scan_unsigned_int_not_digit
+    cmp return_reg, 0
+    jl __scan_unsigned_int_not_digit
     mull r23, 10
     add r23, return_reg
     jmp __scan_unsigned_int_loop
