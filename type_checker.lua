@@ -37,7 +37,7 @@ function Type_Checker:type_check(ast, symbol_table)
 
     function check_typedef(n)
         local type = base(n.specifier.type_specifier.kind)
-        get_symbol(n.id.id, symbol_table.ordinary).type = type
+        get_symbol(n.declarator.id.id, symbol_table.ordinary).type = type
     end
 
     function fill_array_dimensions(target_type, initializer_type)
@@ -93,7 +93,7 @@ function Type_Checker:type_check(ast, symbol_table)
     function check_enum_type(n)
         
         if(n.declaration) then
-            local type = enum(n.id.id)
+            local type = enum(n.id.id) -- When the enum specifier was parsed, an id field was assigned as a sibling to the declaration field
             for i, value in ipairs(n.declaration) do
                 local identifier = value.id
                 local value = value.value or i - 1
@@ -123,70 +123,77 @@ function Type_Checker:type_check(ast, symbol_table)
                 base_type = base(n.specifier.type_specifier.kind)
             end
         end
-        if(n.declarator) then
-            n.value_type = build_declarator(n.declarator, base_type)
-        else
-            n.value_type = base_type
-        end
 
-        if(n.value_type.kind == Type.KINDS["VOID"]) then
-            Diagnostics.submit(Message.error("Cannot declare a variable of type void", n.pos))
-        end
+        n.value_type = base_type
 
-        if(n.initializer) then
-            if(node_check(n.initializer, "INITIALIZER_LIST")) then
-                if(n.value_type.length == -1) then
-                    n.value_type.length = #n.initializer
-                end
-                -- checks whether the initializer list can be morphed into the target type
-                if(not match_initializer_list(n.initializer, n.value_type)) then
-                    Diagnostics.submit(Message.error("Initializer list does not match the declared type", n.pos))
-                end
-                n.initializer.value_type = n.value_type
-            else
-                
-                if(not can_coerce(check_initializer(n.initializer), n.value_type, true)) then
-                    print(to_string_pretty(n.initializer.value_type), to_string_pretty(n.value_type))
-                    Diagnostics.submit(Message.error("Initializer does not match the declared type", n.initializer.pos))
-                end
+        for _, declarator in ipairs(n.declarators) do
+            declarator.value_type = build_declarator(declarator, base_type)
 
-                if(n.initializer.value and node_check(n.initializer.value, "STRING_LITERAL")) then
-                    if(n.value_type.kind == Type.KINDS["ARRAY"] and n.value_type.length == -1) then
-                        n.value_type.length = #n.initializer.value.value + 1
-                    else
-                        n.initializer.value_type = n.value_type
+            if(declarator.value_type.kind == Type.KINDS["VOID"]) then
+                Diagnostics.submit(Message.error("Cannot declare a variable of type void", declarator.pos))
+            end
+
+            -- check if the initializer matches the declared type
+            if(declarator.initializer) then
+                if(node_check(declarator.initializer, "INITIALIZER_LIST")) then
+                    if(declarator.value_type.length == -1) then
+                        declarator.value_type.length = #declarator.initializer
+                    end
+                    -- checks whether the initializer list can be morphed into the target type
+                    if(not match_initializer_list(declarator.initializer, declarator.value_type)) then
+                        Diagnostics.submit(Message.error("Initializer list does not match the declared type", declarator.pos))
+                    end
+                    declarator.initializer.value_type = declarator.value_type
+                else
+                    
+                    if(not can_coerce(check_initializer(declarator.initializer), declarator.value_type, true)) then
+                        print(to_string_pretty(declarator.initializer.value_type), to_string_pretty(declarator.value_type))
+                        Diagnostics.submit(Message.error("Initializer does not match the declared type", declarator.initializer.pos))
+                    end
+
+                    if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
+                        if(declarator.value_type.kind == Type.KINDS["ARRAY"] and declarator.value_type.length == -1) then
+                            declarator.value_type.length = #declarator.initializer.value.value + 1
+                        else
+                            declarator.initializer.value_type = declarator.value_type
+                        end
                     end
                 end
             end
-        end
 
-        if(n.id) then
+            -- register the variable in the symbol table
+            -- every registered variable has a declarator
             if(n.is_function and not n.block) then
-                add_symbol(n.id.id, {type = n.value_type, is_prototype = true}, symbol_table.ordinary)
+                -- prototype
+                add_symbol(declarator.id.id, {type = declarator.value_type, is_prototype = true}, symbol_table.ordinary)
             else
-                local potential_symbol = get_symbol(n.id.id, symbol_table.ordinary)
+                local potential_symbol = get_symbol(declarator.id.id, symbol_table.ordinary)
                 if(potential_symbol) then
-                    potential_symbol.type = n.value_type
+                    -- previous prototype
+                    potential_symbol.type = declarator.value_type
                 else
-                    add_symbol(n.id.id, {type = n.value_type}, symbol_table.ordinary)
+                    add_symbol(declarator.id.id, {type = declarator.value_type}, symbol_table.ordinary)
                 end
             end
-            n.handle = get_symbol(n.id.id, symbol_table.ordinary)
-        else
-            -- when declaring a struct, union, or enum type, the handle is the created tag symbol
-            n.handle = get_symbol(n.specifier.type_specifier.kind.id.id, symbol_table.tag)
+            declarator.handle = get_symbol(declarator.id.id, symbol_table.ordinary)
+            -- else
+            --     -- when declaring a struct, union, or enum type, the handle is the created tag symbol
+            --     n.handle = get_symbol(n.specifier.type_specifier.kind.id.id, symbol_table.tag)
+            -- end
         end
+
+        
 
         -- for when a function is declared
         if(n.block) then
-            new_scope(n.declarator.direct_declarator.id.id)
-            for _, child in ipairs(n.declarator.direct_declarator.parameter_list) do
+            new_scope(n.declarators[1].id.id)
+            for _, parameter in ipairs(n.declarators[1].direct_declarator.parameter_list) do
                 
-                add_symbol(child.id.id, {type = child.value_type}, symbol_table.ordinary)
-                child.handle = get_symbol(child.id.id, symbol_table.ordinary)
+                add_symbol(parameter.declarator.id.id, {type = parameter.value_type}, symbol_table.ordinary)
+                parameter.handle = get_symbol(parameter.declarator.id.id, symbol_table.ordinary)
             end
-            if(n.handle.type.parameter_types.is_variadic) then
-                add_variadic_parameter(n.declarator.direct_declarator.parameter_list)
+            if(n.declarators[1].handle.type.parameter_types.is_variadic) then
+                add_variadic_parameter(n.declarators[1].direct_declarator.parameter_list)
             end
             check_block(n.block)
             exit_scope()
@@ -873,6 +880,9 @@ function Type_Checker:type_check(ast, symbol_table)
         return n.value_type
     end
 
+    function process_declarator(n, type)
+        
+    end
 
 
 
@@ -882,9 +892,10 @@ function Type_Checker:type_check(ast, symbol_table)
             type = pointer(type)
         end
 
-        type = build_direct_declarator(n.direct_declarator, type)
+        n.value_type = build_direct_declarator(n.direct_declarator, type)
+        
 
-        return type
+        return n.value_type
     end
 
     function build_direct_declarator(n, type)

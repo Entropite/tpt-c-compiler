@@ -479,6 +479,7 @@ function CodeGen:build_interference_graph(blocks)
                     assert(type(k1) == "number" and type(k2) == "number", "Invalid operands")
                     interference_graph[k1][k2] = true
                     interference_graph[k2][k1] = true
+                    
                 end
             end
         end

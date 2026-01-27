@@ -6,7 +6,7 @@
 %define term_reg r28
 %define return_addr_reg r27
 
-; Initialization and defining basic macros, most of this is the same as what LBPHacker did for his demo
+; Initialization and defining basic macros
 %define term_base 0x9F80
 
 %eval term_input  term_base 0x00 +
@@ -82,8 +82,7 @@ __scan_signed_int:
 	call getchar
 	mov r3, return_reg
 	mov r1, r3
-	mov r4, '-'
-	cmp r3, r4
+	cmp r3, '-'
 	je .label_1
 	jmp .label_0
 	.label_1:
@@ -100,24 +99,14 @@ __scan_signed_int:
 	call getchar
 	mov r4, return_reg
 	mov r1, r4
-	mov r5, '0'
-	cmp r4, r5
-	jge .label_9
-	jmp .label_6
-	.label_9:
-	mov r4, r1
-	mov r5, '9'
-	cmp r4, r5
-	jle .label_7
-	jmp .label_6
-	.label_7:
-	mov r4, 1
-	jmp .label_8
+	cmp r4, '0'
+	jge .label_6
+	jmp .label_4
 	.label_6:
-	mov r4, 0
-	.label_8:
-	cmp r4, 0
-	je .label_4
+	mov r4, r1
+	cmp r4, '9'
+	jle .label_5
+	jmp .label_4
 	.label_5:
 	mov r22, r1
 	call putchar
@@ -126,16 +115,15 @@ __scan_signed_int:
 	add r2, r1
 	jmp .label_3
 	.label_4:
-	mov r4, 65535
-	cmp r3, r4
-	je .label_11
-	jmp .label_10
-	.label_11:
+	cmp r3, 65535
+	je .label_8
+	jmp .label_7
+	.label_8:
 	xor r2, 65535
 	add r2, 1
-	jmp .label_12
-	.label_10:
-	.label_12:
+	jmp .label_9
+	.label_7:
+	.label_9:
 	ld r3, base_pointer, 2
 	st r2, r3
 	mov return_reg, r1
@@ -156,30 +144,21 @@ __scan_char_array:
 	push r3
 	push r4
 	ld r2, base_pointer, 2
-	.label_13:
+	.label_10:
 	call getchar
 	mov r3, return_reg
 	mov r1, r3
-	mov r4, 10
-	cmp r3, r4
-	jne .label_17
-	jmp .label_16
-	.label_17:
-	mov r3, 1
-	jmp .label_18
-	.label_16:
-	mov r3, 0
-	.label_18:
-	cmp r3, 0
-	je .label_14
-	.label_15:
+	cmp r3, 10
+	jne .label_12
+	jmp .label_11
+	.label_12:
 	mov r22, r1
 	call putchar
 	mov r3, r2
 	add r2, 1
 	st r1, r3
-	jmp .label_13
-	.label_14:
+	jmp .label_10
+	.label_11:
 	mov r1, r2
 	mov r3, 0
 	st r3, r1
@@ -203,50 +182,34 @@ move_cursor:
 	push r3
 	mov r22, 0
 	call set_cursor
-	mov r3, 0
-	.label_19:
-	mov r1, r3
-	ld r2, base_pointer, 3
-	cmp r1, r2
-	jl .label_24
-	jmp .label_23
-	.label_24:
-	mov r1, 1
-	jmp .label_25
-	.label_23:
 	mov r1, 0
-	.label_25:
-	cmp r1, 0
-	je .label_21
-	.label_22:
+	.label_13:
+	mov r2, r1
+	ld r3, base_pointer, 3
+	cmp r2, r3
+	jl .label_16
+	jmp .label_15
+	.label_16:
 	mov r22, 10
 	call putchar
-	.label_20:
-	add r3, 1
-	jmp .label_19
-	.label_21:
+	.label_14:
+	add r1, 1
+	jmp .label_13
+	.label_15:
 	mov r1, 0
-	.label_26:
+	.label_17:
 	mov r2, r1
 	ld r3, base_pointer, 2
 	cmp r2, r3
-	jl .label_31
-	jmp .label_30
-	.label_31:
-	mov r2, 1
-	jmp .label_32
-	.label_30:
-	mov r2, 0
-	.label_32:
-	cmp r2, 0
-	je .label_28
-	.label_29:
+	jl .label_20
+	jmp .label_19
+	.label_20:
 	mov r22, ' '
 	call putchar
-	.label_27:
+	.label_18:
 	add r1, 1
-	jmp .label_26
-	.label_28:
+	jmp .label_17
+	.label_19:
 .exit_move_cursor:
 	pop r3
 	pop r2
@@ -341,32 +304,23 @@ main:
 	call __print_char_array
 	mov r2, 0
 	mov r3, 1
-	.label_33:
+	.label_21:
 	mov r4, r3
-	mov r5, 6
-	cmp r4, r5
-	jl .label_40
-	jmp .label_37
-	.label_40:
+	cmp r4, 6
+	jl .label_25
+	jmp .label_23
+	.label_25:
 	mov r4, r2
 	cmp r4, 0
-	je .label_41
+	je .label_26
 	mov r4, 0
-	jmp .label_42
-	.label_41:
+	jmp .label_27
+	.label_26:
 	mov r4, 1
-	.label_42:
+	.label_27:
 	cmp r4, 0
-	je .label_37
-	.label_38:
-	mov r4, 1
-	jmp .label_39
-	.label_37:
-	mov r4, 0
-	.label_39:
-	cmp r4, 0
-	je .label_35
-	.label_36:
+	je .label_23
+	.label_24:
 	mov r22, ' '
 	call putchar
 	mov r22, ' '
@@ -406,47 +360,37 @@ main:
 	ld r7, r7, r8
 	add r8, base_pointer, 2
 	ld r8, r8, 1
-	mov r9, r7
-	cmp r8, r9
-	jg .label_44
-	jmp .label_43
-	.label_44:
+	cmp r8, r7
+	jg .label_29
+	jmp .label_28
+	.label_29:
 	mov r5, r6
 	add r5, 1
-	jmp .label_45
-	.label_43:
+	jmp .label_30
+	.label_28:
 	add r8, base_pointer, 2
 	ld r8, r8, 1
 	cmp r8, r7
-	jl .label_47
-	jmp .label_46
-	.label_47:
+	jl .label_32
+	jmp .label_31
+	.label_32:
 	mov r4, r6
 	sub r4, 1
-	jmp .label_48
-	.label_46:
-	.label_48:
-	.label_45:
+	jmp .label_33
+	.label_31:
+	.label_33:
+	.label_30:
 	add r6, base_pointer, 4
 	push r6
 	call __scan_char_array
 	add stack_pointer, 1
 	mov r6, return_reg
-	.label_49:
+	.label_34:
 	mov r6, r5
-	mov r7, r4
-	cmp r6, r7
-	jle .label_53
-	jmp .label_52
-	.label_53:
-	mov r6, 1
-	jmp .label_54
-	.label_52:
-	mov r6, 0
-	.label_54:
-	cmp r6, 0
-	je .label_50
-	.label_51:
+	cmp r6, r4
+	jle .label_36
+	jmp .label_35
+	.label_36:
 	mov r7, 0
 	mov r6, r5
 	add r6, r4
@@ -460,9 +404,9 @@ main:
 	add r11, 1
 	ld r10, r10, r11
 	cmp r9, r10
-	jne .label_56
-	jmp .label_55
-	.label_56:
+	jne .label_38
+	jmp .label_37
+	.label_38:
 	add r7, base_pointer, 2
 	ld r7, r7, 1
 	mov r9, 1
@@ -470,8 +414,8 @@ main:
 	add r9, r8
 	ld r8, r9
 	sub r7, r8
-	jmp .label_57
-	.label_55:
+	jmp .label_39
+	.label_37:
 	add r9, base_pointer, 2
 	ld r9, r9, 2
 	mov r10, 1
@@ -479,9 +423,9 @@ main:
 	add r11, 2
 	ld r10, r10, r11
 	cmp r9, r10
-	jne .label_59
-	jmp .label_58
-	.label_59:
+	jne .label_41
+	jmp .label_40
+	.label_41:
 	add r7, base_pointer, 2
 	ld r7, r7, 2
 	mov r9, 1
@@ -489,8 +433,8 @@ main:
 	add r9, r8
 	ld r8, r9
 	sub r7, r8
-	jmp .label_60
-	.label_58:
+	jmp .label_42
+	.label_40:
 	add r9, base_pointer, 2
 	ld r9, r9, 3
 	mov r10, 1
@@ -498,9 +442,9 @@ main:
 	add r11, 3
 	ld r10, r10, r11
 	cmp r9, r10
-	jne .label_62
-	jmp .label_61
-	.label_62:
+	jne .label_44
+	jmp .label_43
+	.label_44:
 	add r7, base_pointer, 2
 	ld r7, r7, 3
 	mov r9, 1
@@ -508,8 +452,8 @@ main:
 	add r9, r8
 	ld r8, r9
 	sub r7, r8
-	jmp .label_63
-	.label_61:
+	jmp .label_45
+	.label_43:
 	add r9, base_pointer, 2
 	ld r9, r9, 4
 	mov r10, 1
@@ -517,9 +461,9 @@ main:
 	add r11, 4
 	ld r10, r10, r11
 	cmp r9, r10
-	jne .label_65
-	jmp .label_64
-	.label_65:
+	jne .label_47
+	jmp .label_46
+	.label_47:
 	add r7, base_pointer, 2
 	ld r7, r7, 4
 	mov r9, 1
@@ -527,48 +471,46 @@ main:
 	add r9, r8
 	ld r8, r9
 	sub r7, r8
-	jmp .label_66
-	.label_64:
-	.label_66:
-	.label_63:
-	.label_60:
-	.label_57:
+	jmp .label_48
+	.label_46:
+	.label_48:
+	.label_45:
+	.label_42:
+	.label_39:
 	mov r8, r7
-	mov r9, 0
-	cmp r8, r9
-	je .label_68
-	jmp .label_67
-	.label_68:
-	jmp .label_50
-	jmp .label_69
-	.label_67:
-	mov r8, 0
-	cmp r7, r8
-	jl .label_71
-	jmp .label_70
-	.label_71:
-	mov r4, r6
-	sub r4, 1
-	jmp .label_72
-	.label_70:
-	mov r5, r6
-	add r5, 1
-	.label_72:
-	.label_69:
+	cmp r8, 0
+	je .label_50
 	jmp .label_49
 	.label_50:
+	jmp .label_35
+	jmp .label_51
+	.label_49:
+	cmp r7, 0
+	jl .label_53
+	jmp .label_52
+	.label_53:
+	mov r4, r6
+	sub r4, 1
+	jmp .label_54
+	.label_52:
+	mov r5, r6
+	add r5, 1
+	.label_54:
+	.label_51:
+	jmp .label_34
+	.label_35:
 	cmp r5, r4
-	jg .label_77
-	jmp .label_76
-	.label_77:
+	jg .label_59
+	jmp .label_58
+	.label_59:
 	mov r4, 1
-	jmp .label_78
-	.label_76:
+	jmp .label_60
+	.label_58:
 	mov r4, 0
-	.label_78:
+	.label_60:
 	cmp r4, 0
-	je .label_73
-	.label_74:
+	je .label_55
+	.label_56:
 	push r3
 	mov r4, 3
 	push r4
@@ -584,8 +526,8 @@ main:
 	push r4
 	call move_cursor
 	add stack_pointer, 2
-	jmp .label_75
-	.label_73:
+	jmp .label_57
+	.label_55:
 	push r3
 	mov r4, 3
 	push r4
@@ -593,89 +535,79 @@ main:
 	add stack_pointer, 2
 	mov r4, 0
 	mov r5, 0
-	.label_79:
+	.label_61:
 	mov r6, r5
-	mov r7, 5
-	cmp r6, r7
-	jl .label_84
-	jmp .label_83
-	.label_84:
-	mov r6, 1
-	jmp .label_85
-	.label_83:
-	mov r6, 0
-	.label_85:
-	cmp r6, 0
-	je .label_81
-	.label_82:
+	cmp r6, 5
+	jl .label_64
+	jmp .label_63
+	.label_64:
 	ld r6, r1, r5
 	add r7, base_pointer, 2
 	ld r7, r7, r5
 	cmp r6, r7
-	je .label_87
-	jmp .label_86
-	.label_87:
+	je .label_66
+	jmp .label_65
+	.label_66:
 	add r4, 1
 	mov r22, 2
 	call set_colour
-	jmp .label_88
-	.label_86:
+	jmp .label_67
+	.label_65:
 	mov r6, 7036
 	add r7, base_pointer, 2
 	ld r7, r7, r5
 	sub r7, 'a'
 	ld r6, r6, r7
 	cmp r6, 0
-	je .label_89
-	.label_90:
+	je .label_68
+	.label_69:
 	mov r22, 6
 	call set_colour
-	jmp .label_91
-	.label_89:
+	jmp .label_70
+	.label_68:
 	mov r22, 8
 	call set_colour
-	.label_91:
-	.label_88:
+	.label_70:
+	.label_67:
 	add r6, base_pointer, 2
 	add r6, r5
 	ld r22, r6
 	call putchar
-	.label_80:
+	.label_62:
 	add r5, 1
-	jmp .label_79
-	.label_81:
+	jmp .label_61
+	.label_63:
 	mov r22, 15
 	call set_colour
 	mov r22, 10
 	call putchar
-	mov r5, 5
-	cmp r4, r5
-	je .label_93
-	jmp .label_92
-	.label_93:
+	cmp r4, 5
+	je .label_72
+	jmp .label_71
+	.label_72:
 	mov r2, 7125
 	mov r22, r2
 	call __print_char_array
 	mov r2, 1
-	jmp .label_35
-	jmp .label_94
-	.label_92:
-	.label_94:
-	.label_75:
-	.label_34:
+	jmp .label_23
+	jmp .label_73
+	.label_71:
+	.label_73:
+	.label_57:
+	.label_22:
 	add r3, 1
-	jmp .label_33
-	.label_35:
+	jmp .label_21
+	.label_23:
 	cmp r2, 0
-	je .label_98
+	je .label_77
 	mov r2, 0
-	jmp .label_99
-	.label_98:
+	jmp .label_78
+	.label_77:
 	mov r2, 1
-	.label_99:
+	.label_78:
 	cmp r2, 0
-	je .label_95
-	.label_96:
+	je .label_74
+	.label_75:
 	mov r2, 7134
 	mov r22, r2
 	call __print_char_array
@@ -684,9 +616,9 @@ main:
 	st r3, r2
 	mov r22, r1
 	call __print_char_array
-	jmp .label_97
-	.label_95:
-	.label_97:
+	jmp .label_76
+	.label_74:
+	.label_76:
 .exit_main:
 	pop r11
 	pop r10
@@ -791,9 +723,12 @@ __scan_unsigned_int:
     mov r23, 0
 __scan_unsigned_int_loop:
     call getchar
+    st return_reg, term_print
     sub return_reg, '0'
     cmp return_reg, 9
-    jg __scan_unsigned_int_not_digit 
+    jg __scan_unsigned_int_not_digit
+    cmp return_reg, 0
+    jl __scan_unsigned_int_not_digit
     mull r23, 10
     add r23, return_reg
     jmp __scan_unsigned_int_loop

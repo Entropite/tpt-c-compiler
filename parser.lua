@@ -101,7 +101,7 @@ function Parser.parse(toks, symbol_table)
         while peek_token().type ~= TOKEN_TYPES["EOF"] do
 
             table.insert(program_node, parse_declaration())
-            if(not (program_node[#program_node].is_function and program_node[#program_node].block)) then
+            if(not (program_node[#program_node].declarator and program_node[#program_node].declarator.is_function and program_node[#program_node].block)) then -- probably can remove first condition
                 expect(";")
             end
         end
@@ -112,26 +112,25 @@ function Parser.parse(toks, symbol_table)
     function parse_declaration()
         local declaration_node = new("DECLARATION")
         declaration_node.specifier = parse_declaration_specifier()
-        if(not check(";")) then
-            declaration_node.declarator = parse_declarator()
-            declaration_node.id = declaration_node.declarator.direct_declarator.id
-
-            declaration_node.is_function = declaration_node.declarator.direct_declarator.parameter_list ~= nil
-            if(declaration_node.is_function) then
-                declaration_node.is_variadic = declaration_node.declarator.direct_declarator.parameter_list.is_variadic
-            end
+        declaration_node.declarators = {}
+        while (not (check(";") or declaration_node.block)) do
+            local declarator = parse_declarator()
             if(check("{")) then
                 declaration_node.block = parse_block()
             else
                 if(accept("=")) then
-                    declaration_node.initializer = parse_initializer()
+                    declarator.initializer = parse_initializer()
                 end
             end
+            accept(",")
+            table.insert(declaration_node.declarators, declarator)
+        end
+        declaration_node.declarator = declaration_node.declarators[1]
+        -- FIX THIS! Go through every declarator
+        if(declaration_node.specifier.storage_class.kind == "typedef") then
+            symbol_table.add_symbol(declaration_node.declarator.id.id, {is_type_name = true}, symbol_table.ordinary)
         end
 
-        if(declaration_node.specifier.storage_class.kind == "typedef") then
-            symbol_table.add_symbol(declaration_node.id.id, {is_type_name = true}, symbol_table.ordinary)
-        end
         return declaration_node
     end
 
@@ -185,7 +184,7 @@ function Parser.parse(toks, symbol_table)
             return parameter_list_node
         end
         table.insert(parameter_list_node, parse_parameter_declaration())
-        if(not parameter_list_node[1].id and parameter_list_node[1].type_specifier.kind[1] == "void") then
+        if(not parameter_list_node[1].declarator.id and parameter_list_node[1].type_specifier.kind[1] == "void") then
             parameter_list_node[1] = nil
             return parameter_list_node
         end
@@ -208,7 +207,7 @@ function Parser.parse(toks, symbol_table)
         parameter_declaration_node.type_specifier = parse_type_specifier()
         if(not multi_check({",", ")"})) then
             parameter_declaration_node.declarator = parse_declarator()
-            parameter_declaration_node.id = parameter_declaration_node.declarator.direct_declarator.id
+            parameter_declaration_node.declarator.id = parameter_declaration_node.declarator.direct_declarator.id
         end
         return parameter_declaration_node
     end
@@ -580,14 +579,19 @@ function Parser.parse(toks, symbol_table)
         while(accept("*")) do
             declarator_node.pointer_level = declarator_node.pointer_level + 1
         end
-
         declarator_node.direct_declarator = parse_direct_declarator()
+        declarator_node.id = declarator_node.direct_declarator.id
+        if(declarator_node.direct_declarator.parameter_list) then
+            declarator_node.is_function = true
+            declarator_node.is_variadic = declarator_node.direct_declarator.parameter_list.is_variadic
+        end
 
         return declarator_node
     end
 
     function parse_direct_declarator()
         local direct_declarator_node = new("DIRECT_DECLARATOR")
+        --print(peek_token().value)
         if(check("ID")) then
             direct_declarator_node.id = parse_identifier()
         elseif(accept("(")) then
@@ -649,7 +653,7 @@ function Parser.parse(toks, symbol_table)
         local enum_specifier_node = new("ENUM_SPECIFIER")
         expect("TYPE_SPECIFIER")
         enum_specifier_node.id = parse_identifier()
-        if(accept("{")) then
+        if(accept("{")) then 
             enum_specifier_node.declaration = parse_enum_declaration_list()
             expect("}")
         end

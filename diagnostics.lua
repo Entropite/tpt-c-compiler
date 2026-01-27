@@ -29,6 +29,7 @@ function Diagnostics.default_on_panic(message, pos)
 end
 
 function Diagnostics.default_recover()
+    error()
     os.exit(1)
 end
 

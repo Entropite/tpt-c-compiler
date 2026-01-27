@@ -245,92 +245,99 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
     end
 
     function emit_struct_or_union_declaration(n)
-        if(n.handle.type.kind == Type.KINDS["STRUCT"] and n.specifier.type_specifier.kind.declaration) then
-            compute_struct_layout(n.handle.type)
-        elseif(n.handle.type.kind == Type.KINDS["UNION"] and n.specifier.type_specifier.kind.declaration) then -- make sure the layout is only computed when the union is declared
-            compute_union_layout(n.handle.type)
+        if(n.value_type.kind == Type.KINDS["STRUCT"] and n.specifier.type_specifier.kind.declaration) then
+            compute_struct_layout(n.value_type)
+        elseif(n.value_type.kind == Type.KINDS["UNION"] and n.specifier.type_specifier.kind.declaration) then -- make sure the layout is only computed when the union is declared
+            compute_union_layout(n.value_type)
         end
     end
 
     function emit_declaration(n)
-        assert(n.value_type ~= nil, "Value type is nil")
+        --assert(n.value_type ~= nil, "Value type is nil")
         --handle_name_definition_conflict(n.id)
         emit_struct_or_union_declaration(n)
 
-        if(not n.declarator) then
+        if(n.specifier.storage_class.kind == "typedef" or #n.declarators == 0) then
             return
         end
 
-        if(n.value_type.kind ~= Type.KINDS["FUNCTION"]) then
+        for _, declarator in ipairs(n.declarators) do
+            
+            if(declarator.value_type.kind ~= Type.KINDS["FUNCTION"]) then
 
-            local place = nil
-            if(n.initializer) then
-                local initializer_place = nil
-                if(n.initializer.value and node_check(n.initializer.value, "STRING_LITERAL")) then
-                    initializer_place = operand.g(n.initializer.value_type.length) -- string literals are stored in global memory
-                else
-                    if(n.specifier.storage_class.kind == "register") then
-                        if(not aggregate_types[Type.INVERTED_KINDS[n.initializer.value_type.kind]]) then
-                            initializer_place = operand.vr()
+                local place = nil
+                if(declarator.initializer) then
+                    local initializer_place = nil
+                    if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
+                        initializer_place = operand.g(declarator.initializer.value_type.length) -- string literals are stored in global memory
+                    else
+                        if(n.specifier.storage_class.kind == "register") then
+                            if(not aggregate_types[Type.INVERTED_KINDS[declarator.value_type.kind]]) then
+                                initializer_place = operand.vr()
+                            else
+                                Diagnostics.submit(Message.error("Cannot store aggregate type in register", declarator.initializer.pos))
+                            end
                         else
-                            Diagnostics.submit(Message.error("Cannot store aggregate type in register", n.initializer.pos))
+                            initializer_place = static_allocate_place(self:sizeof(declarator.initializer.value_type))
+                        end
+                    end
+                    
+                    emit_static_initializer(declarator.initializer, initializer_place)
+                    if(node_check(declarator.initializer, "STRING_LITERAL") and declarator.value_type.kind == Type.KINDS["POINTER"]) then
+                        place = static_allocate_place(1) -- pointer to object
+                        if(self.method.id == "!global" or node_check(declarator.initializer.value, "STRING_LITERAL")) then -- String literal must be included even for local variables
+                            initialize_word(initializer_place.value+1, place) -- +1 is to offset the initial jmp start instruction (poor design, might fix later)
+                        else
+                            local next_reg = operand.t()
+                            table.insert(tac[self.method.id], {type="!get_address", target=declarator.handle.place, dest=next_reg}) -- should probably just be place
+                            emit_move(next_reg, declarator.handle.place)
                         end
                     else
-                        initializer_place = static_allocate_place(self:sizeof(n.initializer.value_type))
+                        place=initializer_place -- object itself
                     end
-                end
-                
-                emit_static_initializer(n.initializer, initializer_place)
-                if(node_check(n.initializer, "STRING_LITERAL") and n.value_type.kind == Type.KINDS["POINTER"]) then
-                    place = static_allocate_place(1) -- pointer to object
-                    if(self.method.id == "!global" or node_check(n.initializer.value, "STRING_LITERAL")) then -- String literal must be included even for local variables
-                        initialize_word(initializer_place.value+1, place) -- +1 is to offset the initial jmp start instruction (poor design, might fix later)
+                else
+                    if(n.specifier.storage_class.kind == "register") then
+                        if(not aggregate_types[Type.INVERTED_KINDS[declarator.value_type.kind]]) then
+                            place = operand.vr()
+                        else
+                            Diagnostics.submit(Message.error("Cannot store aggregate type in register", declarator.initializer.pos))
+                        end
                     else
-                        local next_reg = operand.t()
-                        table.insert(tac[self.method.id], {type="!get_address", target=n.handle.place, dest=next_reg}) 
-                        emit_move(next_reg, n.handle.place)
+                        place=static_allocate_place(self:sizeof(declarator.value_type)) -- no initializer
                     end
-                else
-                    place=initializer_place -- object itself
                 end
+                declarator.handle.place = place
             else
-                if(n.specifier.storage_class.kind == "register") then
-                    place = operand.vr()
-                else
-                    place=static_allocate_place(self:sizeof(n.value_type)) -- no initializer
+                -- function definition
+                assert(self.method.id == "!global", "Nested function definitions are not supported")
+                    
+                declarator.handle.place = operand.i(declarator.id.id)
+                declarator.handle.local_size = 0
+                declarator.handle.id = declarator.id.id
+                if(not n.block) then -- ignore function prototypes
+                    return
                 end
-            end
-            n.handle.place = place
-        else
-            -- function definition
-            assert(self.method.id == "!global", "Nested function definitions are not supported")
-
-            n.handle.place = operand.i(n.id.id)
-            n.handle.local_size = 0
-            n.handle.id = n.id.id
-            if(not n.block) then -- ignore function prototypes
-                return
-            end
-            self.method = n.handle
-            table.insert(tac, self.method.id)
-            tac[self.method.id] = {}
-            
-
-            new_scope(self.method.id)
-
-            
-            for i, p in ipairs(n.declarator.direct_declarator.parameter_list or {}) do
-                p.handle.place = operand.p(i-1)
-            end
-
-            if(n.block) then
-                emit_block(n.block)
-            else
+                self.method = declarator.handle
+                table.insert(tac, self.method.id)
+                tac[self.method.id] = {}
                 
-            end
-            exit_scope()
-            self.method = global_method
 
+                new_scope(self.method.id)
+
+                
+                for i, p in ipairs(declarator.direct_declarator.parameter_list or {}) do
+                    p.handle.place = operand.p(i-1)
+                end
+
+                if(n.block) then
+                    emit_block(n.block)
+                else
+                    
+                end
+                exit_scope()
+                self.method = global_method
+
+            end
         end
     end
 
@@ -899,21 +906,6 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
 
     end
 
-    function emit_function_call(n)
-        if(n.id == "print_num" or n.id == "printf") then
-            emit_assignment_expression(n.args[1])
-            if(lvalue_operands[n.args[1].place.type]) then
-                table.insert(tac[self.method.id], {type="ld", source=n.args[1].place, dest=operand.r("r1")})
-            else
-                table.insert(tac[self.method.id], {type="mov", source=n.args[1].place, dest=operand.r("r1")})
-            end
-            table.insert(tac[self.method.id], {type="call", target=n.id})
-        else
-            emit_argument_list(n.args)
-            table.insert(tac[self.method.id], {type="call", target=n.id})
-            table.insert(tac[self.method.id], {type="add", source=operand.i(#n.args), dest=self.STACK_POINTER}) -- destroy stack frame
-        end
-    end
 
     function emit_argument_list(n, is_standard_function)
         for i=#n, 1, -1 do
@@ -1226,7 +1218,7 @@ function IRVisitor:generate_ir_code(ast, symbol_table)
                     if(lvalue_operands[n.place.type]) then
                         n.place = load_operand_into_register(n.place)
                     end
-                    table.insert(tac[self.method.id], {type="call", target=n.place}) -- fix this
+                    table.insert(tac[self.method.id], {type="call", target=n.place})
                     if(not n.place.is_standard_function) then
                         table.insert(tac[self.method.id], {type="add", source=operand.i(#operation.value), dest=self.STACK_POINTER}) -- destroy stack frame
                     end
