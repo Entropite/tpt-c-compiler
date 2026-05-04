@@ -338,8 +338,45 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
                 new_scope(current_method.id)
 
                 
-                for i, p in ipairs(declarator.direct_declarator.parameter_list or {}) do
-                    p.handle.place = operand.p(i-1)
+                for i, p in ipairs(declarator.direct_declarator.parameter_list or {}) do -- this is hell
+                    local param_place = operand.p(i-1)
+
+                    if aggregate_types[Type.INVERTED_KINDS[p.value_type.kind]] then -- since an pointer of an struct is pushed, the called function copies the data from that pointer into an copy in its stack frame.
+                        local ptr = operand.t()
+                        table.insert(tac[current_method.id], {type="ld", source=param_place, dest=ptr})
+
+                        local size = IRVisitor:sizeof(p.value_type)
+                        local local_copy = operand.l(size)
+
+                        for offset = 0, size - 1 do
+                            local src = operand.pr()
+                            local tmp = operand.t()
+
+                            table.insert(tac[current_method.id], {
+                                type="add3",
+                                source=ptr,
+                                dest=src,
+                                offset=operand.i(offset)
+                            })
+
+                            table.insert(tac[current_method.id], {
+                                type="ld",
+                                source=src,
+                                dest=tmp
+                            })
+
+                            local dest = Operand:new(local_copy.type, local_copy.value + offset)
+                            table.insert(tac[current_method.id], {
+                                type="st",
+                                source=tmp,
+                                dest=dest
+                            })
+                        end
+
+                        p.handle.place = local_copy
+                    else
+                        p.handle.place = param_place
+                    end
                 end
 
                 if(n.block) then
@@ -398,12 +435,60 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
         end
     end
 
+    function emit_aggregate_copy(source, dest, valtype) -- please work 2x, Oh hey it seems to work :D
+        local size = IRVisitor:sizeof(valtype)
+
+        local src_addr = emit_address_of(source)
+        local dst_addr = emit_address_of(dest)
+
+        for i = 0, size - 1 do
+            local src_byte = operand.pr()
+            local dst_byte = operand.pr()
+
+            -- src_byte = *(src_addr + i)
+            table.insert(tac[current_method.id], {
+                type = "add3",
+                source = src_addr,
+                dest = src_byte,
+                offset = operand.i(i)
+            })
+
+            local tmp = operand.t()
+            table.insert(tac[current_method.id], {
+                type = "ld",
+                source = src_byte,
+                dest = tmp
+            })
+
+            -- dst_byte = *(dst_addr + i)
+            table.insert(tac[current_method.id], {
+                type = "add3",
+                source = dst_addr,
+                dest = dst_byte,
+                offset = operand.i(i)
+            })
+
+            table.insert(tac[current_method.id], {
+                type = "st",
+                source = tmp,
+                dest = dst_byte
+            })
+        end
+
+        return dest
+    end
+  
     function emit_assignment_expression(n)
         if (n.lhs) then 
             emit_ternary_expression(n.lhs)
             emit_assignment_expression(n.rhs)
             if(n.op == "=") then
-                n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
+                if aggregate_types[Type.INVERTED_KINDS[n.value_type.kind]] then
+                    emit_aggregate_copy(n.rhs.place, n.lhs.place, n.value_type)
+                    n.place = n.lhs.place
+                else
+                    n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
+                end
             elseif(n.op == "/=") then
                 local lhs_place = n.lhs.place
                 -- if(not reg_rvalue_operands[n.lhs.place.type]) then
