@@ -113,7 +113,6 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n.specifier.type_specifier.kind, "STRUCT_OR_UNION_SPECIFIER")) then
             check_struct_or_union_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
-            s = require("serpent")
         elseif(node_check(n.specifier.type_specifier.kind, "ENUM_SPECIFIER")) then
             check_enum_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
@@ -320,16 +319,22 @@ function Type_Checker.type_check(ast, symbol_table)
 
     function check_for(n)
         new_scope("for_loop_" .. next_block_id())
-        if(node_check(n.initialization, "DECLARATION")) then
-            build_type(n.initialization)
-        else
-            check_expression(n.initialization)
+        if(n.initialization) then
+            if(node_check(n.initialization, "DECLARATION")) then
+                build_type(n.initialization)
+            else
+                check_expression(n.initialization)
+            end
         end
-        if(not can_coerce(check_expression(n.condition), base("INT"))) then
-            Diagnostics.submit(Message.error("The condition for a for statement must be an int", n.condition.pos))
+        if(n.condition) then
+            if(not can_coerce(check_expression(n.condition), base("INT"))) then
+                Diagnostics.submit(Message.error("The condition for a for statement must be an int", n.condition.pos))
+            end
         end
         check_statement(n.statement)
-        check_expression(n.update)
+        if(n.update) then
+            check_expression(n.update)
+        end
         exit_scope()
     end
 

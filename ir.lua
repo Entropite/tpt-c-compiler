@@ -183,7 +183,7 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
         elseif(node_check(n, "INITIALIZER_LIST")) then
 
             if(Type.same_type_chain(n.value_type, Type.pointer(Type.base("CHAR")))) then
-                print("WOW")
+                print("?")
             else
                 for i, child in ipairs(n) do
                     if(n.value_type.kind == Type.KINDS["ARRAY"]) then
@@ -1004,19 +1004,25 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
         local update_label = operand.lb()
         local end_label = operand.lb()
         table.insert(loop_labels, {update_lb=update_label, end_lb=end_label})
+        if(n.initialization) then
         if(node_check(n.initialization, "DECLARATION")) then
             emit_declaration(n.initialization)
-        else
-            emit_expression(n.initialization)
+            else
+                emit_expression(n.initialization)
+            end
         end
         table.insert(tac[current_method.id], {type="label", target=start_label})
         -- For optimization purposes, the condition's false and end labels are associated with the for loop itself
         local true_label = operand.lb()
-        emit_bool_control_flow(n.condition[1], true_label, end_label)
+        if(n.condition) then
+            emit_bool_control_flow(n.condition[1], true_label, end_label)
+        end
         table.insert(tac[current_method.id], {type="label", target=true_label})
         emit_statement(n.statement)
         table.insert(tac[current_method.id], {type="label", target=update_label})
-        emit_expression(n.update)
+        if(n.update) then
+            emit_expression(n.update)
+        end
         table.insert(tac[current_method.id], {type="jmp", target=start_label})
         table.insert(tac[current_method.id], {type="label", target=end_label})
         table.remove(loop_labels)

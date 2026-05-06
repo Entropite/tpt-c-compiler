@@ -1041,17 +1041,21 @@ function Parser.parse(toks, symbol_table)
 
         if(check("TYPE_SPECIFIER") or check("STORAGE_CLASS")) then
             for_node.initialization = parse_declaration()
-        else
+        elseif(not check(";")) then
             for_node.initialization = parse_expression()
         end
 
         expect(";")
 
-        for_node.condition = parse_expression()
+        if(not check(";")) then
+            for_node.condition = parse_expression()
+        end
 
         expect(";")
 
-        for_node.update = parse_expression()
+        if(not check(")")) then
+            for_node.update = parse_expression()
+        end
 
         expect(")")
 
