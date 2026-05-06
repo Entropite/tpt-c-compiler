@@ -127,6 +127,7 @@ function Parser.parse(toks, symbol_table)
             table.insert(declaration_node.declarators, declarator)
         end
         declaration_node.declarator = declaration_node.declarators[1]
+        declaration_node.is_function = declaration_node.declarator and declaration_node.declarator.is_function
 
         if(declaration_node.specifier.storage_class.kind == "typedef") then
             for _, declarator in ipairs(declaration_node.declarators) do
@@ -727,9 +728,14 @@ function Parser.parse(toks, symbol_table)
             elseif(peek_token().value == "enum") then
                 type_specifier_node.kind = parse_enum_specifier()
             else
-                type_specifier_node.kind = {}
-                while(check("TYPE_SPECIFIER")) do
-                    table.insert(type_specifier_node.kind, next_token().value)
+                potential_type = symbol_table.get_symbol(peek_token().value, symbol_table.ordinary)
+                if(potential_type and potential_type.is_type_name) then
+                    type_specifier_node.kind = {next_token().value}
+                else
+                    type_specifier_node.kind = {}
+                    while(check("TYPE_SPECIFIER")) do
+                        table.insert(type_specifier_node.kind, next_token().value)
+                    end
                 end
             end
         else

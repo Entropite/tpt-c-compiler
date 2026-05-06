@@ -113,12 +113,14 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n.specifier.type_specifier.kind, "STRUCT_OR_UNION_SPECIFIER")) then
             check_struct_or_union_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
+            s = require("serpent")
         elseif(node_check(n.specifier.type_specifier.kind, "ENUM_SPECIFIER")) then
             check_enum_type(n.specifier.type_specifier.kind)
             base_type = n.specifier.type_specifier.kind.value_type
         else
             if(not Type.BASE_KINDS[string.upper(n.specifier.type_specifier.kind[1])]) then
                 base_type = get_symbol(n.specifier.type_specifier.kind[1], symbol_table.ordinary).type
+                
             else
                 base_type = base(n.specifier.type_specifier.kind)
             end
@@ -162,6 +164,7 @@ function Type_Checker.type_check(ast, symbol_table)
 
             -- register the variable in the symbol table
             -- every registered variable has a declarator
+            
             if(n.is_function and not n.block) then
                 -- prototype
                 add_symbol(declarator.id.id, {type = declarator.value_type, is_prototype = true}, symbol_table.ordinary)
@@ -169,7 +172,7 @@ function Type_Checker.type_check(ast, symbol_table)
                 local potential_symbol = get_symbol(declarator.id.id, symbol_table.ordinary)
                 if(potential_symbol) then
                     -- previous prototype
-                    if(not potential_symbol.is_prototype) then
+                    if(not potential_symbol.is_prototype and not potential_symbol.is_type_name) then
                         Diagnostics.submit(Message.error(string.format("Symbol '%s' is redefined", declarator.id.id), declarator.id.pos))
                     end
                     potential_symbol.type = declarator.value_type

@@ -499,6 +499,7 @@ function CodeGen:build_interference_graph(blocks)
                 interference_graph[k1] = interference_graph[k1] or {}
                 for k2, v2 in pairs(block.per_instruction_live_out[j]) do
                     assert(type(k1) == "number" and type(k2) == "number", "Invalid operands")
+                    interference_graph[k2] = interference_graph[k2] or {}
                     interference_graph[k1][k2] = true
                     interference_graph[k2][k1] = true
                     
