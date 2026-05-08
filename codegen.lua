@@ -6,6 +6,7 @@ local CodeGen = {
     term_width=12,
     term_height=8,
     global_addr=1,
+    base_addr=0x9F80,
     symbol_table={},
     available_registers={},
     current_method="!global",
@@ -152,11 +153,11 @@ function CodeGen:generate(code, symbol_table)
 %define return_addr_reg r27
 
 ; Initialization and defining basic macros
-%define term_base 0x9F80
 ]] .. string.gsub([[
+%define term_base %base
 %define term_height %height
 %define term_width %width
- ]], "%%(%a+)", {["height"]=tostring(self.term_height), ["width"]=tostring(self.term_width)})
+ ]], "%%(%a+)", {["height"]=tostring(self.term_height), ["width"]=tostring(self.term_width), ["base"]=tostring(self.base_addr)})
  .. [[
 
 %eval term_input  term_base 0x00 +
@@ -642,9 +643,9 @@ function CodeGen:lower_abstract_instructions(tac)
             if(c.type == "!get_address") then
                 tac[i] = self:emit_get_address(c.target, c.dest)
             elseif(c.type == "!debug_breakpoint") then
-                tac[i] = {type="st", source=Operand:new("r", "r0"), dest=Operand:new("g", 0x8000 - self.global_addr)} -- Cheap way to deal with as_global shifting everything by 1
+                tac[i] = {type="st", source=Operand:new("r", "r0"), dest=Operand:new("g", self.base_addr + 0x80 - self.global_addr)} -- Cheap way to deal with as_global shifting everything by 1
             elseif(c.type == "!debug_function_call") then
-                tac[i] = {type="st", source=c.target, dest=Operand:new("g", 0x8001 - self.global_addr)}
+                tac[i] = {type="st", source=c.target, dest=Operand:new("g", self.base_addr + 0x8001 - self.global_addr)}
             end
         end
     end

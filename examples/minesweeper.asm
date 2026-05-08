@@ -7,7 +7,7 @@
 %define return_addr_reg r27
 
 ; Initialization and defining basic macros
-%define term_base 0x9F80
+%define term_base 40832
 %define term_height 8
 %define term_width 12
  
