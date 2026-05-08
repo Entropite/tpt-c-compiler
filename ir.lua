@@ -32,18 +32,20 @@ function IRVisitor:sizeof(type)
 end
 
 
-function IRVisitor.generate_ir_code(ast, symbol_table)
+function IRVisitor.generate_ir_code(ast, breakpoints)
     local NODE_TYPES = Node.NODE_TYPES
     local TOKEN_TYPES = Token.TOKEN_TYPES
     local PLACE_TYPES = Operand.PLACE_TYPES
     local global_method = IRVisitor.global_method
     local tac = {[global_method.id] = {}}
-    local get_symbol = symbol_table.get_symbol
-    local set_symbol = symbol_table.set_symbol
-    local new_scope = symbol_table.new_scope
-    local exit_scope = symbol_table.exit_scope
+    -- local get_symbol = symbol_table.get_symbol
+    -- local set_symbol = symbol_table.set_symbol
+    -- local new_scope = symbol_table.new_scope
+    -- local exit_scope = symbol_table.exit_scope
 
     local node_check = Node.node_check
+
+    local breakpoint_idx = 1
 
     local global_data = {}
     local label = 0
@@ -335,7 +337,7 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
                 tac[current_method.id] = {}
                 
 
-                new_scope(current_method.id)
+                -- new_scope(current_method.id)
 
                 
                 for i, p in ipairs(declarator.direct_declarator.parameter_list or {}) do -- this is hell
@@ -384,7 +386,7 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
                 else
                     
                 end
-                exit_scope()
+                -- exit_scope()
                 current_method = global_method
 
             end
@@ -832,6 +834,10 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
 
     function emit_block(n)
         for i, s in ipairs(n) do
+            if(breakpoints and #breakpoints >= breakpoint_idx and s.pos.row > breakpoints[breakpoint_idx] - 1) then
+                table.insert(tac[current_method.id], {type="!debug_breakpoint", target=breakpoints[breakpoint_idx]})
+                breakpoint_idx = breakpoint_idx + 1
+            end
             emit_statement(s)
         end
     end
@@ -1452,6 +1458,11 @@ function IRVisitor.generate_ir_code(ast, symbol_table)
 
                     if(lvalue_operands[n.place.type]) then
                         n.place = load_operand_into_register(n.place)
+                    end
+                    if(breakpoints and #breakpoints > 0) then
+                        local t = operand.t()
+                        emit_move(n.place, t)
+                        table.insert(tac[current_method.id], {type="!debug_function_call", target=t})
                     end
                     table.insert(tac[current_method.id], {type="call", target=n.place})
                     if(not n.place.is_standard_function) then

@@ -10,14 +10,16 @@ if(_VERSION ~= "Lua 5.4") then
     print("[WARNING] This compiler requires Lua 5.4. You are using Lua " .. _VERSION .. ". The compiler may not work as expected.")
 end
 
-local usage = "Usage: lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-width width] [--term-height height] [--offset offset]" 
+local usage = "Usage: lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-width width] [--term-height height] [--offset offset] [--symbols symbols.json]" 
 if(#arg < 1) then
     print(usage)
     os.exit(1)
 end
 
 local output_name = string.sub(arg[1], 1, #arg[1] - 2) .. ".asm"
-
+local export_symbols = false
+local export_symbols_filename
+local breakpoints = {}
 
 for arg_idx = 2, #arg - 1, 2 do
     if arg[arg_idx] == "--offset" then
@@ -50,6 +52,25 @@ for arg_idx = 2, #arg - 1, 2 do
             error("Invalid term-height argument: '"..arg[arg_idx + 1].."'")
         end
         codegen.term_height = height
+    elseif arg[arg_idx] == "--symbols" then
+        export_symbols = true
+        export_symbols_filename = arg[arg_idx + 1]
+        if not export_symbols_filename then
+            error("Exporting symbols requires specifying an output file")
+        end
+    elseif arg[arg_idx] == "--breakpoints" then
+        local breakpoint_string = arg[arg_idx + 1]
+        breakpoint_string = string.sub(breakpoint_string, 2, #breakpoint_string - 1)
+        local breakpoint_strings = util.split_string(breakpoint_string, ",")
+        for _, breakpoint_string in ipairs(breakpoint_strings) do
+            breakpoint = tonumber(breakpoint_string)
+            if not breakpoint then
+                error("Invalid breakpoint argument: '"..breakpoint.."'")
+            end
+            table.insert(breakpoints, breakpoint)
+        end
+
+        table.sort(breakpoints)
     end
 end
 
@@ -62,9 +83,26 @@ else
     error("Failed to open file")
 end
 
+local type_checked_ast, symbol_table = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
+local ir_code = irv.generate_ir_code(type_checked_ast, breakpoints)
+local asm = codegen:generate(ir_code, symbol_table)
 
-local asm = codegen:generate(irv.generate_ir_code(type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))))
 
 local out_file = io.open(output_name, "w")
 out_file:write(asm)
 out_file:close()
+
+if(export_symbols) then
+    local json_installed, json = pcall(function() return require("dkjson") end)
+    if(json_installed) then
+
+        local type_exception = function(reason, value, state) return true end
+
+        local json_string = json.encode(symbol_table, {indent=true, exception=type_exception})
+        local json_file = io.open(export_symbols_filename, "w")
+        json_file:write(json_string)
+        json_file:close()
+    else        
+        print("[ERROR] dkjson not found, symbols cannot be exported to json")
+    end
+end

@@ -1,6 +1,12 @@
 local Token = require("token")
 local util = require("util")
-local lpeg = require("lipeg")
+
+
+local lpeg_installed, lpeg = pcall(function() return require("lpeg") end)
+
+if(not lpeg_installed) then
+    lpeg = require("lipeg")
+end
 
 local Lexer = {}
 Lexer.__index = Lexer
@@ -156,8 +162,13 @@ function Lexer.lex(s)
     -- LPEG is greedy so floats must be checked before integers else, integers will match the integer part of the float
     local token = S * ((singleline_comments + multiline_comments + reserved + storage_class + op +type_specifier + id + string_lit + character + hex_integers + integers + punctuation + other) * S)^1
     
-    local succ, p, tokens = token:match(s, 1, {size=0})
-    util.resize_list(tokens, tokens.size)
+    local succ, p, tokens
+    if(lpeg_installed) then
+        tokens = {token:match(s)}
+    else
+        succ, p, tokens = token:match(s, 1, {size=0})
+        util.resize_list(tokens, tokens.size)
+    end
 
     setmetatable(tokens, {__tostring = function(s) return util.array_to_string(s, " ") end })
 

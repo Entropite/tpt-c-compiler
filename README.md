@@ -47,7 +47,7 @@ In a terminal, use cli.lua to compile your program like in the following snippet
 
 ```bash
 
-lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-height terminal-rows] [--term-width terminal-cols] [--offset global-offset]
+lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-height terminal-rows] [--term-width terminal-cols] [--offset global-offset] [--symbols symbols.json] [--breakpoints "[5, 8, 13, ...]"]
 
 ```
 |Optional Argument|Description|Default value|
@@ -57,6 +57,8 @@ lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-hei
 |\-\-term-height|The number of character rows in the terminal|8|
 |\-\-term-width|The number of character columns in the terminal|12|
 |\-\-offset|The global offset of the program in memory|0|
+|\-\-symbols|The file to store the symbol table in JSON format (requires dkjson)|N/A|
+|\-\-breakpoints|The list of line numbers to place breakpoints in the program|"[]"|
 
   
 

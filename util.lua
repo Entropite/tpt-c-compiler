@@ -41,6 +41,23 @@ function Utils.deep_copy(table)
     return copy
 end
 
+function Utils.split_string(str, delimiter)
+    local result = {}
+    local start_idx = 1
+    local end_idx = str:find(delimiter)
+    while end_idx and end_idx > start_idx do
+        table.insert(result, str:sub(start_idx, end_idx - 1))
+        start_idx = end_idx + 1
+        end_idx = str:find(delimiter, start_idx)
+    end
+
+    if start_idx <= #str then
+        table.insert(result, str:sub(start_idx, #str))
+    end
+
+    return result
+end
+
 function Utils.resize_list(list, size)
     for i = #list, size + 1, -1 do
         list[i] = nil

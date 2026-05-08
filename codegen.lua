@@ -98,7 +98,7 @@ CodeGen.emission_map = {
 
 setmetatable(CodeGen.emission_map, {
     __index=function(t, x)
-                return function(c) 
+                return function(c)
                     if(string.sub(c.type, #c.type, #c.type) == "3") then
                         return string.format("%s %s, %s, %s", string.sub(c.type, 1, #c.type - 1), CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third))
                     elseif(string.sub(c.type, 1, 1) == "j") then
@@ -633,11 +633,19 @@ function CodeGen:allocate_registers(tac)
 
 end
 
+local abstract_instructions = {["!get_address"]=1, ["!debug_breakpoint"]=1, ["!debug_function_call"]=1}
+
 function CodeGen:lower_abstract_instructions(tac)
-    for i = #tac - 1, 1, -1 do
+    for i = #tac, 1, -1 do
         local c = tac[i]
-        if(c.type == "!get_address") then
-            tac[i] = self:emit_get_address(c.target, c.dest)
+        if(abstract_instructions[c.type]) then
+            if(c.type == "!get_address") then
+                tac[i] = self:emit_get_address(c.target, c.dest)
+            elseif(c.type == "!debug_breakpoint") then
+                tac[i] = {type="st", source=Operand:new("r", "r0"), dest=Operand:new("g", 0x8000 - self.global_addr)} -- Cheap way to deal with as_global shifting everything by 1
+            elseif(c.type == "!debug_function_call") then
+                tac[i] = {type="st", source=c.target, dest=Operand:new("g", 0x8001 - self.global_addr)}
+            end
         end
     end
 end
