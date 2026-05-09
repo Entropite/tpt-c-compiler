@@ -96,7 +96,7 @@ if(export_symbols) then
     local json_installed, json = pcall(function() return require("dkjson") end)
     if(json_installed) then
 
-        local type_exception = function(reason, value, state) return true end
+        local type_exception = function(reason, value, state) return '"NULL"' end
 
         local json_string = json.encode(symbol_table, {indent=true, exception=type_exception})
         local json_file = io.open(export_symbols_filename, "w")
