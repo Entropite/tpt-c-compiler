@@ -7,7 +7,7 @@
 %define return_addr_reg r27
 
 ; Initialization and defining basic macros
-%define term_base 0x9F80
+%define term_base 40832
 %define term_height 29
 %define term_width 29
  
@@ -832,49 +832,15 @@ __tptcc_fn_main:
 	pop r1
 	pop base_pointer
 	hlt
-__tptcc_fn_print_unsigned_int:
-	test r22, r22
-	jnz .__print_unsigned_int_not_zero
-	mov r22, '0'
-	st r22, term_print
-	jmp .__print_unsigned_int_exit
-.__print_unsigned_int_not_zero:
-	mov r23, 4		; p = 4
-.__print_unsigned_int_fixed_point:
-	mulh r24, r22, 52429	; q = (n * 52429) >> 16
-	shr r24, 3		; q >>= 3
-	mul r25, r24, 10		; d*q
-	sub r22, r25		; remainder = n - d*q
-	st r22, r23, .__print_unsigned_int_buf		
-	sub r23, 1		; p--;
-	movf r22, r24		; n = q
-	jnz .__print_unsigned_int_fixed_point
-
-	add r23, 1
-.__print_unsigned_int_print_int:
-	ld r22, r23, .__print_unsigned_int_buf
-	add r22, '0'
-	st r22, term_reg, term_base
-	add r23, 1
-	cmp r23, 5
-	jne .__print_unsigned_int_print_int
-	
-.__print_unsigned_int_exit:
-	ret
-.__print_unsigned_int_buf:
-	dw 0, 0, 0, 0, 0
-
-__tptcc_fn_print_signed_int:
-    cmp r22, 0
-    jge .__print_signed_int_not_negative
-    mov r23, '-'
-    st r23, term_reg, term_base
-	xor r22, 65535
-    add r22, 1
-.__print_signed_int_not_negative:
-    call __tptcc_fn_print_unsigned_int
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
     ret
-    
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
+    ret
 __tptcc_fn_print_char_array:
     ld r23, r22
     test r23, r23
@@ -884,91 +850,101 @@ __tptcc_fn_print_char_array:
     jmp __tptcc_fn_print_char_array
 .__print_char_array_exit:
     ret
-
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-
-__tptcc_fn_getchar:
-    ld return_reg, term_input
-    test return_reg, return_reg
-    jz __tptcc_fn_getchar
-    ret
-
-__tptcc_fn_getchar_nb:
-    ld return_reg, term_input
-    ret
-
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-
-__tptcc_fn_send_raw:
-    st r22, r23
-    ret
-
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-
-
 __tptcc_fn_set_cursor:
     ; r22 = row, r23 = column
     shl r22, 5
     add r22, r23
     st r22, term_cursor
     ret
-
-__tptcc_fn_scan_unsigned_int:
-    mov r23, 0
-__scan_unsigned_int_loop:
-    call __tptcc_fn_getchar
-    st return_reg, term_reg, term_base
-    sub return_reg, '0'
-    cmp return_reg, 9
-    jg __scan_unsigned_int_not_digit
-    cmp return_reg, 0
-    jl __scan_unsigned_int_not_digit
-    mull r23, 10
-    add r23, return_reg
-    jmp __scan_unsigned_int_loop
-__scan_unsigned_int_not_digit:
-    st r23, r22
+__tptcc_fn_print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz .__print_char_array_exit
+    st r23, term_reg, term_base
+    add r22, 1
+    jmp __tptcc_fn_print_char_array
+.__print_char_array_exit:
     ret
-
-__tptcc_fn_vscroll:
-    mov r22, ' '
-    st r22, term_raw
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
     ret
-
-__tptcc_fn_hscroll:
-    mov r22, ' '
-    st r22, term_base
+__tptcc_fn_print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz .__print_char_array_exit
+    st r23, term_reg, term_base
+    add r22, 1
+    jmp __tptcc_fn_print_char_array
+.__print_char_array_exit:
     ret
-
-__tptcc_fn_set_terminal_mode:
-    mov term_reg, r22
+__tptcc_fn_print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz .__print_char_array_exit
+    st r23, term_reg, term_base
+    add r22, 1
+    jmp __tptcc_fn_print_char_array
+.__print_char_array_exit:
     ret
-
-__tptcc_fn_get_terminal_mode:
-    mov return_reg, term_reg
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
     ret
-
-__tptcc_fn_plot:
-    ; r22 = column/x, r23 = row/y, r24 = colour
-    shl r23, 8
-    add r23, r22
-    st r23, r24, term_plot
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
+    ret
+__tptcc_fn_print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz .__print_char_array_exit
+    st r23, term_reg, term_base
+    add r22, 1
+    jmp __tptcc_fn_print_char_array
+.__print_char_array_exit:
+    ret
+__tptcc_fn_print_char_array:
+    ld r23, r22
+    test r23, r23
+    jz .__print_char_array_exit
+    st r23, term_reg, term_base
+    add r22, 1
+    jmp __tptcc_fn_print_char_array
+.__print_char_array_exit:
+    ret
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
+    ret
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
+    ret
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
+    ret
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
+    ret
+__tptcc_fn_putchar:
+    st r22, term_reg, term_base
+    ret
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
+    ret
+__tptcc_fn_putchar:
+    st r22, term_reg, term_base
+    ret
+__tptcc_fn_getchar:
+    ld return_reg, term_input
+    test return_reg, return_reg
+    jz __tptcc_fn_getchar
     ret

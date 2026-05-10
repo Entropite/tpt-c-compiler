@@ -133,7 +133,7 @@ function CodeGen:build_global_data_section()
     return "dw " .. table.concat(data_section, ", ")
 end
 
-function CodeGen:generate(code, symbol_table)
+function CodeGen:generate(code, symbol_table, included_standard_functions)
     self.symbol_table = symbol_table
     self.ir = code
     local gen = {code={}}
@@ -287,7 +287,12 @@ start:
     end
 
     -- print num + other util functions
-    built_ins =string.gsub(Standard_Library.code, "%%(%d+)", {["1"]="r22", ["2"]="r23", ["3"]="r24", ["4"]="r25"})
+    local stdlib = ""
+    for _, func in ipairs(included_standard_functions) do
+        stdlib = stdlib .. Standard_Library.code[func]
+    end
+    
+    built_ins =string.gsub(stdlib, "%%(%d+)", {["1"]="r22", ["2"]="r23", ["3"]="r24", ["4"]="r25"})
 
     gen = gen .. built_ins
     return table.concat(gen.code, "")

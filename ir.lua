@@ -424,10 +424,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
     local symbol_to_unsigned_comparison_type = {
         ["=="] = "je",
         ["!="] = "jne",
-        [">="] = "jae",
-        ["<="] = "jbe",
-        [">"] = "ja",
-        ["<"] = "jb"
+        ["<="] = "jae",
+        [">="] = "jbe",
+        ["<"] = "ja",
+        [">"] = "jb"
     }
 
 

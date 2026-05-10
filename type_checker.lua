@@ -27,6 +27,8 @@ function Type_Checker.type_check(ast, symbol_table)
     local NODE_TYPES = Node.NODE_TYPES
     local node_check = Node.node_check
 
+    local included_standard_functions = {}
+
     function check_program(n)
         for _, child in ipairs(n) do
             build_type(child)
@@ -918,6 +920,9 @@ function Type_Checker.type_check(ast, symbol_table)
                 n.value_type = n.handle.type
             end
             if(n.value_type.kind == Type.KINDS["FUNCTION"]) then
+                if(n.handle.place and n.handle.place.is_standard_function) then
+                    table.insert(included_standard_functions, n.value)
+                end
                 n.value_type = pointer(n.value_type)
             end
         elseif(node_check(n, "STRING_LITERAL")) then
@@ -995,7 +1000,8 @@ function Type_Checker.type_check(ast, symbol_table)
         return parameter_types
     end
 
-    return check_program(ast), symbol_table
+    check_program(ast)
+    return ast, included_standard_functions
 end
 
 

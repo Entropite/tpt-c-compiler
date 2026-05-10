@@ -83,9 +83,9 @@ else
     error("Failed to open file")
 end
 
-local type_checked_ast, symbol_table = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
+local type_checked_ast, included_standard_functions = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
 local ir_code = irv.generate_ir_code(type_checked_ast, breakpoints)
-local asm = codegen:generate(ir_code, symbol_table)
+local asm = codegen:generate(ir_code, symbol_table, included_standard_functions)
 
 
 local out_file = io.open(output_name, "w")
