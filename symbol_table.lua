@@ -23,6 +23,8 @@ symbol_table.default_symbol_table = {level=0, tag_symbols={}, ordinary_symbols={
 ["set_terminal_mode"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_set_terminal_mode"}},
 ["get_terminal_mode"]={type=Type.func(Type.base("INT"), {}), place={is_standard_function=true, type="i",value="__tptcc_fn_get_terminal_mode"}},
 ["set_text_colour"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_set_text_colour"}},
+["set_hrange"]={type=Type.func(Type.base("VOID"), {Type.base("INT"), Type.base("INT")}), place={is_standard_function=true, type="i", value="__tptcc_fn_set_hrange"}},
+["set_vrange"]={type=Type.func(Type.base("VOID"), {Type.base("INT"), Type.base("INT")}), place={is_standard_function=true, type="i", value="__tptcc_fn_set_vrange"}},
 ["plot"]={type=Type.func(Type.base("VOID"), {Type.base("INT"), Type.base("INT"), Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_plot"}},
 ["BLACK"]={type=Type.base("INT"), place={type="i",value=0}},
 ["DARK_BLUE"]={type=Type.base("INT"), place={type="i",value=1}},

@@ -176,4 +176,22 @@ __tptcc_fn_plot:
     ret
 ]]
 
+Standard_Library.code["set_hrange"] = [[
+__tptcc_fn_set_hrange:
+    ; %1 = start column, %2 = end column
+    shl %2, 5
+    add %2, %1
+    st %2, term_hrange
+    ret
+]]
+
+Standard_Library.code["set_vrange"] = [[
+__tptcc_fn_set_vrange:
+    ; %1 = start row, %2 = end row
+    shl %2, 5
+    add %2, %1
+    st %2, term_vrange
+    ret
+]]
+
 return Standard_Library

@@ -305,6 +305,32 @@ Displays a null-terminated array of characters.
 - **Returns**
   - `void`
 
+---
+
+## `void set_hrange(int minimum_column, int maximum_column)`
+
+Sets the horizontal range of the scrollprint. Note that the origin is at the top left corner.
+
+- **Parameters**
+  - `minimum_column` — The lowest inclusive column in the scrollprint
+  - `maximum_column` — The highest inclusive column in the scrollprint
+- **Returns**
+  - `void`
+
+---
+
+## `void set_vrange(int minimum_row, int maximum_row)`
+
+Sets the vertical range of the scrollprint. Note that the origin is at the top left corner.
+
+- **Parameters**
+  - `minimum_row` — The lowest inclusive row in the scrollprint
+  - `maximum_row` — The highest inclusive row in the scrollprint
+- **Returns**
+  - `void`
+
+---
+
 # Inline Assembly
 The Powder Toy Compiler provides basic support for inline assembly. The following EBNF-like pseudocode describes how to use this feature.
 
