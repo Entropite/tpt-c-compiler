@@ -8,7 +8,9 @@ local func = Type.func
 local symbol_table = {}
 symbol_table.default_symbol_table = {level=0, tag_symbols={}, ordinary_symbols={["NULL"]={type=Type.pointer(Type.base("VOID")), place={type="i",value=0}},
     ["__print_unsigned_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_print_unsigned_int"}},
-["__print_signed_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_print_signed_int"}},
+    ["__print_unsigned_long"]={type=Type.func(Type.base("VOID"), {Type.base("LONG")}), place={is_standard_function=true, type="i",value="__tptcc_fn_print_unsigned_long"}},
+    ["__print_signed_long"]={type=Type.func(Type.base("VOID"), {Type.base("LONG")}), place={is_standard_function=true, type="i", value="__tptcc_fn_print_signed_long"}},
+    ["__print_signed_int"]={type=Type.func(Type.base("VOID"), {Type.base("INT")}), place={is_standard_function=true, type="i",value="__tptcc_fn_print_signed_int"}},
 ["putchar"]={type=Type.func(Type.base("VOID"), {Type.base("CHAR")}), place={is_standard_function=true, type="i",value="__tptcc_fn_putchar"}},
 ["getchar"]={type=Type.func(Type.base("CHAR"), {}), place={is_standard_function=true, type="i",value="__tptcc_fn_getchar"}},
 ["getchar_nb"]={type=Type.func(Type.base("CHAR"), {}), place={is_standard_function=true, type="i",value="__tptcc_fn_getchar_nb"}},

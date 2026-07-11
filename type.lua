@@ -28,7 +28,22 @@ Type.BASE_KINDS = {
     ["ENUM"]=1
 }
 
+
+
+setmetatable(Type.BASE_KINDS, {__index = function(t, k)
+    return rawget(t, string.upper(k))
+end})
+
 Type.KINDS = util.invert_table(Type.INVERTED_KINDS)
+
+Type.INTEGRAL_TYPES = {}
+Type.INTEGRAL_TYPES[Type.KINDS["INT"]] = 1
+Type.INTEGRAL_TYPES[Type.KINDS["LONG"]] = 1
+
+setmetatable(Type.KINDS, {__index = function(t, k)
+    return rawget(t, string.upper(k))
+end})
+
 Type.__index = Type
 
 function Type:new(t)
@@ -49,20 +64,17 @@ function Type.same_type_chain(type1, type2, allow_length_mismatch)
     return type1 == type2 -- both are nil
 end
 
+
     function Type.base(kind)
         if(type(kind) == "table") then
             if(#kind == 1) then
-                return Type:new({kind = Type.KINDS[string.upper(kind[1])], signed = true})
-            elseif(#kind == 2) then
-                -- first kind is signedness
-                -- second kind is the base type
-                local first_kind = string.upper(kind[1])
-                local second_kind = string.upper(kind[2])
-                assert((first_kind == "SIGNED" or first_kind == "UNSIGNED"), "Invalid type specifier")
-                return Type:new({kind = Type.KINDS[second_kind], signed = first_kind == "SIGNED"})
-            else
-                error()
+                return Type.base(kind[1])
             end
+            -- local s = require("serpent")
+            -- assert(kind.is_signed ~= nil and kind.kind ~= nil, "Invalid base type " .. s.block(kind))
+            
+            assert(type(kind.is_signed) == "boolean" and Type.BASE_KINDS[kind.kind], "Invalid base type ")
+            return Type:new({kind = Type.KINDS[kind.kind], signed = kind.is_signed})
         else
             return Type:new({kind = Type.KINDS[string.upper(kind)], signed = true})
         end
@@ -109,7 +121,8 @@ end
         end
     end
 
-    function Type.to_string_pretty(type)
+    function Type.to_string_pretty(type, show_unsigned)
+        show_unsigned = show_unsigned or true
         if(type == nil) then
             return "?"
         end
@@ -140,15 +153,19 @@ end
             elseif(type.kind == Type.KINDS["FUNCTION"]) then
                 result = result .. "FUNCTION(("
                 for _, param in ipairs(type.parameter_types) do
-                    result = result .. Type.to_string_pretty(param) .. ", "
+                    result = result .. Type.to_string_pretty(param, show_unsigned) .. ", "
                 end
-                result = result .. ") -> " .. Type.to_string_pretty(type.return_type) .. ")"
+                result = result .. ") -> " .. Type.to_string_pretty(type.return_type, show_unsigned) .. ")"
             elseif(Type.INVERTED_KINDS[type.kind]) then
-                result = result .. Type.INVERTED_KINDS[type.kind]
+                if(Type.INTEGRAL_TYPES[type.kind] and show_unsigned and not type.signed) then
+                    result = result .. "U" .. Type.INVERTED_KINDS[type.kind]
+                else
+                    result = result .. Type.INVERTED_KINDS[type.kind]
+                end
             else
                 local potential_symbol = get_symbol(type.kind, symbol_table.ordinary)
                 if(potential_symbol) then
-                    result = result .. Type.to_string_pretty(potential_symbol.type)
+                    result = result .. Type.to_string_pretty(potential_symbol.type, show_unsigned)
                 else
                     error()
                 end

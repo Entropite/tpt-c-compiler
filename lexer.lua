@@ -53,6 +53,7 @@ function Lexer.lex(s)
     local loc = lpeg.locale()
     local S = lpeg.S(" \n\t\r")^0
     local TOKEN_TYPES = Token.TOKEN_TYPES
+    local INT_LITERAL_SUFFIXES = Token.INT_LITERAL_SUFFIXES
 
     local last_newline_pos = 0
     local rows = 1
@@ -113,11 +114,38 @@ function Lexer.lex(s)
     local singleline_comments = lpeg.P("//") * (lpeg.P(1) - lpeg.P("\n"))^0
 
     -- Integers
-    local integers = lpeg.C(lpeg.R("09")^1 * lpeg.P("u")^-1) 
-    integers = lpeg.Cp() * integers / function(pos, n) return Token:new(string.sub(n, #n, #n) == "u" and TOKEN_TYPES["UNSIGNED_INT"] or TOKEN_TYPES["INT"], util.to_int(n), get_pos(pos)) end
+    local integers = lpeg.C(lpeg.R("09")^1 * lpeg.S("uUlL")^-1)
+    integers = lpeg.Cp() * integers / function(pos, n) 
+        local int_type = INT_LITERAL_SUFFIXES[string.sub(n, #n, #n)]
+        local int_value = nil
+        if(not int_type) then
+            int_value = util.to_int(n)
+            if(int_value > 65535) then
+                int_type = TOKEN_TYPES["LONG"]
+            else
+                int_type = TOKEN_TYPES["INT"]
+            end
+        else
+            int_value = util.to_int(string.sub(n, 1, #n - 1))
+        end
+        return Token:new(int_type, int_value, get_pos(pos)) end
 
-    local hex_integers = lpeg.C(lpeg.P("0x") * lpeg.R("09", "af", "AF")^1 * lpeg.P("u")^-1)
-    hex_integers = lpeg.Cp() * hex_integers / function(pos, n) return Token:new(string.sub(n, #n, #n) == "u" and TOKEN_TYPES["UNSIGNED_INT"] or TOKEN_TYPES["INT"], util.to_int(n), get_pos(pos)) end
+    local hex_integers = lpeg.C(lpeg.P("0x") * lpeg.R("09", "af", "AF")^1 * lpeg.S("uUlL")^-1)
+    hex_integers = lpeg.Cp() * hex_integers / function(pos, n) 
+        
+        local hex_type = INT_LITERAL_SUFFIXES[string.sub(n, #n, #n)]
+        local hex_value = nil
+        if(not hex_type) then
+            hex_value = util.to_int(n)
+            if(hex_value > 65535) then
+                hex_type = TOKEN_TYPES["LONG"]
+            else
+                hex_type = TOKEN_TYPES["INT"]
+            end
+        else
+            hex_value = util.to_int(string.sub(n, 1, #n - 1))
+        end
+        return Token:new(hex_type, hex_value, get_pos(pos)) end
     
     -- Floats (not supported yet)
     local floats = lpeg.C(loc.digit^1 * "." * loc.digit^1) 

@@ -13,8 +13,9 @@ local CodeGen = {
     register_count=21,
     ir = nil,
     optimized = true
-    
+
 }
+
 
 for i=CodeGen.register_count, 1, -1 do
     table.insert(CodeGen.available_registers, i)
@@ -91,9 +92,14 @@ CodeGen.emission_map = {
     ["add3"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end, -- might remove this later since the __index metamethod can handle 3 operand instructions
     ["ldoffset"]=function(c) return string.format("%s %s, %s, %s", "ld", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
     ["asm"]=function(c) return c.asm end,
-    ["mulh"]=function(c) return string.format("%s %s, %s, %s", "mulh", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
+    ["mulh"]=function(c) return string.format("%s %s, %s, %s", c.type, CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
     ["mull3"]=function(c) return string.format("%s %s, %s, %s", "mul", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
     ["sub3"]=function(c) return string.format("%s %s, %s, %s", "sub", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
+    ["exh"]=function(c) return string.format("%s %s, %s, %s", c.type, CodeGen.as_reg(c.dest), CodeGen.as_reg(c.low), CodeGen.as_reg(c.high)) end,
+    ["adc"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source)) end,
+    ["mov3"]=function(c) return string.format("%s %s, %s, %s", "mov", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.high), c.low.type == "i" and c.low.value or CodeGen.as_reg(c.low)) end,
+    ["mov"]=function(c) return string.format("mov %s, %s", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen:as_memory(c.source)) end,
+    ["test"]=function(c) return string.format("%s %s, %s", c.type, CodeGen.as_reg(c.first), c.second.type == "i" and c.second.value or CodeGen.as_reg(c.second)) end,
 }
 
 
@@ -151,6 +157,7 @@ function CodeGen:generate(code, symbol_table, included_standard_functions)
 %define base_pointer r29
 %define term_reg r28
 %define return_addr_reg r27
+%define zero_high_reg r26 ; the msb 16 bits are all 0, unlike r0
 
 ; Initialization and defining basic macros
 ]] .. string.gsub([[
@@ -191,9 +198,9 @@ function CodeGen:generate(code, symbol_table, included_standard_functions)
 %endmacro
 
 %macro ret
-    mov r26, return_addr_reg
+    mov zero_high_reg, zero_high_reg, return_addr_reg
     pop return_addr_reg
-    jmp r26
+    jmp zero_high_reg
 %endmacro
 
 %macro mull x, y
@@ -206,8 +213,9 @@ global_data_section:
 
 init:
     mov term_reg, 0x25
-                              
-    ld r0, term_base              
+    exh zero_high_reg, r0, r0
+    mov zero_high_reg, zero_high_reg, 1                        
+                 
     mov r1, { term_width 1 - 5 << }
     st r1, term_hrange
     mov r1, { term_height 1 - 5 << }
@@ -288,7 +296,7 @@ start:
 
     -- print num + other util functions
     local stdlib = ""
-    for _, func in ipairs(included_standard_functions) do
+    for func, _ in pairs(included_standard_functions) do
         stdlib = stdlib .. Standard_Library.code[func]
     end
     
@@ -323,7 +331,14 @@ CodeGen.use_def_map = {
     ["asm"]=function(c) return {}, {} end,
     ["mulh"]=function(c) return {c.source, c.third}, {c.dest} end,
     ["mull3"]=function(c) return {c.source, c.third}, {c.dest} end,
-    ["sub3"]=function(c) return {c.source, c.third}, {c.dest} end
+    ["sub3"]=function(c) return {c.source, c.third}, {c.dest} end,
+    ["exh"]=function(c) return {c.high, c.low}, {c.dest} end,
+    ["adc"]=function(c) return {c.source, c.dest}, {c.dest} end,
+    ["mov3"]=function(c) return {c.high, c.low}, {c.dest} end,
+    ["sbb"] = function(c) return {c.source, c.dest}, {c.dest} end,
+    ["sbb3"] = function(c) return {c.source, c.third}, {c.dest} end,
+    ["and3"] = function(c) return {c.source, c.third}, {c.dest} end,
+    ["test"]=function(c) return {c.first, c.second}, {} end,
 }
 
 setmetatable(CodeGen.use_def_map, {
@@ -701,14 +716,14 @@ function CodeGen:peephole(tac)
         elseif(c.type == "jmp" and nc.type == "label" and c.target.value == nc.target.value) then
             table.remove(tac, i)
             removals = removals + 1
-        elseif(c.type == "mov" and nc.type == "cmp" and c.dest == nc.second and (c.source.type == "i" or c.source.type == "g")) then
-            if c.source.type == "g" then
-                c.source.value = self.global_addr + c.source.value
-            end
-            tac[i] = {type="cmp", first=nc.first, second=Operand:new("i", c.source.value)}
+        elseif(c.type == "mov" and nc.type == "cmp" and c.dest == nc.second and c.source.type == "i" and c.source.value == 0) then
+            tac[i] = {type="cmp", first=nc.first, second=Operand:new("r", "r0")}
             table.remove(tac, i + 1)
+        elseif(c.type == "st" and nc.type == "ld" and c.source == nc.dest and c.dest == nc.source) then
+            tac[i] = {type="st", source=c.source, dest=c.dest}
+            table.remove(tac, i + 1)
+            removals = removals + 1
         end
-        
     end
     --print("[OPTIMIZER] Removed", removals, "instructions")
 end

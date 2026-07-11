@@ -878,7 +878,7 @@ function Parser.parse(toks, symbol_table)
                 cast_expression_node.pointer_level = cast_expression_node.pointer_level + 1
             end
             expect(")")
-            cast_expression_node.cast_expression = parse_cast_expression()
+            cast_expression_node.child = parse_cast_expression()
             return cast_expression_node
         else
             return parse_unary_expression()
@@ -949,6 +949,9 @@ function Parser.parse(toks, symbol_table)
         elseif(check("UNSIGNED_INT")) then
             node = new("INT")
             node.is_unsigned = true
+            node.value = next_token().value
+        elseif(check("LONG")) then
+            node = new("LONG")
             node.value = next_token().value
         elseif(check("ID")) then
             node = new("IDENTIFIER")

@@ -10,8 +10,10 @@ local CodeGen = require('codegen')
 -- Intermediate representation code generation
 
 local IRVisitor = {
-                    types = {["INT"]=1, ["CHAR"]=1, ["VOID"]=1, ["POINTER"]=1}, -- size of the types
+                    types = {["INT"]=1, ["LONG"]=1, ["CHAR"]=1, ["VOID"]=1, ["POINTER"]=1}, -- size of the types
                     global_method = {id = "!global"},
+                    LONG_BITS = 32,
+                    INT_BITS = 16
                     }
 function IRVisitor:sizeof(type)
     local size = 1
@@ -48,9 +50,6 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
     local breakpoint_idx = 1
 
     local global_data = {}
-    local label = 0
-    local temp = 0
-    local global = 0
     local loop_labels = {}
     local case_labels = {}
     local current_method = global_method
@@ -59,10 +58,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
     -- lvalue, not in register = l p g
     -- rvalue in register = t, r, vr
     -- rvalue not in register = i
-    local lvalue_operands = {["l"]=1,["p"]=2,["g"]=3, ["pr"]=4, ["vr"]=5} -- has lvalue; may or may not have a register
-    local mem_lvalue_operands = {["l"]=1, ["p"]=1, ["g"]=1, ["vr"]=1} -- has lvalue but doesn't have a register
-    local reg_rvalue_operands = {["t"]=1, ["r"]=2, ["vr"]=3} -- has r value; has a register
-    local rvalue_operands = {["i"]=1, ["t"]=1, ["r"]=1, ["vr"]=1} -- has r value without lvalue; may or may not have a register
+    local lvalue_operands = Operand.lvalue_operands
+    local mem_lvalue_operands = Operand.mem_lvalue_operands
+    local reg_rvalue_operands = Operand.reg_rvalue_operands
+    local rvalue_operands = Operand.rvalue_operands
     local aggregate_types = {["ARRAY"]=1, ["STRUCT"]=1, ["UNION"]=1}
     
     local logical_expressions = {
@@ -72,57 +71,15 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         ["EQUALITY_EXPRESSION"] = 1
     }
 
-    local operand = {
-        l=function(s, method) return Operand:new("l", next_stack(s, method or current_method)) end, -- local variable
-        p=function(v) return Operand:new("p", v) end,                   -- parameter
-        g=function(s, l) return Operand:new("g", next_global(s, l)) end, -- global variable
-        pr=function() return Operand:new("pr", next_temp()) end,
-        i=function(v) return Operand:new("i", v) end,                      -- immediate
-        t=function() return Operand:new("t", next_temp()) end,    -- temporary    
-        r=function(v) return Operand:new("r", v) end,                        -- binded register
-        lb=function() return Operand:new("i", string.format(".label_%d", next_label())) end, --label
-        vr=function() return Operand:new("vr", next_temp()) end -- variable register (used for variables residing in registers), should not be confused with "virtual register"
-    }
+    local operand = Operand.operand
+    
 
     local standard_function_arguments = {operand.r("r22"), operand.r("r23"), operand.r("r24"), operand.r("r25")}
     local RETURN_REG = operand.r("return_reg")
     local STACK_POINTER = operand.r("stack_pointer")
     local BASE_POINTER = operand.r("base_pointer")
 
-    function next_label()
-        local temp = label
-        label = label + 1
-        return temp
-    end
-    
-    function next_stack(size, method)
-        assert(method.local_size ~= nil, "Method local size is nil")
-        local result = method.local_size
-        method.local_size = result + size
-        return result
-    end
-    
-    function next_temp()
-        temp = temp + 1
-        return temp
-    end
-
-    function next_global(size, l)
-        local temp = global
-        -- Update global_data table with the initial data list
-        if l then
-            local data_entry = {idx=temp, list=l, next_entry=nil}
-    
-            if(global_data ~= nil) then
-                global_data.next_entry = data_entry
-            end
-    
-            global_data = data_entry
-        end
-    
-        global = temp + size
-        return temp
-    end
+ 
 
     function register_global_word(data, start)
         global_data[start.value] = data
@@ -141,7 +98,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             return place
         end
 
-        local next_reg = operand.t()
+        local next_reg = operand.t(place.bitsize)
         emit_move(place, next_reg)
 
         return next_reg
@@ -149,32 +106,35 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
     
 
-    function initialize_word(value, place)
+    -- For literals
+    function initialize_word(word_place, place)
         if(place.type == "g") then
-            register_global_word(value, place)
+            register_global_word(word_place.value, place)
         else
-            emit_move(operand.i(value), place)
+            
+            if(word_place.value > 65535) then -- literals are always unsigned
+                word_place.bitsize = IRVisitor.LONG_BITS
+            end
+            emit_move(word_place, place)
         end
     end
 
     function emit_static_initializer(n, start)
-        local start = Operand:new(start.type, start.value)
+        local start = Operand.copy_place(start)
         -- n is the initializer: either of type initializer_list or initializer
         if(node_check(n, "INITIALIZER")) then
             local element = n.value
             if(node_check(element, "INT")) then
-                if(n.value_type.kind == Type.KINDS["LONG"]) then
-                    initialize_word(element.value, start)
-                else
-                    initialize_word(element.value, start)
-                end
+                initialize_word(operand.i(element.value, IRVisitor.INT_BITS), start)
+            elseif(node_check(element, "LONG")) then
+                initialize_word(operand.i(element.value, IRVisitor.LONG_BITS), start)
             elseif(node_check(element, "CHARACTER")) then
-                initialize_word(element.value, start)
+                initialize_word(operand.i(element.value), start)
             elseif(node_check(element, "STRING_LITERAL")) then
                 if(Type.same_type_chain(n.value_type, Type.pointer(Type.base("CHAR")))) then
                     local global_place = operand.g(element.value_type.length)
                     register_string_literal(element, global_place)
-                    initialize_word(global_place.value+CodeGen.global_addr, start)
+                    initialize_word(operand.i(global_place.value+CodeGen.global_addr), start)
                 else
                     register_string_literal(element, start)
                 end
@@ -224,7 +184,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         if(current_method.id == "!global") then
             return operand.g(size)
         else
-            return operand.l(size)
+            return operand.l(size, current_method)
         end
     end
 
@@ -282,6 +242,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
                 local place = nil
                 if(declarator.initializer) then
+                
                     local initializer_place = nil
                     if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
                         initializer_place = operand.g(declarator.initializer.value_type.length) -- string literals are stored in global memory
@@ -297,11 +258,17 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                         end
                     end
                     
+                    if(declarator.value_type.kind == Type.KINDS["LONG"]) then
+                        initializer_place.bitsize = IRVisitor.LONG_BITS
+                    end
+
+                    -- where the actual initialization happens most of the time
                     emit_static_initializer(declarator.initializer, initializer_place)
+                    
                     if(node_check(declarator.initializer, "STRING_LITERAL") and declarator.value_type.kind == Type.KINDS["POINTER"]) then
                         place = static_allocate_place(1) -- pointer to object
                         if(current_method.id == "!global" or node_check(declarator.initializer.value, "STRING_LITERAL")) then -- String literal must be included even for local variables
-                            initialize_word(initializer_place.value+1, place) -- +1 is to offset the initial jmp start instruction (poor design, might fix later)
+                            initialize_word(operand.i(initializer_place.value+1), place) -- +1 is to offset the initial jmp start instruction (poor design, might fix later)
                         else
                             local next_reg = operand.t()
                             table.insert(tac[current_method.id], {type="!get_address", target=declarator.handle.place, dest=next_reg}) -- should probably just be place
@@ -310,6 +277,8 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     else
                         place=initializer_place -- object itself
                     end
+
+                    
                 else
                     if(n.specifier.storage_class.kind == "register") then
                         if(not aggregate_types[Type.INVERTED_KINDS[declarator.value_type.kind]]) then
@@ -321,6 +290,11 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                         place=static_allocate_place(IRVisitor:sizeof(declarator.value_type)) -- no initializer
                     end
                 end
+                
+                if(declarator.value_type.kind == Type.KINDS["LONG"]) then
+                    place.bitsize = IRVisitor.LONG_BITS
+                end
+
                 declarator.handle.place = place
             else
                 -- function definition
@@ -342,13 +316,16 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                 
                 for i, p in ipairs(declarator.direct_declarator.parameter_list or {}) do -- this is hell
                     local param_place = operand.p(i-1)
+                    if(p.value_type.kind == Type.KINDS["LONG"]) then
+                        param_place.bitsize = IRVisitor.LONG_BITS
+                    end
 
                     if aggregate_types[Type.INVERTED_KINDS[p.value_type.kind]] then -- since an pointer of an struct is pushed, the called function copies the data from that pointer into an copy in its stack frame.
                         local ptr = operand.t()
                         table.insert(tac[current_method.id], {type="ld", source=param_place, dest=ptr})
 
                         local size = IRVisitor:sizeof(p.value_type)
-                        local local_copy = operand.l(size)
+                        local local_copy = operand.l(size, current_method)
 
                         for offset = 0, size - 1 do
                             local src = operand.pr()
@@ -393,6 +370,70 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         end
     end
 
+    function sign_extend(value, from_bitsize, to_bitsize)
+        assert(from_bitsize < to_bitsize, "From bitsize must be less than to bitsize")
+        -- all literal values are treated as positive values even if they are signed (negation is a separate operation that still maps to a positive value)
+        if(value >= (1 << from_bitsize - 1)) then
+            local mask = (1 << to_bitsize - from_bitsize) - 1 << from_bitsize
+            return value | mask
+        else
+            return value
+        end
+    end
+do
+
+    local coercion_functions = {}
+    coercion_functions["INT_to_LONG"] = function(place)
+        local long_place = nil
+        if(place.type == "i") then
+            long_place = operand.i(sign_extend(place.value, IRVisitor.INT_BITS, IRVisitor.LONG_BITS), IRVisitor.LONG_BITS)
+        elseif(reg_rvalue_operands[place.type]) then
+            long_place = copy_place(place)
+            long_place.bitsize = IRVisitor.LONG_BITS
+            table.insert(tac[current_method.id], {type="movsx", source=place, dest=long_place}) 
+        else
+            local temp = load_operand_into_register(place)
+            table.insert(tac[current_method.id], {type="movsx", source=temp, dest=temp})
+            long_place = temp
+        end
+        return long_place
+    end
+
+    coercion_functions["INT_to_ULONG"] = coercion_functions["INT_to_LONG"]
+
+    coercion_functions["UINT_to_LONG"] = function(place)
+        local long_place = nil
+        if(place.type == "i") then
+            long_place = place
+        elseif(reg_rvalue_operands[place.type]) then
+            table.insert(tac[current_method.id], {type="movzx", source=place, dest=place}) -- non destructive
+            long_place = place
+        else
+            local temp = load_operand_into_register(place)
+            table.insert(tac[current_method.id], {type="movzx", source=place, dest=temp})
+            long_place = temp
+        end
+        return long_place
+    end
+
+    coercion_functions["UINT_to_ULONG"] = coercion_functions["UINT_to_LONG"]
+
+    function emit_type_coercion(n)
+        --n.child has already been emitted
+        assert(n.child and n.child.place ~= nil, "Child place is nil")
+
+        local child_type_string = Type.to_string_pretty(n.child.value_type, true)
+        local target_type_string = Type.to_string_pretty(n.value_type, true)
+        local coercion_function = coercion_functions[child_type_string .. "_to_" .. target_type_string]
+        --emit_unary_expression(n.child) -- temp, cast_expression already has the child emitted
+        if(coercion_function) then
+            n.child.place = coercion_function(n.child.place)
+        else
+            n.child.place = n.child.place
+        end
+    end
+end
+
     function emit_expression(n)
         for i = 1, #n do
             emit_assignment_expression(n[i])
@@ -424,10 +465,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
     local symbol_to_unsigned_comparison_type = {
         ["=="] = "je",
         ["!="] = "jne",
-        ["<="] = "jae",
-        [">="] = "jbe",
-        ["<"] = "ja",
-        [">"] = "jb"
+        ["<="] = "jbe",
+        [">="] = "jae",
+        ["<"] = "jb",
+        [">"] = "ja"
     }
 
 
@@ -812,9 +853,9 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         local is_dest_mem = not rvalue_operands[dest.type]
 
         if(source.type == "i" and is_dest_mem) then
+            
             source = load_operand_into_register(source)
         end
-
 
         if(not is_source_mem and not is_dest_mem) then
             table.insert(tac[current_method.id], {type="mov", source=source, dest=dest})
@@ -1110,7 +1151,13 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         end
     
         emit_term(n[1])
-        n.place = load_operand_into_register(n[1].place)
+        n.place = copy_place(load_operand_into_register(n[1].place))
+        if(n.value_type.kind == Type.KINDS["LONG"]) then
+            n.place.bitsize = IRVisitor.LONG_BITS
+        else
+            n.place.bitsize = 16
+        end
+
         for i = 3, #n, 2 do
             
             emit_term(n[i])
@@ -1213,89 +1260,28 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             dividend = load_operand_into_register(dividend)
         end
 
+        local quotient = operand.t()
+        local remainder = operand.t()
+
         if(divisor.type == "i") then
-            return emit_fixed_point_division(dividend, divisor)
+            
+            table.insert(tac[current_method.id], {type="fixed_point_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder})
         else
             if(not reg_rvalue_operands[divisor.type]) then
                 divisor = load_operand_into_register(divisor)
             end
 
-            return emit_long_division(dividend, divisor)
-        end
-    end
-
-    function emit_fixed_point_division(dividend, divisor)
-        assert(divisor.type == "i", "divisor must be an immediate")
-        assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
-
-        local fixed_point_factor = (1 << 16) // divisor.value
-        local quotient = operand.t()
-        local remainder = operand.t()
-        local end_label = operand.lb()
-        local instructions = {
-            {type="mulh", source=dividend, third=operand.i(fixed_point_factor), dest=quotient},
-            {type="mull3", source=quotient, third=divisor, dest=remainder},
-            {type="sub3", source=dividend, third=remainder, dest=remainder},
-            {type="cmp", first=remainder, second=divisor},
-            {type="ja", target=end_label}, -- ja is similar to jl since the operands are reversed
-            {type="add", source=operand.i(1), dest=quotient},
-            {type="sub", source=divisor, dest=remainder},
-            {type="label", target=end_label}
-        }
-
-        for _, instruction in ipairs(instructions) do
-            table.insert(tac[current_method.id], instruction)
-        end
-
-        return quotient, remainder
-    end
-
-    function emit_long_division(dividend, divisor)
-        assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
-        assert(reg_rvalue_operands[divisor.type], "divisor must be an rvalue oriented operand in a register")
-
-        local quotient = operand.t()
-        local remainder = operand.t()
-        local bit_index = operand.t()
-        local loop_label = operand.lb()
-        local temp = operand.t()
-        local r_lt_d_label = operand.lb()
-        local end_label = operand.lb()
-        local instructions = {
-            {type="mov", source=operand.i(0), dest=quotient},
-            {type="mov", source=operand.i(0), dest=remainder},
-            {type="mov", source=operand.i(15), dest=bit_index},
-            {type="label", target=loop_label},
-            {type="cmp", first=bit_index, second=operand.i(0)},
-            {type="jl", target=end_label},
-            {type="shl", source=operand.i(1), dest=remainder},
-            {type="shr3", source=dividend, third=bit_index, dest=temp},
-            {type="and", source=operand.i(1), dest=temp},
-            {type="or", source=temp, dest=remainder},
-            {type="cmp", first=remainder, second=divisor},
-            {type="jl", target=r_lt_d_label},
-            {type="sub", source=divisor, dest=remainder},
-            {type="mov", source=operand.i(1), dest=temp},
-            {type="shl", source=bit_index, dest=temp},
-            {type="or", source=temp, dest=quotient},
-            {type="label", target=r_lt_d_label},
-            {type="sub", source=operand.i(1), dest=bit_index},
-            {type="jmp", target=loop_label},
-            {type="label", target=end_label}
-        }
-
-        for _, instruction in ipairs(instructions) do
-            table.insert(tac[current_method.id], instruction)
+            table.insert(tac[current_method.id], {type="long_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder})
         end
 
         return quotient, remainder
     end
 
     function emit_cast_expression(n)
-        
         if(node_check(n, "CAST_EXPRESSION")) then
-            emit_cast_expression(n.cast_expression)
-            n.place = n.cast_expression.place
+            emit_cast_expression(n.child)
+            emit_type_coercion(n)
+            n.place = n.child.place
         else
             emit_unary_expression(n)
         end
@@ -1327,15 +1313,18 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             elseif(n.operator == "*") then
                 emit_cast_expression(n.child)
                 n.place = emit_dereference(n.child.place)
+                if(n.child.value_type.points_to.kind == Type.KINDS["LONG"]) then
+                    n.place = copy_place(n.place)
+                    n.place.bitsize = IRVisitor.LONG_BITS
+                end
             elseif(n.operator == "-") then
                 emit_cast_expression(n.child)
                 if(n.child.place.type == "i") then
                     n.place = copy_place(n.child.place)
-                    n.place.value = 65536 - n.place.value
+                    n.place.value = (1 << n.place.bitsize) - n.place.value
                 else
                     n.place = load_operand_into_register(n.child.place)
-                    table.insert(tac[current_method.id], {type="xor", source=operand.i(65535), dest=n.place}) -- take the two's complement
-                    table.insert(tac[current_method.id], {type="add", source=operand.i(1), dest=n.place})
+                    table.insert(tac[current_method.id], {type="neg", primary=n.place})
                 end
             elseif(n.operator == "~") then
                 emit_cast_expression(n.child)
@@ -1406,10 +1395,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
         end
     end
 
-    -- shallow copy of a place
-    function copy_place(place)
-        return Operand:new(place.type, place.value)
-    end
+    copy_place = Operand.copy_place
 
 
     -- indexing -> suppose n.place (indexed) is a t and operation.value.place (indexer) is an i -> return pr = t + i * sizeof(n.place) 
@@ -1453,6 +1439,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     else
                         n.place = emit_indexing(n.place, operation.value.place, IRVisitor:sizeof(n.value_types[i]))
                     end
+                    if(n.value_types[i].kind == Type.KINDS["LONG"]) then
+                        n.place = copy_place(n.place)
+                        n.place.bitsize = IRVisitor.LONG_BITS
+                    end
                 elseif(operation.type == "(") then
                     emit_argument_list(operation.value, n.place.is_standard_function)
 
@@ -1469,8 +1459,16 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                         table.insert(tac[current_method.id], {type="add", source=operand.i(#operation.value), dest=STACK_POINTER}) -- destroy stack frame
                     end
                     if(n.value_types[i].kind ~= Type.KINDS["VOID"]) then
-                        n.place = operand.t()
-                        emit_move(RETURN_REG, n.place)
+                        local return_reg = nil
+                        if(n.value_types[i].kind == Type.KINDS["LONG"]) then
+                            n.place = operand.t(IRVisitor.LONG_BITS)
+                            return_reg = copy_place(RETURN_REG)
+                            return_reg.bitsize = IRVisitor.LONG_BITS
+                        else
+                            n.place = operand.t(16)
+                            return_reg = RETURN_REG
+                        end
+                        emit_move(return_reg, n.place)
                     end
                 elseif(operation.type == "++") then
                     local next_reg = load_operand_into_register(n.place)
@@ -1502,6 +1500,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     pr.type = "pr"
                     n.place = pr
                     n.place = emit_offset_lvalue(operand.i(n.value_types[i-1].members[operation.value.id].offset), n.place, 1)
+                    if(member_type.kind == Type.KINDS["LONG"]) then
+                        n.place = copy_place(n.place)
+                        n.place.bitsize = IRVisitor.LONG_BITS
+                    end
                     if(member_type.kind == Type.KINDS["ARRAY"]) then -- Might remove
                         n.place = emit_address_of(n.place)
                     end
@@ -1517,6 +1519,12 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     -- dereference and then add the offset to the address
                     n.place = emit_dereference(n.place)
                     n.place = emit_offset_lvalue(operand.i(n.value_types[i-1].points_to.members[operation.value.id].offset), n.place, 1)
+                    
+                    if(member_type.kind == Type.KINDS["LONG"]) then
+                        n.place = copy_place(n.place)
+                        n.place.bitsize = IRVisitor.LONG_BITS
+                    end
+                    
                     -- if(not reg_rvalue_operands[n.place.type] and n.place.type ~= "pr") then
                     --     local next_reg = operand.pr() -- ? can this be a pr?
                     --     table.insert(tac[current_method.id], {type="!get_address", target=n.place, dest=next_reg})
@@ -1553,7 +1561,9 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
     function emit_primary_expression(n)
         if(node_check(n, "INT")) then
-            n.place = operand.i(n.value)
+            n.place = operand.i(n.value, 16)
+        elseif(node_check(n, "LONG")) then
+            n.place = operand.i(n.value, IRVisitor.LONG_BITS)
         elseif(node_check(n, "IDENTIFIER")) then
             local symbol = n.handle
             if(symbol) then
@@ -1565,6 +1575,8 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             else
                 error(string.format("Variable '%s' used before definition", n.value))
             end
+
+            
         elseif(node_check(n, "CHARACTER")) then
             n.place = operand.i(n.value)
         elseif(node_check(n, "EXPRESSION")) then
@@ -1580,7 +1592,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
     emit_program(ast)
 
-    local code_result = {tac = tac, global_method = global_method, global = global, label = label, global_data = global_data, types = IRVisitor.types, method = current_method}
+    local code_result = {tac = tac, global_method = global_method, global = Operand.global, label = Operand.label, global_data = global_data, types = IRVisitor.types, method = current_method}
     return code_result, symbol_table
 end
 

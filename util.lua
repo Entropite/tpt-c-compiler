@@ -65,11 +65,7 @@ function Utils.resize_list(list, size)
 end
 
 function Utils.to_int(str)
-    if(string.sub(str, #str, #str) == "u") then
-        return Utils.to_int(string.sub(str, 1, #str - 1))
-    else
-        return tonumber(str)
-    end
+    return tonumber(str)
 end
 
 function Utils.string_to_array(str)

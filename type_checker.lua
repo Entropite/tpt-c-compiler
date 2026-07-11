@@ -99,13 +99,13 @@ function Type_Checker.type_check(ast, symbol_table)
             for i, value in ipairs(n.declaration) do
                 local identifier = value.id
                 local value = value.value or i - 1
-                type.members[identifier.id] = {type=base("INT", false)}
+                type.members[identifier.id] = {type=base({kind="INT", is_signed=true})}
                 type.members[identifier.id].place = Operand:new("i", value)
                 add_symbol(identifier.id, type.members[identifier.id], symbol_table.ordinary)
             end
             add_symbol(n.id.id, {type = type}, symbol_table.tag)
         end
-        n.value_type = base("INT", false)
+        n.value_type = base({kind="INT", is_signed=true})
 
         n.handle = get_symbol(n.id.id, symbol_table.tag)
     end
@@ -121,8 +121,11 @@ function Type_Checker.type_check(ast, symbol_table)
         else
             if(not Type.BASE_KINDS[string.upper(n.specifier.type_specifier.kind[1])]) then
                 base_type = get_symbol(n.specifier.type_specifier.kind[1], symbol_table.ordinary).type
-                
             else
+                -- if type is unsigned, convert to the proper format (an explicit is_signed field)
+                if(#n.specifier.type_specifier.kind == 2) then
+                    n.specifier.type_specifier.kind = {is_signed = n.specifier.type_specifier.kind[1] == "signed", kind = n.specifier.type_specifier.kind[2]}
+                end
                 base_type = base(n.specifier.type_specifier.kind)
             end
         end
@@ -147,18 +150,34 @@ function Type_Checker.type_check(ast, symbol_table)
                     end
                     declarator.initializer.value_type = declarator.value_type
                 else
-                    
+                    -- important
                     if(not can_coerce(check_initializer(declarator.initializer), declarator.value_type, true)) then
                         print(to_string_pretty(declarator.initializer.value_type), to_string_pretty(declarator.value_type))
                         Diagnostics.submit(Message.error("Initializer does not match the declared type", declarator.initializer.pos))
                     end
-
+                    
                     if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
                         if(declarator.value_type.kind == Type.KINDS["ARRAY"] and declarator.value_type.length == -1) then
                             declarator.value_type.length = #declarator.initializer.value.value + 1
                         else
                             declarator.initializer.value_type = declarator.value_type
                         end
+                    else
+                        
+                        -- if(declarator.initializer.value.type == Node.NODE_TYPES["CHARACTER"] and Type.INTEGRAL_TYPES[declarator.value_type.kind]) then
+                        --     declarator.initializer.value.value = string.byte(declarator.initializer.value.value, 2, 2)
+                        -- end
+
+                        -- declarator.initializer.value_type = declarator.value_type
+                    end
+                    
+                    -- int to long implicit type coercion (only uncomment if you're brave)
+                    if(declarator.value_type.kind == Type.KINDS["LONG"] and declarator.initializer.value_type.kind == Type.KINDS["INT"]) then
+                        
+                        local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
+                        cast_node.child = declarator.initializer.value
+                        declarator.initializer.value = cast_node
+                        cast_node.value_type = declarator.value_type
                     end
                 end
             end
@@ -412,8 +431,7 @@ function Type_Checker.type_check(ast, symbol_table)
 
     function can_coerce(type, target, allow_greater_target_length)
         allow_greater_target_length = allow_greater_target_length or false
-        -- if(type.kind == Type.KINDS["VOID"] or target.kind == Type.KINDS["VOID"]) then
-        --     return true
+        
         if(type.kind == Type.KINDS["POINTER"] and target.kind == Type.KINDS["POINTER"]) then
             return can_coerce(type.points_to, target.points_to, allow_greater_target_length)
         elseif(type.kind == Type.KINDS["ARRAY"] and target.kind == Type.KINDS["POINTER"]) then
@@ -424,14 +442,12 @@ function Type_Checker.type_check(ast, symbol_table)
             end
             return can_coerce(type.points_to, target.points_to, allow_greater_target_length)
         elseif(Type.is_base_type(type) and Type.is_base_type(target)) then
-            if(type.kind == Type.KINDS["STRUCT"] and target.kind == Type.KINDS["STRUCT"]) then
-                return type.id == target.id
-            elseif(type.kind == Type.KINDS["STRUCT"] or type.kind == Type.KINDS["STRUCT"]) then
-                return false
-            elseif(type.kind == Type.KINDS["UNION"] and target.kind == Type.KINDS["UNION"]) then
-                return type.id == target.id
-            elseif(type.kind == Type.KINDS["UNION"] or target.kind == Type.KINDS["UNION"]) then
-                return false
+            if(type.kind == Type.KINDS["STRUCT"] or type.kind == Type.KINDS["UNION"]) then
+                if(target.kind == target.kind) then
+                    return type.id == target.id
+                else
+                    return false
+                end
             end
 
             return true
@@ -548,7 +564,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Logical or expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_logical_and_expression(n)
@@ -562,7 +578,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Logical and expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_inclusive_or_expression(n)
@@ -576,7 +592,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Bitwise inclusive or expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_inclusive_xor_expression(n)
@@ -590,7 +606,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Bitwise inclusive xor expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_inclusive_and_expression(n)
@@ -604,7 +620,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Bitwise inclusive and expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_equality_expression(n)
@@ -619,7 +635,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Equality expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_relational_expression(n)
@@ -635,15 +651,15 @@ function Type_Checker.type_check(ast, symbol_table)
             end
             local signed = n[1].value_type.signed
             for i = 2, #n - 1, 2 do
-                if (not signed or not n[i+1].value_type.signed) then
-                    n[i].value_type = base({"UNSIGNED", "INT"})
+                if (not signed or not n[i+1].value_type.signed) then -- unsure about this
+                    n[i].value_type = base({is_signed=false, kind="INT"})
                 else
-                    n[i].value_type = base({"SIGNED", "INT"})
+                    n[i].value_type = base({is_signed=true, kind="INT"})
                 end
 
                 signed = true
             end
-            n.value_type = base({"SIGNED", "INT"})
+            n.value_type = base({is_signed=true, kind="INT"})
             return n.value_type
         else
             return check_shift_expression(n)
@@ -657,13 +673,21 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Shift expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+            n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
             return check_sum_expression(n)
         end
     end
 
+    function is_long(n)
+        for _, child in ipairs(n) do
+            if(child.value_type and child.value_type.kind == Type.KINDS["LONG"]) then
+                return true
+            end
+        end
+        return false
+    end
 
     function check_sum_expression(n)
         if(node_check(n, "SUM_EXPRESSION")) then
@@ -673,13 +697,20 @@ function Type_Checker.type_check(ast, symbol_table)
                 local term_type = check_term(term)
                 if(term_type.kind == Type.KINDS["POINTER"]) then
                     pointer_type = term_type
-                elseif(term_type.kind ~= Type.KINDS["INT"] and term_type.kind ~= Type.KINDS["CHAR"]) then
+                elseif(term_type.kind ~= Type.KINDS["INT"] and term_type.kind ~= Type.KINDS["CHAR"] and term_type.kind ~= Type.KINDS["LONG"]) then
                     print("TERM TYPE: " .. term_type.kind)
-                    Diagnostics.submit(Message.error("Sum expression term types must be ints or pointers", term.pos))
+                    Diagnostics.submit(Message.error("Sum expression term types must be either integral types or pointers", term.pos))
                 end
             end
             if(pointer_type == nil) then
-                n.value_type = base({is_signed(n) and "SIGNED" or "UNSIGNED", "INT"})
+                n.value_type = base({is_signed=is_signed(n), kind=is_long(n) and "LONG" or "INT"})
+
+                for i=1, #n, 2 do
+                    local term = n[i]
+                    if(term.value_type.kind == Type.KINDS["INT"] and n.value_type.kind == Type.KINDS["LONG"]) then
+                        insert_implicit_cast(term, n, i)
+                    end
+                end
             else
                 n.value_type = pointer_type
             end
@@ -700,17 +731,33 @@ function Type_Checker.type_check(ast, symbol_table)
         return false
     end
 
+    function insert_implicit_cast(n, parent_node, child_node_index)
+        local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
+        local expression_node = Node:new(Node.NODE_TYPES["EXPRESSION"])
+        expression_node[1] = n
+        expression_node.value_type = n.value_type
+        cast_node.child = expression_node
+        cast_node.value_type = parent_node.value_type
+        parent_node[child_node_index] = cast_node
+    end
+
     function check_term(n)
         if(node_check(n, "MULTIPLICATIVE_EXPRESSION")) then
+            n.value_type = base({is_signed=is_signed(n), kind=is_long(n) and "LONG" or "INT"})
+
             for i=1, #n, 2 do
                 local factor = n[i]
                 local factor_type = check_cast_expression(factor)
                 if(not can_coerce(factor_type, base("INT"))) then
-                    Diagnostics.submit(Message.error("Can only multiply or divide an int by an int", factor.pos))
+                    Diagnostics.submit(Message.error("Can only multiply or divide by integral types", factor.pos))
+                end
+                if(factor_type.kind == Type.KINDS["INT"] and n.value_type.kind == Type.KINDS["LONG"]) then
+                    
+                    insert_implicit_cast(factor, n, i)
                 end
             end
 
-            n.value_type = n[1].value_type
+            
         else
             n.value_type = check_cast_expression(n)
         end
@@ -724,7 +771,7 @@ function Type_Checker.type_check(ast, symbol_table)
             for i=1, n.pointer_level do
                 n.value_type = pointer(n.value_type)
             end
-            check_cast_expression(n.cast_expression)
+            check_cast_expression(n.child)
         else
             n.value_type = check_unary_expression(n)
         end
@@ -772,10 +819,10 @@ function Type_Checker.type_check(ast, symbol_table)
             elseif(n.operator == "~") then
                 n.value_type = base("INT")
             elseif(n.operator == "-") then
-                if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
+                if(Type.INTEGRAL_TYPES[n.child.value_type.kind] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
                     n.value_type = n.child.value_type
                 else
-                    Diagnostics.submit(Message.error("unary minus is only valid for ints or pointers", n.child.pos))
+                    Diagnostics.submit(Message.error("unary minus is only valid for integral types or pointers", n.child.pos))
                 end
             elseif(n.operator == "+") then
                 if(n.child.value_type.kind == Type.KINDS["INT"] or n.child.value_type.kind == Type.KINDS["POINTER"]) then
@@ -853,7 +900,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     n.value_types[i-1] = n.value_types[i-1].kind == Type.KINDS["POINTER"] and n.value_types[i-1].points_to or n.value_types[i-1]
                     if(n.value_types[i-1].kind == Type.KINDS["FUNCTION"]) then
                         
-                        check_argument_list(operation.value, n.value_types[i-1].parameter_types)
+                        check_argument_list(operation, n.value_types[i-1].parameter_types) -- passes entire operation node to update the argument tree if a cast is needed
                         table.insert(n.value_types, n.value_types[i-1].return_type)
                     else
                         Diagnostics.submit(Message.error("Function call can only be performed on a function", operation.value.pos))
@@ -892,23 +939,37 @@ function Type_Checker.type_check(ast, symbol_table)
     end
 
     function check_argument_list(arguments, parameter_types)
-        if((parameter_types.is_variadic and #arguments < #parameter_types) or (not parameter_types.is_variadic and #arguments ~= #parameter_types)) then
+        if((parameter_types.is_variadic and #arguments.value < #parameter_types) or (not parameter_types.is_variadic and #arguments.value ~= #parameter_types)) then
             Diagnostics.submit(Message.error("Argument list length does not match the parameter list length", arguments.pos))
         end
 
-        for i, argument in ipairs(arguments) do
+        for i, argument in ipairs(arguments.value) do
             local argument_type = check_assignment_expression(argument)
             if(not (parameter_types.is_variadic or can_coerce(argument_type, parameter_types[i]))) then
                 print(to_string_pretty(argument_type) .. " " .. to_string_pretty(parameter_types[i]))
                 Diagnostics.submit(Message.error("Argument type does not match parameter type", argument.pos))
                 
             end
+
+            if(argument_type.kind == Type.KINDS["INT"] and parameter_types[i].kind == Type.KINDS["LONG"]) then
+                local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
+                local expression_node = Node:new(Node.NODE_TYPES["EXPRESSION"]) -- bridge for the grammar; cast_node can't have a relational subnode
+                expression_node[1] = argument
+                cast_node.child = expression_node
+                
+                cast_node.value_type = base("LONG")
+                check_expression(cast_node.child)
+                
+                arguments.value[i] = cast_node
+            end
         end
     end
 
     function check_primary_expression(n)
         if(node_check(n, "INT")) then
-            n.value_type = base({n.is_unsigned and "UNSIGNED" or "SIGNED", "INT"})
+            n.value_type = base({is_signed=not n.is_unsigned, kind="INT"})
+        elseif(node_check(n, "LONG")) then
+            n.value_type = base({is_signed=true, kind="LONG"})
         elseif(node_check(n, "IDENTIFIER")) then
             n.handle = get_symbol(n.value, symbol_table.ordinary)
             if(n.handle == nil) then
@@ -921,7 +982,7 @@ function Type_Checker.type_check(ast, symbol_table)
             end
             if(n.value_type.kind == Type.KINDS["FUNCTION"]) then
                 if(n.handle.place and n.handle.place.is_standard_function) then
-                    table.insert(included_standard_functions, n.value)
+                    included_standard_functions[n.value] = true
                 end
                 n.value_type = pointer(n.value_type)
             end

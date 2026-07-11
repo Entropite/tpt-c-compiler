@@ -5,6 +5,7 @@
 %define base_pointer r29
 %define term_reg r28
 %define return_addr_reg r27
+%define zero_high_reg r26 ; the msb 16 bits are all 0, unlike r0
 
 ; Initialization and defining basic macros
 %define term_base 40832
@@ -42,9 +43,9 @@
 %endmacro
 
 %macro ret
-    mov r26, return_addr_reg
+    mov zero_high_reg, zero_high_reg, return_addr_reg
     pop return_addr_reg
-    jmp r26
+    jmp zero_high_reg
 %endmacro
 
 %macro mull x, y
@@ -56,8 +57,9 @@ global_data_section:
     dw 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 119, 121, 114, 124, 113, 116, 118, 117, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 75, 97, 98, 111, 111, 109, 33, 32, 89, 111, 117, 32, 108, 111, 115, 101, 33, 0, 35, 32, 111, 102, 32, 109, 105, 110, 101, 115, 10, 40, 54, 45, 49, 50, 41, 58, 32, 0, 10, 69, 110, 116, 101, 114, 32, 97, 10, 110, 117, 109, 98, 101, 114, 32, 116, 111, 10, 104, 101, 108, 112, 10, 114, 97, 110, 100, 111, 109, 105, 122, 101, 10, 40, 49, 45, 49, 48, 48, 41, 58, 32, 0, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 0, 89, 111, 117, 32, 119, 105, 110, 33, 0
 init:
     mov term_reg, 0x25
-                              
-    ld r0, term_base              
+    exh zero_high_reg, r0, r0
+    mov zero_high_reg, zero_high_reg, 1                        
+                 
     mov r1, { term_width 1 - 5 << }
     st r1, term_hrange
     mov r1, { term_height 1 - 5 << }
@@ -85,7 +87,8 @@ __tptcc_fn___scan_signed_int:
 	call __tptcc_fn_getchar
 	mov r3, return_reg
 	mov r1, r3
-	cmp r3, '-'
+	mov r4, '-'
+	cmp r3, r4
 	je .label_1
 	jmp .label_0
 	.label_1:
@@ -102,12 +105,14 @@ __tptcc_fn___scan_signed_int:
 	call __tptcc_fn_getchar
 	mov r4, return_reg
 	mov r1, r4
-	cmp r4, '0'
+	mov r5, '0'
+	cmp r4, r5
 	jge .label_6
 	jmp .label_4
 	.label_6:
 	mov r4, r1
-	cmp r4, '9'
+	mov r5, '9'
+	cmp r4, r5
 	jle .label_5
 	jmp .label_4
 	.label_5:
@@ -118,7 +123,8 @@ __tptcc_fn___scan_signed_int:
 	add r2, r1
 	jmp .label_3
 	.label_4:
-	cmp r3, 65535
+	mov r4, 65535
+	cmp r3, r4
 	je .label_8
 	jmp .label_7
 	.label_8:
@@ -149,14 +155,16 @@ __tptcc_fn_show_bombs:
 	mov r2, 0
 	.label_10:
 	mov r1, r2
-	cmp r1, 8
+	mov r3, 8
+	cmp r1, r3
 	jl .label_13
 	jmp .label_12
 	.label_13:
 	mov r1, 0
 	.label_14:
 	mov r3, r1
-	cmp r3, 12
+	mov r4, 12
+	cmp r3, r4
 	jl .label_17
 	jmp .label_16
 	.label_17:
@@ -165,7 +173,8 @@ __tptcc_fn_show_bombs:
 	mull r4, 12
 	add r3, r4
 	ld r3, r3, r1
-	cmp r3, 9
+	mov r4, 9
+	cmp r3, r4
 	jge .label_19
 	jmp .label_18
 	.label_19:
@@ -223,7 +232,8 @@ __tptcc_fn_sweep_cell:
 	mull r4, 12
 	add r3, r4
 	ld r3, r3, r2
-	cmp r3, 9
+	mov r4, 9
+	cmp r3, r4
 	jge .label_22
 	jmp .label_21
 	.label_22:
@@ -296,7 +306,7 @@ __tptcc_fn_sweep_cell:
 	call __tptcc_fn_putchar
 	mov r6, r4
 	add r4, 1
-	cmp r5, 0
+	cmp r5, r0
 	je .label_31
 	jmp .label_30
 	.label_31:
@@ -321,7 +331,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 0
+	cmp r9, r0
 	je .label_37
 	.label_39:
 	mov r9, 1
@@ -329,7 +339,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_37
 	jmp .label_36
 	.label_37:
@@ -354,7 +365,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 0
+	cmp r9, r0
 	je .label_41
 	.label_43:
 	mov r9, 1
@@ -362,7 +373,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_41
 	jmp .label_40
 	.label_41:
@@ -387,7 +399,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 0
+	cmp r9, r0
 	je .label_45
 	.label_47:
 	mov r9, 1
@@ -395,7 +407,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_45
 	jmp .label_44
 	.label_45:
@@ -420,7 +433,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 0
+	cmp r9, r0
 	je .label_49
 	.label_51:
 	mov r9, 1
@@ -428,7 +441,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_49
 	jmp .label_48
 	.label_49:
@@ -453,7 +467,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 0
+	cmp r9, r0
 	je .label_53
 	.label_55:
 	mov r9, 1
@@ -461,7 +475,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_53
 	jmp .label_52
 	.label_53:
@@ -486,7 +501,7 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r6, r9
 	ld r6, r6, r8
-	cmp r6, 0
+	cmp r6, r0
 	je .label_57
 	.label_59:
 	mov r6, 1
@@ -494,7 +509,8 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r6, r9
 	ld r6, r6, r8
-	cmp r6, 'F'
+	mov r9, 'F'
+	cmp r6, r9
 	je .label_57
 	jmp .label_56
 	.label_57:
@@ -519,7 +535,7 @@ __tptcc_fn_sweep_cell:
 	mull r6, 12
 	add r1, r6
 	ld r1, r1, r2
-	cmp r1, 0
+	cmp r1, r0
 	je .label_61
 	.label_63:
 	mov r1, 1
@@ -527,7 +543,8 @@ __tptcc_fn_sweep_cell:
 	mull r6, 12
 	add r1, r6
 	ld r1, r1, r2
-	cmp r1, 'F'
+	mov r6, 'F'
+	cmp r1, r6
 	je .label_61
 	jmp .label_60
 	.label_61:
@@ -552,7 +569,7 @@ __tptcc_fn_sweep_cell:
 	mull r6, 12
 	add r1, r6
 	ld r1, r1, r2
-	cmp r1, 0
+	cmp r1, r0
 	je .label_65
 	.label_67:
 	mov r1, 1
@@ -560,7 +577,8 @@ __tptcc_fn_sweep_cell:
 	mull r6, 12
 	add r1, r6
 	ld r1, r1, r2
-	cmp r1, 'F'
+	mov r6, 'F'
+	cmp r1, r6
 	je .label_65
 	jmp .label_64
 	.label_65:
@@ -583,12 +601,12 @@ __tptcc_fn_sweep_cell:
 	jmp .label_35
 	.label_33:
 	mov r9, r1
-	cmp r9, 0
+	cmp r9, r0
 	jg .label_69
 	jmp .label_68
 	.label_69:
 	mov r9, r2
-	cmp r9, 0
+	cmp r9, r0
 	jg .label_74
 	jmp .label_71
 	.label_74:
@@ -597,7 +615,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 0
+	cmp r9, r0
 	je .label_76
 	.label_78:
 	mov r9, 1
@@ -605,7 +623,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r6
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_76
 	jmp .label_75
 	.label_76:
@@ -634,7 +653,8 @@ __tptcc_fn_sweep_cell:
 	.label_71:
 	.label_73:
 	mov r9, r2
-	cmp r9, 11
+	mov r10, 11
+	cmp r9, r10
 	jl .label_82
 	jmp .label_79
 	.label_82:
@@ -643,7 +663,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 0
+	cmp r9, r0
 	je .label_84
 	.label_86:
 	mov r9, 1
@@ -651,7 +671,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r8
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_84
 	jmp .label_83
 	.label_84:
@@ -684,7 +705,7 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r2
-	cmp r9, 0
+	cmp r9, r0
 	je .label_88
 	.label_90:
 	mov r9, 1
@@ -692,7 +713,8 @@ __tptcc_fn_sweep_cell:
 	mull r10, 12
 	add r9, r10
 	ld r9, r9, r2
-	cmp r9, 'F'
+	mov r10, 'F'
+	cmp r9, r10
 	je .label_88
 	jmp .label_87
 	.label_88:
@@ -716,12 +738,13 @@ __tptcc_fn_sweep_cell:
 	.label_68:
 	.label_70:
 	mov r5, r1
-	cmp r5, 7
+	mov r9, 7
+	cmp r5, r9
 	jl .label_92
 	jmp .label_91
 	.label_92:
 	mov r5, r2
-	cmp r5, 0
+	cmp r5, r0
 	jg .label_97
 	jmp .label_94
 	.label_97:
@@ -730,7 +753,7 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r6
-	cmp r5, 0
+	cmp r5, r0
 	je .label_99
 	.label_101:
 	mov r5, 1
@@ -738,7 +761,8 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r6
-	cmp r5, 'F'
+	mov r9, 'F'
+	cmp r5, r9
 	je .label_99
 	jmp .label_98
 	.label_99:
@@ -767,7 +791,8 @@ __tptcc_fn_sweep_cell:
 	.label_94:
 	.label_96:
 	mov r5, r2
-	cmp r5, 11
+	mov r9, 11
+	cmp r5, r9
 	jl .label_105
 	jmp .label_102
 	.label_105:
@@ -776,7 +801,7 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r8
-	cmp r5, 0
+	cmp r5, r0
 	je .label_107
 	.label_109:
 	mov r5, 1
@@ -784,7 +809,8 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r8
-	cmp r5, 'F'
+	mov r9, 'F'
+	cmp r5, r9
 	je .label_107
 	jmp .label_106
 	.label_107:
@@ -817,7 +843,7 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r2
-	cmp r5, 0
+	cmp r5, r0
 	je .label_111
 	.label_113:
 	mov r5, 1
@@ -825,7 +851,8 @@ __tptcc_fn_sweep_cell:
 	mull r9, 12
 	add r5, r9
 	ld r5, r5, r2
-	cmp r5, 'F'
+	mov r9, 'F'
+	cmp r5, r9
 	je .label_111
 	jmp .label_110
 	.label_111:
@@ -849,7 +876,7 @@ __tptcc_fn_sweep_cell:
 	.label_91:
 	.label_93:
 	mov r5, r2
-	cmp r5, 0
+	cmp r5, r0
 	jg .label_117
 	jmp .label_114
 	.label_117:
@@ -858,7 +885,7 @@ __tptcc_fn_sweep_cell:
 	mull r7, 12
 	add r5, r7
 	ld r5, r5, r6
-	cmp r5, 0
+	cmp r5, r0
 	je .label_119
 	.label_121:
 	mov r5, 1
@@ -866,7 +893,8 @@ __tptcc_fn_sweep_cell:
 	mull r7, 12
 	add r5, r7
 	ld r5, r5, r6
-	cmp r5, 'F'
+	mov r7, 'F'
+	cmp r5, r7
 	je .label_119
 	jmp .label_118
 	.label_119:
@@ -894,7 +922,8 @@ __tptcc_fn_sweep_cell:
 	jmp .label_116
 	.label_114:
 	.label_116:
-	cmp r2, 11
+	mov r5, 11
+	cmp r2, r5
 	jl .label_125
 	jmp .label_122
 	.label_125:
@@ -903,7 +932,7 @@ __tptcc_fn_sweep_cell:
 	mull r5, 12
 	add r2, r5
 	ld r2, r2, r8
-	cmp r2, 0
+	cmp r2, r0
 	je .label_127
 	.label_129:
 	mov r2, 1
@@ -911,7 +940,8 @@ __tptcc_fn_sweep_cell:
 	mull r5, 12
 	add r2, r5
 	ld r2, r2, r8
-	cmp r2, 'F'
+	mov r5, 'F'
+	cmp r2, r5
 	je .label_127
 	jmp .label_126
 	.label_127:
@@ -988,12 +1018,12 @@ __tptcc_fn_add_to_surrounding_cells:
 	add r2, 1
 	mov r8, r2
 	mov r2, r4
-	cmp r2, 0
+	cmp r2, r0
 	jg .label_131
 	jmp .label_130
 	.label_131:
 	mov r2, r5
-	cmp r2, 0
+	cmp r2, r0
 	jg .label_134
 	jmp .label_133
 	.label_134:
@@ -1019,7 +1049,8 @@ __tptcc_fn_add_to_surrounding_cells:
 	add r3, r9
 	st r3, r2
 	mov r2, r5
-	cmp r2, 11
+	mov r3, 11
+	cmp r2, r3
 	jl .label_137
 	jmp .label_136
 	.label_137:
@@ -1039,7 +1070,7 @@ __tptcc_fn_add_to_surrounding_cells:
 	.label_130:
 	.label_132:
 	mov r1, r5
-	cmp r1, 0
+	cmp r1, r0
 	jg .label_140
 	jmp .label_139
 	.label_140:
@@ -1056,7 +1087,8 @@ __tptcc_fn_add_to_surrounding_cells:
 	.label_139:
 	.label_141:
 	mov r1, r5
-	cmp r1, 11
+	mov r2, 11
+	cmp r1, r2
 	jl .label_143
 	jmp .label_142
 	.label_143:
@@ -1073,12 +1105,13 @@ __tptcc_fn_add_to_surrounding_cells:
 	.label_142:
 	.label_144:
 	mov r1, r4
-	cmp r1, 7
+	mov r2, 7
+	cmp r1, r2
 	jl .label_146
 	jmp .label_145
 	.label_146:
 	mov r1, r5
-	cmp r1, 0
+	cmp r1, r0
 	jg .label_149
 	jmp .label_148
 	.label_149:
@@ -1104,7 +1137,8 @@ __tptcc_fn_add_to_surrounding_cells:
 	add r2, r3
 	st r2, r1
 	mov r1, r5
-	cmp r1, 11
+	mov r2, 11
+	cmp r1, r2
 	jl .label_152
 	jmp .label_151
 	.label_152:
@@ -1221,13 +1255,15 @@ __tptcc_fn_main:
 	and r6, r7
 	.label_158:
 	mov r7, r6
-	cmp r7, 96
+	mov r8, 96
+	cmp r7, r8
 	jge .label_160
 	.label_161:
 	mov r7, r1
 	add r7, r6
 	ld r7, r7, 0
-	cmp r7, 9
+	mov r8, 9
+	cmp r7, r8
 	jge .label_160
 	jmp .label_159
 	.label_160:
@@ -1266,12 +1302,12 @@ __tptcc_fn_main:
 	mov r11, r6
 	add r11, 1
 	mov r12, r7
-	cmp r12, 0
+	cmp r12, r0
 	jg .label_163
 	jmp .label_162
 	.label_163:
 	mov r12, r6
-	cmp r12, 0
+	cmp r12, r0
 	jg .label_166
 	jmp .label_165
 	.label_166:
@@ -1297,7 +1333,8 @@ __tptcc_fn_main:
 	add r13, r14
 	st r13, r12
 	mov r12, r6
-	cmp r12, 11
+	mov r13, 11
+	cmp r12, r13
 	jl .label_169
 	jmp .label_168
 	.label_169:
@@ -1317,7 +1354,7 @@ __tptcc_fn_main:
 	.label_162:
 	.label_164:
 	mov r8, r6
-	cmp r8, 0
+	cmp r8, r0
 	jg .label_172
 	jmp .label_171
 	.label_172:
@@ -1334,7 +1371,8 @@ __tptcc_fn_main:
 	.label_171:
 	.label_173:
 	mov r8, r6
-	cmp r8, 11
+	mov r12, 11
+	cmp r8, r12
 	jl .label_175
 	jmp .label_174
 	.label_175:
@@ -1350,12 +1388,13 @@ __tptcc_fn_main:
 	jmp .label_176
 	.label_174:
 	.label_176:
-	cmp r7, 7
+	mov r8, 7
+	cmp r7, r8
 	jl .label_178
 	jmp .label_177
 	.label_178:
 	mov r7, r6
-	cmp r7, 0
+	cmp r7, r0
 	jg .label_181
 	jmp .label_180
 	.label_181:
@@ -1380,7 +1419,8 @@ __tptcc_fn_main:
 	mov r9, 1
 	add r8, r9
 	st r8, r7
-	cmp r6, 11
+	mov r7, 11
+	cmp r6, r7
 	jl .label_184
 	jmp .label_183
 	.label_184:
@@ -1425,7 +1465,8 @@ __tptcc_fn_main:
 	mov r1, 0
 	.label_186:
 	mov r2, r1
-	cmp r2, 8
+	mov r3, 8
+	cmp r2, r3
 	jl .label_189
 	jmp .label_188
 	.label_189:
@@ -1459,7 +1500,8 @@ __tptcc_fn_main:
 	add r1, r2
 	ld r1, r1, r6
 	mov r2, r1
-	cmp r2, 'F'
+	mov r7, 'F'
+	cmp r2, r7
 	je .label_194
 	jmp .label_193
 	.label_194:
@@ -1473,7 +1515,7 @@ __tptcc_fn_main:
 	jmp .label_195
 	.label_193:
 	mov r2, r1
-	cmp r2, 0
+	cmp r2, r0
 	je .label_197
 	jmp .label_196
 	.label_197:
@@ -1487,7 +1529,8 @@ __tptcc_fn_main:
 	jmp .label_198
 	.label_196:
 	mov r2, r1
-	cmp r2, 'B'
+	mov r7, 'B'
+	cmp r2, r7
 	je .label_200
 	jmp .label_199
 	.label_200:
@@ -1501,7 +1544,8 @@ __tptcc_fn_main:
 	jmp .label_201
 	.label_199:
 	mov r2, r1
-	cmp r2, '0'
+	mov r7, '0'
+	cmp r2, r7
 	jne .label_203
 	jmp .label_202
 	.label_203:
@@ -1525,7 +1569,8 @@ __tptcc_fn_main:
 	mov r22, r5
 	call __tptcc_fn_set_cursor
 	mov r2, r1
-	cmp r2, 'F'
+	mov r8, 'F'
+	cmp r2, r8
 	je .label_206
 	jmp .label_205
 	.label_206:
@@ -1542,7 +1587,7 @@ __tptcc_fn_main:
 	jmp .label_207
 	.label_205:
 	mov r2, r1
-	cmp r2, 0
+	cmp r2, r0
 	je .label_209
 	jmp .label_208
 	.label_209:
@@ -1559,7 +1604,8 @@ __tptcc_fn_main:
 	jmp .label_210
 	.label_208:
 	mov r2, r1
-	cmp r2, 'B'
+	mov r8, 'B'
+	cmp r2, r8
 	je .label_212
 	jmp .label_211
 	.label_212:
@@ -1587,12 +1633,13 @@ __tptcc_fn_main:
 	.label_210:
 	.label_207:
 	mov r1, r7
-	cmp r1, 'a'
+	mov r2, 'a'
+	cmp r1, r2
 	je .label_217
 	jmp .label_214
 	.label_217:
 	mov r1, r6
-	cmp r1, 0
+	cmp r1, r0
 	jg .label_215
 	jmp .label_214
 	.label_215:
@@ -1602,12 +1649,14 @@ __tptcc_fn_main:
 	jmp .label_216
 	.label_214:
 	mov r1, r7
-	cmp r1, 'd'
+	mov r2, 'd'
+	cmp r1, r2
 	je .label_221
 	jmp .label_218
 	.label_221:
 	mov r1, r6
-	cmp r1, 11
+	mov r2, 11
+	cmp r1, r2
 	jl .label_219
 	jmp .label_218
 	.label_219:
@@ -1617,12 +1666,13 @@ __tptcc_fn_main:
 	jmp .label_220
 	.label_218:
 	mov r1, r7
-	cmp r1, 'w'
+	mov r2, 'w'
+	cmp r1, r2
 	je .label_225
 	jmp .label_222
 	.label_225:
 	mov r1, r5
-	cmp r1, 0
+	cmp r1, r0
 	jg .label_223
 	jmp .label_222
 	.label_223:
@@ -1632,12 +1682,14 @@ __tptcc_fn_main:
 	jmp .label_224
 	.label_222:
 	mov r1, r7
-	cmp r1, 's'
+	mov r2, 's'
+	cmp r1, r2
 	je .label_229
 	jmp .label_226
 	.label_229:
 	mov r1, r5
-	cmp r1, 7
+	mov r2, 7
+	cmp r1, r2
 	jl .label_227
 	jmp .label_226
 	.label_227:
@@ -1647,7 +1699,8 @@ __tptcc_fn_main:
 	jmp .label_228
 	.label_226:
 	mov r1, r7
-	cmp r1, 'f'
+	mov r2, 'f'
+	cmp r1, r2
 	je .label_231
 	jmp .label_230
 	.label_231:
@@ -1656,7 +1709,8 @@ __tptcc_fn_main:
 	mull r2, 12
 	add r1, r2
 	ld r1, r1, r6
-	cmp r1, 'F'
+	mov r2, 'F'
+	cmp r1, r2
 	je .label_234
 	jmp .label_233
 	.label_234:
@@ -1674,7 +1728,7 @@ __tptcc_fn_main:
 	mull r2, 12
 	add r1, r2
 	ld r1, r1, r6
-	cmp r1, 0
+	cmp r1, r0
 	je .label_237
 	jmp .label_236
 	.label_237:
@@ -1692,11 +1746,13 @@ __tptcc_fn_main:
 	jmp .label_232
 	.label_230:
 	mov r1, r7
-	cmp r1, 10
+	mov r2, 10
+	cmp r1, r2
 	je .label_240
 	.label_242:
 	mov r1, r7
-	cmp r1, 'r'
+	mov r2, 'r'
+	cmp r1, r2
 	je .label_240
 	jmp .label_239
 	.label_240:
@@ -1708,7 +1764,8 @@ __tptcc_fn_main:
 	mull r2, 12
 	add r1, r2
 	ld r1, r1, r6
-	cmp r1, 9
+	mov r2, 9
+	cmp r1, r2
 	jge .label_247
 	jmp .label_246
 	.label_247:
@@ -1784,117 +1841,20 @@ __tptcc_fn_main:
 	pop base_pointer
 	add stack_pointer, 2
 	hlt
+__tptcc_fn_set_colour:
+    ; r22 = background, r23 = foreground
+    shl r22, 4
+    add r22, r23
+    st r22, term_colour
+    ret
+__tptcc_fn_putchar:
+    st r22, term_reg, term_base
+    ret
 __tptcc_fn_getchar:
     ld return_reg, term_input
     test return_reg, return_reg
     jz __tptcc_fn_getchar
     ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_getchar:
-    ld return_reg, term_input
-    test return_reg, return_reg
-    jz __tptcc_fn_getchar
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_print_char_array:
-    ld r23, r22
-    test r23, r23
-    jz .__print_char_array_exit
-    st r23, term_reg, term_base
-    add r22, 1
-    jmp __tptcc_fn_print_char_array
-.__print_char_array_exit:
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_print_char_array:
-    ld r23, r22
-    test r23, r23
-    jz .__print_char_array_exit
-    st r23, term_reg, term_base
-    add r22, 1
-    jmp __tptcc_fn_print_char_array
-.__print_char_array_exit:
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_print_char_array:
-    ld r23, r22
-    test r23, r23
-    jz .__print_char_array_exit
-    st r23, term_reg, term_base
-    add r22, 1
-    jmp __tptcc_fn_print_char_array
-.__print_char_array_exit:
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
 __tptcc_fn_set_cursor:
     ; r22 = row, r23 = column
     shl r22, 5
@@ -1909,188 +1869,18 @@ __tptcc_fn_print_char_array:
     add r22, 1
     jmp __tptcc_fn_print_char_array
 .__print_char_array_exit:
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
     ret
 __tptcc_fn_send_raw:
     st r22, r23
     ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
+__tptcc_fn_set_zero_char:
+    exh r23, r0, r23
+    mov r22, r23, r22
+    st r22, term_print_e
+    exh r25, r0, r25
+    mov r24, r25, r24
+    st r24, term_print_o
     ret
 __tptcc_fn_set_text_colour:
     st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_getchar:
-    ld return_reg, term_input
-    test return_reg, return_reg
-    jz __tptcc_fn_getchar
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_print_char_array:
-    ld r23, r22
-    test r23, r23
-    jz .__print_char_array_exit
-    st r23, term_reg, term_base
-    add r22, 1
-    jmp __tptcc_fn_print_char_array
-.__print_char_array_exit:
     ret

@@ -5,6 +5,9 @@ local codegen = require("codegen")
 local type_checker = require("type_checker")
 local symbol_table = require("symbol_table")
 local util = require("util")
+local tac_arithmetic_lowerer = require("tac_arithmetic_lowerer")
+local Standard_Library = require("standard_library")
+local preprocessor = require("preprocessor")
 
 if(_VERSION ~= "Lua 5.4") then
     print("[WARNING] This compiler requires Lua 5.4. You are using Lua " .. _VERSION .. ". The compiler may not work as expected.")
@@ -84,7 +87,14 @@ else
 end
 
 local type_checked_ast, included_standard_functions = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
+
+-- resolve included standard functions by filling in dependencies
+included_standard_functions = Standard_Library.resolve_dependencies(included_standard_functions)
+
+
 local ir_code = irv.generate_ir_code(type_checked_ast, breakpoints)
+
+tac_arithmetic_lowerer:lower(ir_code.tac)
 local asm = codegen:generate(ir_code, symbol_table, included_standard_functions)
 
 

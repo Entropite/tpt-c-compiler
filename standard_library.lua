@@ -1,6 +1,134 @@
 local Standard_Library = {}
 
 Standard_Library.code = {}
+
+Standard_Library.dependencies = {["__print_signed_long"] = {"__print_unsigned_long"},
+["__print_signed_int"] = {"__print_unsigned_int"}}
+
+function Standard_Library.resolve_dependencies(included_standard_functions)
+    local resolved_dependencies = {}
+    for func, _ in pairs(included_standard_functions) do
+        if(Standard_Library.dependencies[func]) then
+            for _, dependency in ipairs(Standard_Library.dependencies[func]) do
+                resolved_dependencies[dependency] = true
+            end
+        end
+
+        resolved_dependencies[func] = true
+    end
+    
+    return resolved_dependencies
+end
+
+Standard_Library.code["__print_signed_long"] = [[
+__tptcc_fn_print_signed_long:
+    exh %2, %1, r0
+    cmp %2, 0x8000
+    ja __tptcc_fn_print_signed_long_positive
+    mov %3, '-'
+    st %3, term_reg, term_base
+    xor %1, 0xFFFF
+    xor %2, 0xFFFF
+    add %1, 1
+    adc %2, 0
+    exh %2, r0, %2
+    mov %1, %2, %1
+__tptcc_fn_print_signed_long_positive:
+    call __tptcc_fn_print_unsigned_long
+    ret
+]]
+
+Standard_Library.code["__print_unsigned_long"] = [[
+__tptcc_fn_print_unsigned_long:
+    push r1
+    push r2
+    push r3
+    push r4
+    push r5
+
+    ; input
+    %define mn_16 52429
+    %define mn_32 52428
+
+    mov r5, 0
+    exh %2, %1, r0 ; s2 == n_32
+__tptcc_fn_print_unsigned_long_loop:
+    mul r1, %1, mn_16 ; pu_16
+    mulh r2, %1, mn_16 ; pu_32
+
+    mul r3, %2, mn_32 ; pu_48
+    mulh r4, %2, mn_32 ; pu_64
+
+    mul %3, %2, mn_16 ; temp_32
+    add r2, %3
+    adc r3, r0
+    adc r4, r0
+
+    mul %3, %1, mn_32 ; temp_32_2
+    add r2, %3
+    adc r3, r0
+    adc r4, r0
+
+    mulh %3, %2, mn_16 ; temp_48
+    add r3, %3
+    adc r4, r0
+
+    mulh %3, %1, mn_32 ; temp_48_2
+    add r3, %3
+    adc r4, r0
+    
+
+    ; quotient_16
+    shr r3, 3
+    shl %3, r4, 13
+    or %3, r3
+
+    ; quotient_32
+    shr %4, r4, 3
+
+    mul r1, %3, 10 ; rd_16
+    ;mulh r2, %3, 10 ; rd_32
+    
+    ;mul r3, %4, 10 ; rd_32_2
+    ;add r2, r3
+
+    sub r1, %1, r1 ; remainder_16 -- might need to add 10
+    ;sub r2, %2, r2 ; remainder_32
+
+    st r1, r5, __tptcc_fn_print_unsigned_long_buf
+    
+
+    mov %1, %3
+    mov %2, %4
+    cmp %1, 0
+    jnz __tptcc_fn_print_unsigned_long_continue_loop
+    cmp %2, 0
+    jnz __tptcc_fn_print_unsigned_long_continue_loop
+    jmp __tptcc_fn_print_unsigned_long_print
+__tptcc_fn_print_unsigned_long_continue_loop:
+    add r5, 1
+    jmp __tptcc_fn_print_unsigned_long_loop
+
+__tptcc_fn_print_unsigned_long_print:
+    
+    ld r1, r5, __tptcc_fn_print_unsigned_long_buf
+    add r1, '0'
+    st r1, term_print
+    sub r5, 1
+    jl __tptcc_fn_print_unsigned_long_exit
+    jmp __tptcc_fn_print_unsigned_long_print
+
+__tptcc_fn_print_unsigned_long_exit:
+    pop r5
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    ret
+__tptcc_fn_print_unsigned_long_buf:
+    dw 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]]
+
 Standard_Library.code["__print_unsigned_int"] =  [[
 __tptcc_fn_print_unsigned_int:
 	test %1, %1
