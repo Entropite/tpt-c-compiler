@@ -13,7 +13,7 @@ if(_VERSION ~= "Lua 5.4") then
     print("[WARNING] This compiler requires Lua 5.4. You are using Lua " .. _VERSION .. ". The compiler may not work as expected.")
 end
 
-local usage = "Usage: lua cli.lua input.c [--output output.asm] [--size total-memory-size] [--term-width width] [--term-height height] [--offset offset] [--symbols symbols.json]" 
+local usage = "Usage: lua cli.lua input.c [input2.c ...]  [--output output.asm] [--size total-memory-size] [--term-width width] [--term-height height] [--offset offset] [--symbols symbols.json]" 
 if(#arg < 1) then
     print(usage)
     os.exit(1)
@@ -24,7 +24,31 @@ local export_symbols = false
 local export_symbols_filename
 local breakpoints = {}
 
-for arg_idx = 2, #arg - 1, 2 do
+local file = io.open(arg[1], "r")
+local code = {}
+if(file) then
+    table.insert(code, file:read("*all"))
+    file:close()
+else
+    error("Failed to open file")
+end
+
+local arg_start_idx = 2
+
+while arg_start_idx <= #arg do
+    if(#arg[arg_start_idx] < 2 or string.sub(arg[arg_start_idx], 1, 2) ~= "--") then
+        local aux_file = io.open(arg[arg_start_idx], "r")
+        if(aux_file) then
+            table.insert(code, aux_file:read("*all"))
+            aux_file:close()
+        else
+            error("Failed to open file: " .. arg[arg_start_idx])
+        end
+    end
+    arg_start_idx = arg_start_idx + 1
+end
+
+for arg_idx = arg_start_idx, #arg - 1, 2 do
     if arg[arg_idx] == "--offset" then
         local offset = tonumber(arg[arg_idx + 1])
         if not offset then
@@ -77,14 +101,12 @@ for arg_idx = 2, #arg - 1, 2 do
     end
 end
 
-local file = io.open(arg[1], "r")
-local code = nil
-if(file) then
-    code = file:read("*all")
-    file:close()
-else
-    error("Failed to open file")
-end
+code = table.concat(code, "\n")
+
+code = preprocessor.preprocess(code)
+local temp_file = io.open("temp.c", "w")
+temp_file:write(code)
+temp_file:close()
 
 local type_checked_ast, included_standard_functions = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
 
