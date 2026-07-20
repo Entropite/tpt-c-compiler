@@ -533,6 +533,12 @@ function tac_arithmetic_lowerer.mov(instruction, source, dest)
     end
 end
 
+-- function tac_arithmetic_lowerer.and(instruction, source, dest)
+--     if(source.bitsize == 16 or dest.bitsize == 16) then
+
+--     end
+-- end
+
 function tac_arithmetic_lowerer.add(instruction, source, dest)
     local add_instruction = nil
     if(source.bitsize == 16 and dest.bitsize == 16) then

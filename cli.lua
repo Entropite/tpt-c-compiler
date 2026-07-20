@@ -35,15 +35,13 @@ end
 
 local arg_start_idx = 2
 
-while arg_start_idx <= #arg do
-    if(#arg[arg_start_idx] < 2 or string.sub(arg[arg_start_idx], 1, 2) ~= "--") then
-        local aux_file = io.open(arg[arg_start_idx], "r")
-        if(aux_file) then
-            table.insert(code, aux_file:read("*all"))
-            aux_file:close()
-        else
-            error("Failed to open file: " .. arg[arg_start_idx])
-        end
+while arg_start_idx <= #arg and string.sub(arg[arg_start_idx], 1, 2) ~= "--" do
+    local aux_file = io.open(arg[arg_start_idx], "r")
+    if(aux_file) then
+        table.insert(code, aux_file:read("*all"))
+        aux_file:close()
+    else
+        error("Failed to open file: " .. arg[arg_start_idx])
     end
     arg_start_idx = arg_start_idx + 1
 end
@@ -104,9 +102,6 @@ end
 code = table.concat(code, "\n")
 
 code = preprocessor.preprocess(code)
-local temp_file = io.open("temp.c", "w")
-temp_file:write(code)
-temp_file:close()
 
 local type_checked_ast, included_standard_functions = type_checker.type_check(parser.parse(lexer.lex(code), symbol_table))
 

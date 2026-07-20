@@ -39,6 +39,13 @@ Type.KINDS = util.invert_table(Type.INVERTED_KINDS)
 Type.INTEGRAL_TYPES = {}
 Type.INTEGRAL_TYPES[Type.KINDS["INT"]] = 1
 Type.INTEGRAL_TYPES[Type.KINDS["LONG"]] = 1
+Type.INTEGRAL_TYPES[Type.KINDS["CHAR"]] = 1
+
+Type.INTEGRAL_TYPE_DOMINANCE = {
+    [Type.KINDS["CHAR"]] = 1,
+    [Type.KINDS["INT"]] = 2,
+    [Type.KINDS["LONG"]] = 3,
+}
 
 setmetatable(Type.KINDS, {__index = function(t, k)
     return rawget(t, string.upper(k))

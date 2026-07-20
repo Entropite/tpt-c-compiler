@@ -190,6 +190,13 @@ function lipeg.Cp()
     return t
 end
 
+-- match already closely emulates the behaviour of Ct, so this function is simply a wrapper
+function lipeg.Ct(pattern)
+    local t = {grammar = {pattern}, match = pattern.match}
+    setmetatable(t, lipeg)
+    return t
+end
+
 
 function lipeg:match_range(input, pos, captures)
     if(pos > #input) then

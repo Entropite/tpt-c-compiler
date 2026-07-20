@@ -86,4 +86,12 @@ function Utils.array_to_string(table, delimiter)
     return string
 end
 
+function Utils.apply_to_iterator(it, func)
+    local elements = table.pack(it())
+    while #elements > 0 do
+        func(table.unpack(elements))
+        elements = table.pack(it())
+    end
+end
+
 return Utils

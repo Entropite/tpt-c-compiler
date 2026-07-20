@@ -108,6 +108,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
     -- For literals
     function initialize_word(word_place, place)
+        if(type(word_place.value) == "string") then
+            word_place.value = string.byte(word_place.value)
+        end
+
         if(place.type == "g") then
             register_global_word(word_place.value, place)
         else
@@ -1517,13 +1521,14 @@ end
                     -- end
                 elseif(operation.type == "->") then
                     -- dereference and then add the offset to the address
+
                     n.place = emit_dereference(n.place)
                     n.place = emit_offset_lvalue(operand.i(n.value_types[i-1].points_to.members[operation.value.id].offset), n.place, 1)
                     
-                    if(member_type.kind == Type.KINDS["LONG"]) then
-                        n.place = copy_place(n.place)
-                        n.place.bitsize = IRVisitor.LONG_BITS
-                    end
+                    -- if(member_type.kind == Type.KINDS["LONG"]) then
+                    --     n.place = copy_place(n.place)
+                    --     n.place.bitsize = IRVisitor.LONG_BITS
+                    -- end
                     
                     -- if(not reg_rvalue_operands[n.place.type] and n.place.type ~= "pr") then
                     --     local next_reg = operand.pr() -- ? can this be a pr?
@@ -1586,6 +1591,7 @@ end
             register_string_literal(n, temp)
             n.place = emit_address_of(temp) -- some r value registers can hold an address; however, the address cannot be used to store data except when used with an indexing operator
         else
+            print(Node.INVERTED_NODE_TYPES[n.type])
             Diagnostics.submit(Message.internal_error("Invalid primary expression", n.pos))
         end
     end
