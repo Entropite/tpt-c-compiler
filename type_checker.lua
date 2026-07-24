@@ -176,7 +176,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     
                     -- int to long implicit type coercion (only uncomment if you're brave)
                     if(declarator.value_type.kind == Type.KINDS["LONG"] and declarator.initializer.value_type.kind == Type.KINDS["INT"]) then
-                        insert_implicit_cast(declarator.initializer.value, declarator, function(overwritten_value) declarator.initializer.value = overwritten_value end)
+                        declarator.initializer.value = get_implicit_cast(declarator.initializer.value, declarator.value_type)
                     end
                 end
             end
@@ -534,20 +534,25 @@ function Type_Checker.type_check(ast, symbol_table)
         return n.value_type
     end
 
+
+    function is_arithmetic_pointer_assignment(lhs_type, rhs_type, op)
+        return lhs_type.kind == Type.KINDS["POINTER"] and Type.INTEGRAL_TYPES[rhs_type.kind] and (op == "+=" or op == "-=")
+    end
+
     function check_assignment_expression(n)
         -- May not have a lhs or rhs
         if(node_check(n, "ASSIGNMENT")) then
             local lhs_type = check_ternary_expression(n.lhs)
             local rhs_type = check_assignment_expression(n.rhs)
             assert(lhs_type ~= nil and rhs_type ~= nil, "Assignment expression must have a lhs and rhs")
-            -- same_type_chain seems obsolete. I am considering replacing with can_coerce
-            if(not same_type_chain(lhs_type, rhs_type, true) and not lhs_type.kind == Type.KINDS["VOID"] and not rhs_type.kind == Type.KINDS["VOID"]) then
+            
+            if(not (can_coerce(rhs_type, lhs_type, true) or is_arithmetic_pointer_assignment(lhs_type, rhs_type, n.op))) then
                 Diagnostics.submit(Message.error("Assignment types do not match", n.pos))
             end
 
             
             n.value_type = lhs_type
-            --insert_implicit_cast(n.rhs, n, "rhs")
+            n.rhs = get_implicit_cast(n.rhs, n.value_type)
         else
             n.value_type = check_ternary_expression(n)
         end
@@ -664,17 +669,41 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Relational expression terms must be ints", n[i].pos))
                 end
             end
-            local signed = n[1].value_type.signed
-            for i = 2, #n - 1, 2 do
-                if (not signed or not n[i+1].value_type.signed) then -- unsure about this
-                    n[i].value_type = base({is_signed=false, kind="INT"})
-                else
-                    n[i].value_type = base({is_signed=true, kind="INT"})
-                end
-
-                signed = true
+            local max_kind, signed
+            local first_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[1].value_type.kind]
+            local second_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[3].value_type.kind]
+            if(first_rank > second_rank) then
+                max_kind = n[1].value_type.kind
+                signed = n[1].value_type.signed
+            elseif(second_rank > first_rank) then
+                max_kind = n[3].value_type.kind
+                signed = n[3].value_type.signed
+            else
+                max_kind = n[1].value_type.kind
+                signed = n[1].value_type.signed and n[3].value_type.signed
             end
+
+            local max_type = base({is_signed=signed, kind=Type.INVERTED_KINDS[max_kind]})
+
+            n[1] = get_implicit_cast(n[1], max_type)
+            n[3] = get_implicit_cast(n[3], max_type)
+            n[2].value_type = max_type
+
+            -- higher terms
+            local current_rank = Type.INTEGRAL_TYPE_DOMINANCE[Type.KINDS["INT"]]
+            local current_signedness = true
             n.value_type = base({is_signed=true, kind="INT"})
+            for i = 4, #n - 1, 2 do
+                local other_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[i + 1].value_type.kind]
+                if(other_rank < current_rank) then
+                    n[i + 1] = get_implicit_cast(n[i + 1], n.value_type)
+                    n[i].value_type = n.value_type
+                elseif(other_rank >= current_rank) then
+                    n[i].value_type = n[i + 1].value_type
+                end
+            end
+
+            
             return n.value_type
         else
             return check_shift_expression(n)
@@ -720,8 +749,7 @@ function Type_Checker.type_check(ast, symbol_table)
             if(pointer_type == nil) then
                 local kind = get_max_integral_kind(get_arithmetic_array_iterator(n))
                 n.value_type = base({is_signed=is_signed(n), kind=Type.INVERTED_KINDS[kind]})
-
-                util.apply_to_iterator(get_arithmetic_array_iterator(n), function(term, i) insert_implicit_cast(term, n, i) end)
+                util.apply_to_iterator(get_arithmetic_array_iterator(n), function(term, i) n[i] = get_implicit_cast(term, n.value_type) end)
             else
                 n.value_type = pointer_type
             end
@@ -742,18 +770,14 @@ function Type_Checker.type_check(ast, symbol_table)
         return false
     end
 
-    function insert_implicit_cast(n, parent_node, child_node_mapping)
+    function get_implicit_cast(n, target_type)
         local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
         local expression_node = Node:new(Node.NODE_TYPES["EXPRESSION"])
         expression_node[1] = n
         expression_node.value_type = n.value_type
         cast_node.child = expression_node
-        cast_node.value_type = parent_node.value_type
-        if(type(child_node_mapping) == "function") then
-            child_node_mapping(cast_node)
-        else
-            parent_node[child_node_mapping] = cast_node
-        end
+        cast_node.value_type = target_type
+        return cast_node
     end
 
     function check_term(n)
@@ -769,7 +793,7 @@ function Type_Checker.type_check(ast, symbol_table)
 
             local kind = get_max_integral_kind(get_arithmetic_array_iterator(n))
             n.value_type = base({is_signed=is_signed(n), kind=Type.INVERTED_KINDS[kind]})
-            util.apply_to_iterator(get_arithmetic_array_iterator(n), function(factor, i) insert_implicit_cast(factor, n, i) end)
+            util.apply_to_iterator(get_arithmetic_array_iterator(n), function(factor, i) n[i] = get_implicit_cast(factor, n.value_type) end)
 
         else
             n.value_type = check_cast_expression(n)
@@ -797,13 +821,14 @@ function Type_Checker.type_check(ast, symbol_table)
         return max_kind
     end
 
-    function get_arithmetic_array_iterator(n)
+    function get_arithmetic_array_iterator(n, up_to)
         local idx = 1
+        local up_to = up_to or #n
         return function()
-            local result = n[idx]
-            if(result == nil) then
+            if(idx > up_to) then
                 return nil
             end
+            local result = n[idx]
 
             idx = idx + 2
             return result, idx - 2

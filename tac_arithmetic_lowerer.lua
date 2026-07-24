@@ -544,6 +544,7 @@ function tac_arithmetic_lowerer.add(instruction, source, dest)
     if(source.bitsize == 16 and dest.bitsize == 16) then
         add_instruction = {instruction}
     elseif(source.bitsize == 16 and dest.bitsize == 32) then
+        -- is only allowed for optimization reasons
         local dest_high = operand.t()
         add_instruction = {
             {type="exh", low=dest, dest=dest_high, high=operand.r("r0")},
@@ -581,6 +582,24 @@ function tac_arithmetic_lowerer.add(instruction, source, dest)
     end
 
     return add_instruction
+end
+
+function tac_arithmetic_lowerer.sub(instruction, source, dest)
+    assert(source.bitsize == dest.bitsize, "source and dest must have the same bitsize")
+    if(source.bitsize == 16 and dest.bitsize == 16) then
+        return {instruction}
+    elseif(source.bitsize == 32 and dest.bitsize == 32) then
+        local source_high = operand.t()
+        local dest_high = operand.t()
+        return {
+            {type="exh", dest=source_high, low=source, high=operand.r("r0")},
+            {type="exh", dest=dest_high, low=dest, high=operand.r("r0")},
+            {type="sub", source=source, dest=dest},
+            {type="sbb", source=source_high, dest=dest_high},
+            {type="exh", low=operand.r("r0"), dest=dest_high, high=dest_high},
+            {type="mov3", low=dest, high=dest_high, dest=dest}
+        }
+    end
 end
 
 function tac_arithmetic_lowerer:build_dispatches()

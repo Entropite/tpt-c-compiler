@@ -1841,37 +1841,6 @@ __tptcc_fn_main:
 	pop base_pointer
 	add stack_pointer, 2
 	hlt
-__tptcc_fn_getchar:
-    ld return_reg, term_input
-    test return_reg, return_reg
-    jz __tptcc_fn_getchar
-    ret
-__tptcc_fn_set_colour:
-    ; r22 = background, r23 = foreground
-    shl r22, 4
-    add r22, r23
-    st r22, term_colour
-    ret
-__tptcc_fn_set_zero_char:
-    exh r23, r0, r23
-    mov r22, r23, r22
-    st r22, term_print_e
-    exh r25, r0, r25
-    mov r24, r25, r24
-    st r24, term_print_o
-    ret
-__tptcc_fn_set_cursor:
-    ; r22 = row, r23 = column
-    shl r22, 5
-    add r22, r23
-    st r22, term_cursor
-    ret
-__tptcc_fn_set_text_colour:
-    st r22, term_colour
-    ret
-__tptcc_fn_putchar:
-    st r22, term_reg, term_base
-    ret
 __tptcc_fn_print_char_array:
     ld r23, r22
     test r23, r23
@@ -1883,4 +1852,35 @@ __tptcc_fn_print_char_array:
     ret
 __tptcc_fn_send_raw:
     st r22, r23
+    ret
+__tptcc_fn_set_zero_char:
+    exh r23, r0, r23
+    mov r22, r23, r22
+    st r22, term_print_e
+    exh r25, r0, r25
+    mov r24, r25, r24
+    st r24, term_print_o
+    ret
+__tptcc_fn_getchar:
+    ld return_reg, term_input
+    test return_reg, return_reg
+    jz __tptcc_fn_getchar
+    ret
+__tptcc_fn_putchar:
+    st r22, term_reg, term_base
+    ret
+__tptcc_fn_set_colour:
+    ; r22 = background, r23 = foreground
+    shl r22, 4
+    add r22, r23
+    st r22, term_colour
+    ret
+__tptcc_fn_set_cursor:
+    ; r22 = row, r23 = column
+    shl r22, 5
+    add r22, r23
+    st r22, term_cursor
+    ret
+__tptcc_fn_set_text_colour:
+    st r22, term_colour
     ret

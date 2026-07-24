@@ -422,18 +422,17 @@ do
 
     coercion_functions["UINT_to_ULONG"] = coercion_functions["UINT_to_LONG"]
 
-    function emit_type_coercion(n)
-        --n.child has already been emitted
-        assert(n.child and n.child.place ~= nil, "Child place is nil")
+    function emit_type_coercion(input_place, input_type, target_type)
+        assert(input_place ~= nil, "Input place is nil")
 
-        local child_type_string = Type.to_string_pretty(n.child.value_type, true)
-        local target_type_string = Type.to_string_pretty(n.value_type, true)
+        local child_type_string = Type.to_string_pretty(input_type, true)
+        local target_type_string = Type.to_string_pretty(target_type, true)
         local coercion_function = coercion_functions[child_type_string .. "_to_" .. target_type_string]
-        --emit_unary_expression(n.child) -- temp, cast_expression already has the child emitted
+
         if(coercion_function) then
-            n.child.place = coercion_function(n.child.place)
+            return coercion_function(input_place)
         else
-            n.child.place = n.child.place
+            return input_place
         end
     end
 end
@@ -696,6 +695,7 @@ end
         table.insert(tac[current_method.id], {type="label", target=true_label})
         emit_move(operand.i(1), result_place)
         table.insert(tac[current_method.id], {type="label", target=end_label})
+        result_place.bitsize = 16
     end
 
     function emit_conditional_result_jump(result_place, true_label, false_label)
@@ -706,13 +706,29 @@ end
 
     function emit_relational_expression(n, true_label, false_label)
         if(node_check(n, "RELATIONAL_EXPRESSION")) then
+            
             local temp_place = load_operand_into_register(emit_bool_rvalue(n[1]))
+            local temp_type = n[1].value_type
+            -- processes up to the second to last relational comparison (the last relational comparison and the very last operand are not evaluated)
             for i = 2, #n - 3, 2 do
                 local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
                 local signedness = n[i].value_type.signed
                 local jump_type = (signedness and symbol_to_signed_comparison_type[n[i].value] or symbol_to_unsigned_comparison_type[n[i].value])
+                
+                
+                -- should add pointer comparisons
+                if(n[i].value_type.kind ~= temp_type.kind) then
+                    temp_place = emit_type_coercion(temp_place, temp_type, n[i].value_type)
+                end
+
                 emit_conditional_evaluation(temp_place, next_reg, temp_place, jump_type)
+                temp_type = n.value_type
             end
+
+            if(n[#n - 1].value_type.kind ~= temp_type.kind) then
+                temp_place = emit_type_coercion(temp_place, temp_type, n[#n - 1].value_type)
+            end
+
             local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[#n]))
             table.insert(tac[current_method.id], {type="cmp", first=temp_place, second=next_reg})
             local signedness = n[#n - 1].value_type.signed
@@ -1284,7 +1300,7 @@ end
     function emit_cast_expression(n)
         if(node_check(n, "CAST_EXPRESSION")) then
             emit_cast_expression(n.child)
-            emit_type_coercion(n)
+            n.child.place = emit_type_coercion(n.child.place, n.child.value_type, n.value_type)
             n.place = n.child.place
         else
             emit_unary_expression(n)

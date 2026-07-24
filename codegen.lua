@@ -296,7 +296,13 @@ start:
 
     -- print num + other util functions
     local stdlib = ""
-    for func, _ in pairs(included_standard_functions) do
+    local sorted_included_standard_functions = {}
+    for k, v in pairs(included_standard_functions) do 
+        table.insert(sorted_included_standard_functions, k)
+    end
+
+    table.sort(sorted_included_standard_functions)
+    for _, func in ipairs(sorted_included_standard_functions) do
         stdlib = stdlib .. Standard_Library.code[func]
     end
     
