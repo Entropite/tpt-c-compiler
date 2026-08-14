@@ -393,13 +393,13 @@ do
             long_place = operand.i(sign_extend(place.value, IRVisitor.INT_BITS, IRVisitor.LONG_BITS), IRVisitor.LONG_BITS)
         elseif(reg_rvalue_operands[place.type]) then
             long_place = copy_place(place)
-            long_place.bitsize = IRVisitor.LONG_BITS
             table.insert(tac[current_method.id], {type="movsx", source=place, dest=long_place}) 
         else
             local temp = load_operand_into_register(place)
             table.insert(tac[current_method.id], {type="movsx", source=temp, dest=temp})
             long_place = temp
         end
+        long_place.bitsize = IRVisitor.LONG_BITS
         return long_place
     end
 
@@ -414,9 +414,10 @@ do
             long_place = place
         else
             local temp = load_operand_into_register(place)
-            table.insert(tac[current_method.id], {type="movzx", source=place, dest=temp})
+            table.insert(tac[current_method.id], {type="movzx", source=temp, dest=temp})
             long_place = temp
         end
+        long_place.bitsize = IRVisitor.LONG_BITS
         return long_place
     end
 
@@ -1193,7 +1194,6 @@ end
                     table.insert(tac[current_method.id], {type="add", source = n[i].place, dest=n.place})
                 end
             else
-                
                 table.insert(tac[current_method.id], {type="sub", source = n[i].place, dest=n.place})
             end
         end
@@ -1300,6 +1300,7 @@ end
     function emit_cast_expression(n)
         if(node_check(n, "CAST_EXPRESSION")) then
             emit_cast_expression(n.child)
+            
             n.child.place = emit_type_coercion(n.child.place, n.child.value_type, n.value_type)
             n.place = n.child.place
         else
@@ -1340,8 +1341,10 @@ end
             elseif(n.operator == "-") then
                 emit_cast_expression(n.child)
                 if(n.child.place.type == "i") then
+                   
                     n.place = copy_place(n.child.place)
                     n.place.value = (1 << n.place.bitsize) - n.place.value
+                    
                 else
                     n.place = load_operand_into_register(n.child.place)
                     table.insert(tac[current_method.id], {type="neg", primary=n.place})

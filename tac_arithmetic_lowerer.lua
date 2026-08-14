@@ -401,7 +401,7 @@ function tac_arithmetic_lowerer.neg(instruction, primary)
     else
         local primary_high = operand.t()
         return {
-            {type="exh", low=primary, high=operand.r("r0"), dest=primary_high},
+            {type="exh", low=primary, high=primary, dest=primary_high},
             {type="xor", source=operand.i(65535), dest=primary},
             {type="xor", source=operand.i(65535), dest=primary_high},
             {type="add", source=operand.i(1), dest=primary},
@@ -489,8 +489,8 @@ end
 
 function tac_arithmetic_lowerer.movsx(instruction, source, dest)
     assert(Operand.reg_rvalue_operands[source.type] and Operand.reg_rvalue_operands[dest.type], "source and dest must be register operands holding rvalues")
-
-    if(source.bitsize == 16 and dest.bitsize == 32) then
+    
+    if(dest.bitsize == 32) then
         local positive_label = operand.lb()
         local end_label = operand.lb()
         local temp = operand.t()
@@ -508,6 +508,11 @@ function tac_arithmetic_lowerer.movsx(instruction, source, dest)
     else
         return {{type="mov", source=source, dest=dest}}
     end
+end
+
+function tac_arithmetic_lowerer.movzx(instruction, source, dest)
+    assert(dest.bitsize == 32, "dest must be 32 bits")
+    return {{type="mov3", low=source, high=operand.r("zero_high_reg"), dest=dest}}
 end
 
 

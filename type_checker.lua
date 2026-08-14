@@ -686,7 +686,7 @@ function Type_Checker.type_check(ast, symbol_table)
             end
 
             if(n.is_pointer_comparison) then
-
+                -- TODO: Handle pointer comparisons
             end
 
             local max_kind, signed
@@ -1042,15 +1042,8 @@ function Type_Checker.type_check(ast, symbol_table)
             end
 
             if(argument_type.kind == Type.KINDS["INT"] and parameter_types[i].kind == Type.KINDS["LONG"]) then
-                local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
-                local expression_node = Node:new(Node.NODE_TYPES["EXPRESSION"]) -- bridge for the grammar; cast_node can't have a relational subnode
-                expression_node[1] = argument
-                cast_node.child = expression_node
+                arguments.value[i] = get_implicit_cast(argument, base("LONG"))
                 
-                cast_node.value_type = base("LONG")
-                check_expression(cast_node.child)
-                
-                arguments.value[i] = cast_node
             end
         end
     end
