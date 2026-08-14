@@ -88,7 +88,7 @@ end
 
 function Utils.apply_to_iterator(it, func)
     local elements = table.pack(it())
-    while #elements > 0 do
+    while elements[1] ~= nil do
         func(table.unpack(elements))
         elements = table.pack(it())
     end

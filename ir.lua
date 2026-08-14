@@ -1349,7 +1349,12 @@ end
             elseif(n.operator == "~") then
                 emit_cast_expression(n.child)
                 n.place = load_operand_into_register(n.child.place)
-                table.insert(tac[current_method.id], {type="xor", source=operand.i(65535), dest=n.place})
+                if(n.place.bitsize == 16) then
+                    table.insert(tac[current_method.id], {type="xor", source=operand.i(65535, IRVisitor.INT_BITS), dest=n.place})
+                else
+                    local temp = load_operand_into_register(operand.i(4294967295, IRVisitor.LONG_BITS))
+                    table.insert(tac[current_method.id], {type="xor", source=temp, dest=n.place})
+                end
             elseif(n.operator == "+") then
                 emit_cast_expression(n.child)
                 n.place = n.child.place

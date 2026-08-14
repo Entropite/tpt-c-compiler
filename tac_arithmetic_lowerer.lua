@@ -533,11 +533,28 @@ function tac_arithmetic_lowerer.mov(instruction, source, dest)
     end
 end
 
--- function tac_arithmetic_lowerer.and(instruction, source, dest)
---     if(source.bitsize == 16 or dest.bitsize == 16) then
 
---     end
--- end
+function tac_arithmetic_lowerer.inclusive_operator(instruction, source, dest)
+    assert(source.bitsize == dest.bitsize, "source and dest must have the same bitsize")
+    if(source.bitsize == 16) then
+        return {instruction}
+    else
+        local source_high = operand.t()
+        local dest_high = operand.t()
+        return {
+            {type="exh", low=source, high=source, dest=source_high},
+            {type="exh", low=dest, high=dest, dest=dest_high},
+            {type=instruction.type, source=source, dest=dest},
+            {type=instruction.type, source=source_high, dest=dest_high},
+            {type="exh", low=operand.r("r0"), high=dest_high, dest=dest_high},
+            {type="mov3", low=dest, high=dest_high, dest=dest}
+        }
+    end
+end
+
+tac_arithmetic_lowerer["and"] = tac_arithmetic_lowerer.inclusive_operator
+tac_arithmetic_lowerer["or"] = tac_arithmetic_lowerer.inclusive_operator
+tac_arithmetic_lowerer["xor"] = tac_arithmetic_lowerer.inclusive_operator
 
 function tac_arithmetic_lowerer.add(instruction, source, dest)
     local add_instruction = nil
@@ -601,6 +618,7 @@ function tac_arithmetic_lowerer.sub(instruction, source, dest)
         }
     end
 end
+
 
 function tac_arithmetic_lowerer:build_dispatches()
     local dispatch_table = {}

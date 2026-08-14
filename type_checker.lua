@@ -591,6 +591,17 @@ function Type_Checker.type_check(ast, symbol_table)
         end
     end
 
+
+    function get_array_iterator(n)
+        local i = 1
+
+        return function()
+            i = i + 1
+            return n[i - 1], i - 1
+        end
+
+    end
+
     function check_logical_and_expression(n)
         if(node_check(n, "LOGICAL_AND_EXPRESSION")) then
             for i=1, #n do
@@ -598,6 +609,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Logical and expression terms must be ints", n[i].pos))
                 end
             end
+
             n.value_type = base({is_signed=is_signed(n), kind="INT"})
             return n.value_type
         else
@@ -640,7 +652,10 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Bitwise inclusive and expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+
+            local kind = get_max_integral_kind(get_array_iterator(n))
+            n.value_type = base({is_signed=is_signed(n), kind=Type.INVERTED_KINDS[kind]})
+            util.apply_to_iterator(get_array_iterator(n), function(term, i) n[i] = get_implicit_cast(term, n.value_type) end)
             return n.value_type
         else
             return check_equality_expression(n)
@@ -669,6 +684,11 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Relational expression terms must be ints", n[i].pos))
                 end
             end
+
+            if(n.is_pointer_comparison) then
+
+            end
+
             local max_kind, signed
             local first_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[1].value_type.kind]
             local second_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[3].value_type.kind]
