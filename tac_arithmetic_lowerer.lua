@@ -50,7 +50,9 @@ function magic_number_division_32_signed(dividend, divisor, quotient, remainder)
         }
     end
 
-    local magic_number = math.ceil((1 << 32) / divisor.value)
+    local divisor_abs = util.abs32(divisor.value)
+    local magic_number = math.ceil((1 << 32) / divisor_abs)
+    local is_divisor_negative = divisor.value >= 2^31
     local magic_number_low_i = operand.i(magic_number % 65536)
     local magic_number_high_i = operand.i(magic_number >> 16)
     local magic_number_low = operand.t()
@@ -66,28 +68,37 @@ function magic_number_division_32_signed(dividend, divisor, quotient, remainder)
     local remainder_low = operand.t()
     local remainder_high = operand.t()
     local temp = operand.t()
+    local quotient_needs_negation = operand.t()
 
     local original_16 = operand.t()
     local original_32 = operand.t()
 
     local negative_remainder_label = operand.lb()
     local positive_remainder_label = operand.lb()
-    local positive_quotient_48_label = operand.lb()
+    local positive_dividend_high_label = operand.lb()
+    local remainder_negation_complete_label = operand.lb()
     return {
         {type="mov", source=magic_number_low_i, dest=magic_number_low},
         {type="mov", source=magic_number_high_i, dest=magic_number_high},
         {type="exh", low=dividend, dest=dividend_high, high=operand.r("r0")},
         {type="mov", source=dividend, dest=dividend_low},
+        {type="mov", source=operand.i(is_divisor_negative and 1 or 0), dest=quotient_needs_negation},
+
+        {type="cmp", first=dividend_high, second=operand.r("r0")},
+        {type="jge", target=positive_dividend_high_label},
+        {type="xor", source=operand.i(1), dest=quotient_needs_negation},
+        {type="xor", source=operand.i(65535), dest=dividend_high},
+        {type="xor", source=operand.i(65535), dest=dividend_low},
+        {type="add", source=operand.i(1), dest=dividend_low},
+        {type="adc", source=operand.r("r0"), dest=dividend_high},
+
+        {type="label", target=positive_dividend_high_label},
+
         {type="mull3", source=dividend_low, third=magic_number_low, dest=quotient_16},
         {type="mulh", source=dividend_low, third=magic_number_low, dest=quotient_32},
-        {type="mulx", source=magic_number_low, third=dividend_high, dest=quotient_48},
-        {type="mulx", source=magic_number_high, third=dividend_high, dest=quotient_64},
+        {type="mulh", third=magic_number_low, source=dividend_high, dest=quotient_48},
+        {type="mulh", third=magic_number_high, source=dividend_high, dest=quotient_64},
 
-        {type="cmp", first=quotient_48, second=operand.r("r0")},
-        {type="jge", target=positive_quotient_48_label},
-
-        {type="add", dest=quotient_64, source=operand.i(65535)},
-        {type="label", target=positive_quotient_48_label},
         {type="mull3", source=dividend_low, third=magic_number_high, dest=temp},
         {type="add", source=temp, dest=quotient_32},
         {type="adc", source=operand.r("r0"), dest=quotient_48},
@@ -109,17 +120,17 @@ function magic_number_division_32_signed(dividend, divisor, quotient, remainder)
         
 
         -- -- calculate remainder
-        {type="mull3", source=quotient_48, third=operand.i(divisor.value % 65536), dest=original_16},
-        {type="mulh", source=quotient_48, third=operand.i(divisor.value % 65536), dest=original_32},
-        {type="mull3", source=quotient_64, third=operand.i(divisor.value % 65536), dest=temp},
+        {type="mull3", source=quotient_48, third=operand.i(divisor_abs % 65536), dest=original_16},
+        {type="mulh", source=quotient_48, third=operand.i(divisor_abs % 65536), dest=original_32},
+        {type="mull3", source=quotient_64, third=operand.i(divisor_abs % 65536), dest=temp},
         {type="add", source=temp, dest=original_32},
-        {type="mull3", source=quotient_48, third=operand.i(divisor.value >> 16), dest=temp},
+        {type="mull3", source=quotient_48, third=operand.i(divisor_abs >> 16), dest=temp},
         {type="add", source=temp, dest=original_32},
 
 
         {type="cmp", first=dividend_high, second=original_32},
-        {type="jl", target=negative_remainder_label},
-        {type="jg", target=positive_remainder_label},
+        {type="jb", target=negative_remainder_label},
+        {type="ja", target=positive_remainder_label},
         {type="cmp", first=dividend_low, second=original_16},
         {type="jae", target=positive_remainder_label},
 
@@ -127,12 +138,26 @@ function magic_number_division_32_signed(dividend, divisor, quotient, remainder)
         -- add divisor
         {type="sub", dest=quotient_48, source=operand.i(1)},
         {type="sbb", dest=quotient_64, source=operand.r("r0")},
-        {type="sub", dest=original_16, source=operand.i(divisor.value % 65536)},
-        {type="sbb", dest=original_32, source=operand.i(divisor.value >> 16)},
+        {type="sub", dest=original_16, source=operand.i(divisor_abs % 65536)},
+        {type="sbb", dest=original_32, source=operand.i(divisor_abs >> 16)},
 
         {type="label", target=positive_remainder_label},
         {type="sub3", source=dividend_low, third=original_16, dest=remainder_low},
         {type="sbb3", source=dividend_high, third=original_32, dest=remainder_high},
+
+
+        {type="cmp", first=quotient_needs_negation, second=operand.r("r0")},
+        {type="jz", target=remainder_negation_complete_label},
+        {type="xor", source=operand.i(65535), dest=remainder_low},
+        {type="xor", source=operand.i(65535), dest=remainder_high},
+        {type="add", source=operand.i(1), dest=remainder_low},
+        {type="adc", source=operand.r("r0"), dest=remainder_high},
+        {type="xor", source=operand.i(65535), dest=quotient_48},
+        {type="xor", source=operand.i(65535), dest=quotient_64},
+        {type="add", source=operand.i(1), dest=quotient_48},
+        {type="adc", source=operand.r("r0"), dest=quotient_64},
+
+        {type="label", target=remainder_negation_complete_label},
         {type="exh", low=operand.r("r0"), dest=remainder_high, high=remainder_high},
         {type="mov3", low=remainder_low, high=remainder_high, dest=remainder},
 
