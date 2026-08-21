@@ -9,20 +9,22 @@ local mem_lvalue_operands = Operand.mem_lvalue_operands
 
 local tac_arithmetic_lowerer = {}
 
-function fixed_point_division_16(dividend, divisor, quotient, remainder)
+function fixed_point_division_16(dividend, divisor, quotient, remainder, is_signed)
     assert(divisor.type == "i", "divisor must be an immediate")
     assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
 
     local fixed_point_factor = (1 << 16) // divisor.value
     local end_label = operand.lb()
     local divisor_temp = operand.t()
+    print(is_signed)
     return {
-        {type="mulh", source=dividend, third=operand.i(fixed_point_factor), dest=quotient},
+        {type="mov", source=operand.i(fixed_point_factor), dest=divisor_temp},
+        {type=(is_signed and "mulx" or "mulh"), source=divisor_temp, third=dividend, dest=quotient},
         {type="mull3", source=quotient, third=divisor, dest=remainder},
         {type="sub3", source=dividend, third=remainder, dest=remainder},
         {type="mov", source=divisor, dest=divisor_temp},
         {type="cmp", first=remainder, second=divisor_temp},
-        {type="jb", target=end_label}, -- ja is similar to jl since the operands are reversed
+        {type="jb", target=end_label}, 
         {type="add", source=operand.i(1), dest=quotient},
         {type="sub", source=divisor, dest=remainder},
         {type="label", target=end_label}
@@ -30,7 +32,118 @@ function fixed_point_division_16(dividend, divisor, quotient, remainder)
 
 end
 
-function magic_number_division_32(dividend, divisor, quotient, remainder)
+function magic_number_division_32(dividend, divisor, quotient, remainder, is_signed)
+    if(is_signed) then
+        return magic_number_division_32_signed(dividend, divisor, quotient, remainder)
+    else
+        return magic_number_division_32_unsigned(dividend, divisor, quotient, remainder)
+    end
+end
+
+function magic_number_division_32_signed(dividend, divisor, quotient, remainder)
+    assert(divisor.type == "i", "divisor must be an immediate")
+    assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
+
+    if(divisor.value == 1) then
+        return {{type="mov3", low=dividend, high=dividend, dest=quotient},
+                {type="mov", source=operand.i(0), dest=remainder}            
+        }
+    end
+
+    local magic_number = math.ceil((1 << 32) / divisor.value)
+    local magic_number_low_i = operand.i(magic_number % 65536)
+    local magic_number_high_i = operand.i(magic_number >> 16)
+    local magic_number_low = operand.t()
+    local magic_number_high = operand.t()
+    local end_label = operand.lb()
+
+    local dividend_high = operand.t()
+    local dividend_low = operand.t()
+    local quotient_16 = operand.t()
+    local quotient_32 = operand.t()
+    local quotient_48 = operand.t()
+    local quotient_64 = operand.t()
+    local remainder_low = operand.t()
+    local remainder_high = operand.t()
+    local temp = operand.t()
+
+    local original_16 = operand.t()
+    local original_32 = operand.t()
+
+    local negative_remainder_label = operand.lb()
+    local positive_remainder_label = operand.lb()
+    local positive_quotient_48_label = operand.lb()
+    return {
+        {type="mov", source=magic_number_low_i, dest=magic_number_low},
+        {type="mov", source=magic_number_high_i, dest=magic_number_high},
+        {type="exh", low=dividend, dest=dividend_high, high=operand.r("r0")},
+        {type="mov", source=dividend, dest=dividend_low},
+        {type="mull3", source=dividend_low, third=magic_number_low, dest=quotient_16},
+        {type="mulh", source=dividend_low, third=magic_number_low, dest=quotient_32},
+        {type="mulx", source=magic_number_low, third=dividend_high, dest=quotient_48},
+        {type="mulx", source=magic_number_high, third=dividend_high, dest=quotient_64},
+
+        {type="cmp", first=quotient_48, second=operand.r("r0")},
+        {type="jge", target=positive_quotient_48_label},
+
+        {type="add", dest=quotient_64, source=operand.i(65535)},
+        {type="label", target=positive_quotient_48_label},
+        {type="mull3", source=dividend_low, third=magic_number_high, dest=temp},
+        {type="add", source=temp, dest=quotient_32},
+        {type="adc", source=operand.r("r0"), dest=quotient_48},
+        {type="adc", source=operand.r("r0"), dest=quotient_64},
+
+        {type="mull3", source=dividend_high, third=magic_number_low, dest=temp},
+        {type="add", source=temp, dest=quotient_32},
+        {type="adc", source=operand.r("r0"), dest=quotient_48},
+        {type="adc", source=operand.r("r0"), dest=quotient_64},
+
+        {type="mulh", source=dividend_low, third=magic_number_high, dest=temp},
+        {type="add", source=temp, dest=quotient_48},
+        {type="adc", source=operand.r("r0"), dest=quotient_64},
+        
+        {type="mull3", source=dividend_high, third=magic_number_high, dest=temp},
+        {type="add", source=temp, dest=quotient_48},
+        {type="adc", source=operand.r("r0"), dest=quotient_64},
+
+        
+
+        -- -- calculate remainder
+        {type="mull3", source=quotient_48, third=operand.i(divisor.value % 65536), dest=original_16},
+        {type="mulh", source=quotient_48, third=operand.i(divisor.value % 65536), dest=original_32},
+        {type="mull3", source=quotient_64, third=operand.i(divisor.value % 65536), dest=temp},
+        {type="add", source=temp, dest=original_32},
+        {type="mull3", source=quotient_48, third=operand.i(divisor.value >> 16), dest=temp},
+        {type="add", source=temp, dest=original_32},
+
+
+        {type="cmp", first=dividend_high, second=original_32},
+        {type="jl", target=negative_remainder_label},
+        {type="jg", target=positive_remainder_label},
+        {type="cmp", first=dividend_low, second=original_16},
+        {type="jae", target=positive_remainder_label},
+
+        {type="label", target=negative_remainder_label},
+        -- add divisor
+        {type="sub", dest=quotient_48, source=operand.i(1)},
+        {type="sbb", dest=quotient_64, source=operand.r("r0")},
+        {type="sub", dest=original_16, source=operand.i(divisor.value % 65536)},
+        {type="sbb", dest=original_32, source=operand.i(divisor.value >> 16)},
+
+        {type="label", target=positive_remainder_label},
+        {type="sub3", source=dividend_low, third=original_16, dest=remainder_low},
+        {type="sbb3", source=dividend_high, third=original_32, dest=remainder_high},
+        {type="exh", low=operand.r("r0"), dest=remainder_high, high=remainder_high},
+        {type="mov3", low=remainder_low, high=remainder_high, dest=remainder},
+
+        {type="exh", low=operand.r("r0"), dest=quotient_64, high=quotient_64},
+        {type="mov3", low=quotient_48, high=quotient_64, dest=quotient},
+
+
+    }
+end
+
+function magic_number_division_32_unsigned(dividend, divisor, quotient, remainder, is_signed)
     assert(divisor.type == "i", "divisor must be an immediate")
     assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
 
@@ -60,14 +173,13 @@ function magic_number_division_32(dividend, divisor, quotient, remainder)
 
     local negative_remainder_label = operand.lb()
     local positive_remainder_label = operand.lb()
-
     return {
         {type="exh", low=dividend, dest=dividend_high, high=operand.r("r0")},
         {type="mov", source=dividend, dest=dividend_low},
         {type="mull3", source=dividend_low, third=magic_number_low, dest=quotient_16},
         {type="mulh", source=dividend_low, third=magic_number_low, dest=quotient_32},
-        {type="mulh", source=dividend_high, third=magic_number_low, dest=quotient_48},
-        {type="mulh", source=dividend_high, third=magic_number_high, dest=quotient_64},
+        {type="mulh", third=magic_number_low, source=dividend_high, dest=quotient_48},
+        {type="mulh", third=magic_number_high, source=dividend_high, dest=quotient_64},
 
         {type="mull3", source=dividend_low, third=magic_number_high, dest=temp},
         {type="add", source=temp, dest=quotient_32},
@@ -124,12 +236,11 @@ function magic_number_division_32(dividend, divisor, quotient, remainder)
     }
 end
 
-function tac_arithmetic_lowerer.fixed_point_division(instruction, dividend, divisor, quotient, remainder)
-    
+function tac_arithmetic_lowerer.fixed_point_division(instruction, dividend, divisor, quotient, remainder, is_signed)
     if(divisor.bitsize == 16 and dividend.bitsize == 16) then
-        return fixed_point_division_16(dividend, divisor, quotient, remainder)
+        return fixed_point_division_16(dividend, divisor, quotient, remainder, is_signed)
     else
-        return magic_number_division_32(dividend, divisor, quotient, remainder)
+        return magic_number_division_32(dividend, divisor, quotient, remainder, is_signed)
     end
 end
 

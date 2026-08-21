@@ -28,6 +28,11 @@ Type.BASE_KINDS = {
     ["ENUM"]=1
 }
 
+Type.SIGNED_KINDS = {
+    ["UNSIGNED"] = 1,
+    ["SIGNED"] = 1,
+}
+
 
 
 setmetatable(Type.BASE_KINDS, {__index = function(t, k)
@@ -74,16 +79,21 @@ end
 
     function Type.base(kind)
         if(type(kind) == "table") then
-            if(#kind == 1) then
-                return Type.base(kind[1])
+
+            local is_signed = kind.is_signed or true
+            local base_kind = kind.kind and Type.KINDS[kind.kind] or Type.KINDS["INT"]
+            for _, v in ipairs(kind) do
+                local canon_type = string.upper(v)
+                if(canon_type == "UNSIGNED") then
+                    is_signed = false
+                elseif(Type.BASE_KINDS[canon_type] and not Type.SIGNED_KINDS[canon_type]) then
+                    base_kind = Type.KINDS[canon_type]
+                end
             end
-            -- local s = require("serpent")
-            -- assert(kind.is_signed ~= nil and kind.kind ~= nil, "Invalid base type " .. s.block(kind))
-            
-            assert(type(kind.is_signed) == "boolean" and Type.BASE_KINDS[kind.kind], "Invalid base type ")
-            return Type:new({kind = Type.KINDS[kind.kind], signed = kind.is_signed})
+
+            return Type:new({kind = base_kind, is_signed = is_signed})
         else
-            return Type:new({kind = Type.KINDS[string.upper(kind)], signed = true})
+            return Type:new({kind = Type.KINDS[string.upper(kind)], is_signed = true})
         end
     end
 
@@ -164,7 +174,7 @@ end
                 end
                 result = result .. ") -> " .. Type.to_string_pretty(type.return_type, show_unsigned) .. ")"
             elseif(Type.INVERTED_KINDS[type.kind]) then
-                if(Type.INTEGRAL_TYPES[type.kind] and show_unsigned and not type.signed) then
+                if(Type.INTEGRAL_TYPES[type.kind] and show_unsigned and not type.is_signed) then
                     result = result .. "U" .. Type.INVERTED_KINDS[type.kind]
                 else
                     result = result .. Type.INVERTED_KINDS[type.kind]

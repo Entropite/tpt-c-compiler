@@ -94,4 +94,24 @@ function Utils.apply_to_iterator(it, func)
     end
 end
 
+function Utils.to_bag(table)
+    local result = {}
+    for k, v in pairs(table) do
+        local freq = result[v] or 0
+        result[v] = freq + 1
+    end
+
+    return result
+end
+
+function Utils.all_table(table, func)
+    for k, v in pairs(table) do
+        if not func(k, v) then
+            return false
+        end
+    end
+
+    return true
+end
+
 return Utils

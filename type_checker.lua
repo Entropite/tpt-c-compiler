@@ -122,10 +122,7 @@ function Type_Checker.type_check(ast, symbol_table)
             if(not Type.BASE_KINDS[string.upper(n.specifier.type_specifier.kind[1])]) then
                 base_type = get_symbol(n.specifier.type_specifier.kind[1], symbol_table.ordinary).type
             else
-                -- if type is unsigned, convert to the proper format (an explicit is_signed field)
-                if(#n.specifier.type_specifier.kind == 2) then
-                    n.specifier.type_specifier.kind = {is_signed = n.specifier.type_specifier.kind[1] == "signed", kind = n.specifier.type_specifier.kind[2]}
-                end
+                -- if type is unsigned, convert to the proper format (an explicit is_signed field) --> moved to within the base function
                 base_type = base(n.specifier.type_specifier.kind)
             end
         end
@@ -694,13 +691,13 @@ function Type_Checker.type_check(ast, symbol_table)
             local second_rank = Type.INTEGRAL_TYPE_DOMINANCE[n[3].value_type.kind]
             if(first_rank > second_rank) then
                 max_kind = n[1].value_type.kind
-                signed = n[1].value_type.signed
+                signed = n[1].value_type.is_signed
             elseif(second_rank > first_rank) then
                 max_kind = n[3].value_type.kind
-                signed = n[3].value_type.signed
+                signed = n[3].value_type.is_signed
             else
                 max_kind = n[1].value_type.kind
-                signed = n[1].value_type.signed and n[3].value_type.signed
+                signed = n[1].value_type.is_signed and n[3].value_type.is_signed
             end
 
             local max_type = base({is_signed=signed, kind=Type.INVERTED_KINDS[max_kind]})
@@ -783,7 +780,7 @@ function Type_Checker.type_check(ast, symbol_table)
     function is_signed(n)
         for _, child in ipairs(n) do
             -- value type is skipped if it is nil (in the case of operators like +/-)
-            if(child.value_type and child.value_type.signed == true) then
+            if(child.value_type and child.value_type.is_signed == true) then
                 return true
             end
         end

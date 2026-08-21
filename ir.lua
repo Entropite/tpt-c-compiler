@@ -713,7 +713,7 @@ end
             -- processes up to the second to last relational comparison (the last relational comparison and the very last operand are not evaluated)
             for i = 2, #n - 3, 2 do
                 local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
-                local signedness = n[i].value_type.signed
+                local signedness = n[i].value_type.is_signed
                 local jump_type = (signedness and symbol_to_signed_comparison_type[n[i].value] or symbol_to_unsigned_comparison_type[n[i].value])
                 
                 
@@ -732,7 +732,7 @@ end
 
             local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[#n]))
             table.insert(tac[current_method.id], {type="cmp", first=temp_place, second=next_reg})
-            local signedness = n[#n - 1].value_type.signed
+            local signedness = n[#n - 1].value_type.is_signed
             local jump_type = (signedness and symbol_to_signed_comparison_type[n[#n - 1].value] or symbol_to_unsigned_comparison_type[n[#n - 1].value])
             table.insert(tac[current_method.id], {type=jump_type, target=true_label})
             table.insert(tac[current_method.id], {type="jmp", target=false_label})
@@ -1264,18 +1264,18 @@ end
                 -- if(n[i].place.type == "i") then
                 --     n[i].place = load_operand_into_register(n[i].place)
                 -- end
-                n.place = emit_division(n.place, n[i].place)
+                n.place = emit_division(n.place, n[i].place, n.value_type.is_signed)
             elseif(n[i-1].type == TOKEN_TYPES['%']) then
                 -- if(n[i].place.type == "i") then
                 --     n[i].place = load_operand_into_register(n[i].place)
                 -- end
-                _, n.place = emit_division(n.place, n[i].place)
+                _, n.place = emit_division(n.place, n[i].place, n.value_type.is_signed)
             end
         end
     end
 
     -- performs unsigned division using binary long division
-    function emit_division(dividend, divisor)
+    function emit_division(dividend, divisor, is_signed)
         if(not reg_rvalue_operands[dividend.type]) then
             dividend = load_operand_into_register(dividend)
         end
@@ -1285,7 +1285,7 @@ end
 
         if(divisor.type == "i") then
             
-            table.insert(tac[current_method.id], {type="fixed_point_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder})
+            table.insert(tac[current_method.id], {type="fixed_point_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder, is_signed=is_signed})
         else
             if(not reg_rvalue_operands[divisor.type]) then
                 divisor = load_operand_into_register(divisor)
