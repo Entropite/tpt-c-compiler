@@ -58,6 +58,36 @@ end})
 
 Type.__index = Type
 
+Type.compare_and_choose_largest_integral_type = function(a, b)
+
+    if(a == nil) then
+        return b
+    end
+  
+    if(Type.INTEGRAL_TYPE_DOMINANCE[a.kind] < Type.INTEGRAL_TYPE_DOMINANCE[b.kind]) then
+        return b
+    elseif(Type.INTEGRAL_TYPE_DOMINANCE[a.kind] > Type.INTEGRAL_TYPE_DOMINANCE[b.kind]) then
+        return a
+    end
+
+    if(a.is_signed and not b.is_signed) then
+        return b
+    end
+
+    return a
+end
+
+function Type.value_type_iterator(it)
+    return function()
+        local v = it()
+        return v and v.value_type
+    end
+end
+
+function Type.get_largest_integral_type(it)
+    return util.reduce(Type.value_type_iterator(it), nil, Type.compare_and_choose_largest_integral_type)
+end
+
 function Type:new(t)
     local o = setmetatable(t or {}, Type)
     return o
@@ -79,8 +109,7 @@ end
 
     function Type.base(kind)
         if(type(kind) == "table") then
-
-            local is_signed = kind.is_signed or true
+            local is_signed = (kind.is_signed == nil) and true or kind.is_signed
             local base_kind = kind.kind and Type.KINDS[kind.kind] or Type.KINDS["INT"]
             for _, v in ipairs(kind) do
                 local canon_type = string.upper(v)
@@ -90,7 +119,6 @@ end
                     base_kind = Type.KINDS[canon_type]
                 end
             end
-
             return Type:new({kind = base_kind, is_signed = is_signed})
         else
             return Type:new({kind = Type.KINDS[string.upper(kind)], is_signed = true})

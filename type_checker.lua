@@ -578,10 +578,10 @@ function Type_Checker.type_check(ast, symbol_table)
             for i=1, #n do
         
                 if(not can_coerce(check_logical_and_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Logical or expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Logical or expression terms must be integral types", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            n.value_type = base({is_signed=true, kind="INT"})
             return n.value_type
         else
             return check_logical_and_expression(n)
@@ -603,11 +603,11 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n, "LOGICAL_AND_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_or_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Logical and expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Logical and expression terms must be integral_types", n[i].pos))
                 end
             end
 
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            n.value_type = base({is_signed=true, kind="INT"})
             return n.value_type
         else
             return check_inclusive_or_expression(n)
@@ -618,10 +618,12 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_OR_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_xor_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Bitwise inclusive or expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Bitwise inclusive or expression terms must be integral types", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            local largest_type = Type.get_largest_integral_type(get_array_iterator(n))
+            n.value_type = util.deep_copy(largest_type)
+            util.apply_to_iterator(get_array_iterator(n), function(term, i) n[i] = get_implicit_cast(term, n.value_type) end)
             return n.value_type
         else
             return check_inclusive_xor_expression(n)
@@ -632,10 +634,12 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_XOR_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_inclusive_and_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Bitwise inclusive xor expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Bitwise inclusive xor expression terms must be integral types", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            local largest_type = Type.get_largest_integral_type(get_array_iterator(n))
+            n.value_type = util.deep_copy(largest_type)
+            util.apply_to_iterator(get_array_iterator(n), function(term, i) n[i] = get_implicit_cast(term, n.value_type) end)
             return n.value_type
         else
             return check_inclusive_and_expression(n)
@@ -646,7 +650,7 @@ function Type_Checker.type_check(ast, symbol_table)
         if(node_check(n, "INCLUSIVE_AND_EXPRESSION")) then
             for i=1, #n do
                 if(not can_coerce(check_equality_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Bitwise inclusive and expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Bitwise inclusive and expression terms must be integral types", n[i].pos))
                 end
             end
 
@@ -662,17 +666,28 @@ function Type_Checker.type_check(ast, symbol_table)
     function check_equality_expression(n)
         if(node_check(n, "EQUALITY_EXPRESSION")) then
             for i=1, #n, 2 do
-                -- might extend equality to non-int types later
+
                 if(not can_coerce(check_relational_expression(n[i]), base("INT"))) then
-                    Diagnostics.submit(Message.error("Equality expression terms must be ints", n[i].pos))
+                    Diagnostics.submit(Message.error("Equality expression terms must be integral types", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            
+            local current_type = Type.compare_and_choose_largest_integral_type(n[1].value_type, n[3].value_type)
+            n[1] = get_implicit_cast(n[1], current_type)
+            n[3] = get_implicit_cast(n[3], current_type)
+            current_type = base({is_signed=true, kind="INT"})
+            for i = 5, #n, 2 do
+                local largest = Type.compare_and_choose_largest_integral_type(current_type, n[i].value_type)
+                n[i] = get_implicit_cast(n[i], largest)
+            end
+
+            n.value_type = base({is_signed=true, kind="INT"})
             return n.value_type
         else
             return check_relational_expression(n)
         end
     end
+
 
     function check_relational_expression(n)
         if(node_check(n, "RELATIONAL_EXPRESSION")) then
@@ -734,7 +749,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Shift expression terms must be ints", n[i].pos))
                 end
             end
-            n.value_type = base({is_signed=is_signed(n), kind="INT"})
+            n.value_type = util.deep_copy(n[1].value_type)
             return n.value_type
         else
             return check_sum_expression(n)
@@ -764,8 +779,8 @@ function Type_Checker.type_check(ast, symbol_table)
                 end
             end
             if(pointer_type == nil) then
-                local kind = get_max_integral_kind(get_arithmetic_array_iterator(n))
-                n.value_type = base({is_signed=is_signed(n), kind=Type.INVERTED_KINDS[kind]})
+                local largest_type = Type.get_largest_integral_type(get_arithmetic_array_iterator(n))
+                n.value_type = util.deep_copy(largest_type)
                 util.apply_to_iterator(get_arithmetic_array_iterator(n), function(term, i) n[i] = get_implicit_cast(term, n.value_type) end)
             else
                 n.value_type = pointer_type
@@ -807,9 +822,8 @@ function Type_Checker.type_check(ast, symbol_table)
                     Diagnostics.submit(Message.error("Can only multiply or divide by integral types", factor.pos))
                 end
             end
-
-            local kind = get_max_integral_kind(get_arithmetic_array_iterator(n))
-            n.value_type = base({is_signed=is_signed(n), kind=Type.INVERTED_KINDS[kind]})
+            local largest_type = Type.get_largest_integral_type(get_arithmetic_array_iterator(n))
+            n.value_type = util.deep_copy(largest_type)
             util.apply_to_iterator(get_arithmetic_array_iterator(n), function(factor, i) n[i] = get_implicit_cast(factor, n.value_type) end)
 
         else
@@ -846,7 +860,6 @@ function Type_Checker.type_check(ast, symbol_table)
                 return nil
             end
             local result = n[idx]
-
             idx = idx + 2
             return result, idx - 2
         end
@@ -1105,11 +1118,10 @@ function Type_Checker.type_check(ast, symbol_table)
         if(n.parameter_list) then
             type = func(type, build_parameter_list(n.parameter_list))
         end
-
         if(n.declarator) then
             type = build_declarator(n.declarator, type)
         end
-
+        
         return type
     end
 

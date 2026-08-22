@@ -114,6 +114,15 @@ function Utils.all_table(table, func)
     return true
 end
 
+
+function Utils.reduce(it, initial, func)
+    local result = initial
+    for v, _ in it do
+        result = func(result, v)
+    end
+    return result
+end
+
 function Utils.extend(tab, other) 
     for _, v in ipairs(other) do
         table.insert(tab, v)

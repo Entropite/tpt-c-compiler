@@ -344,7 +344,7 @@ function Parser.parse(toks, symbol_table)
             while(accept("^")) do
                 table.insert(inclusive_xor_expression_node, parse_inclusive_and_expression())
             end
-
+            
             return inclusive_xor_expression_node
         end
 
@@ -736,6 +736,7 @@ function Parser.parse(toks, symbol_table)
                     while(check("TYPE_SPECIFIER")) do
                         table.insert(type_specifier_node.kind, next_token().value)
                     end
+                    
                 end
             end
         else

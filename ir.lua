@@ -676,6 +676,7 @@ end
                     Diagnostics.submit(Message.internal_error("Invalid signed comparison operator", n[i].pos))
                 end
                 emit_conditional_evaluation(temp_place, next_reg, temp_place, jump_type)
+
             end
             local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[#n]))
             table.insert(tac[current_method.id], {type="cmp", first=temp_place, second=next_reg})
@@ -1176,7 +1177,7 @@ end
         if(n.value_type.kind == Type.KINDS["LONG"]) then
             n.place.bitsize = IRVisitor.LONG_BITS
         else
-            n.place.bitsize = 16
+            n.place.bitsize = IRVisitor.INT_BITS
         end
 
         for i = 3, #n, 2 do
