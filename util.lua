@@ -114,6 +114,12 @@ function Utils.all_table(table, func)
     return true
 end
 
+function Utils.extend(tab, other) 
+    for _, v in ipairs(other) do
+        table.insert(tab, v)
+    end
+end
+
 function Utils.abs32(value)
     if(value >= 2^31) then
         return ((2^32 - 1) ~ value) + 1

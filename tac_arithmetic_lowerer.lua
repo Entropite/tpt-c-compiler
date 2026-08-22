@@ -269,16 +269,39 @@ function tac_arithmetic_lowerer.fixed_point_division(instruction, dividend, divi
     end
 end
 
-function tac_arithmetic_lowerer.long_division_16(instruction, dividend, divisor, quotient, remainder)
+function tac_arithmetic_lowerer.long_division_16(instruction, dividend, divisor, quotient, remainder, is_signed)
     assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
     assert(reg_rvalue_operands[divisor.type], "divisor must be an rvalue oriented operand in a register")
-
+    
     local bit_index = operand.t()
     local loop_label = operand.lb()
     local temp = operand.t()
     local r_lt_d_label = operand.lb()
     local end_label = operand.lb()
-    return {
+    local dividend_positive_label = operand.lb()
+    local divisor_positive_label = operand.lb()
+    local instructions = {}
+
+    local needs_negation = operand.t()
+    if(is_signed) then
+        util.extend(instructions, {
+            {type="mov", source=operand.r("r0"), dest=needs_negation},
+            {type="cmp", first=dividend, second=operand.r("r0")},
+            {type="jge", target=dividend_positive_label},
+            {type="mov", source=operand.i(1), dest=needs_negation},
+            {type="xor", source=operand.i(65535), dest=dividend},
+            {type="add", source=operand.i(1), dest=dividend},
+            {type="label", target=dividend_positive_label},
+            {type="cmp", first=divisor, second=operand.r("r0")},
+            {type="jge", target=divisor_positive_label},
+            {type="xor", source=operand.i(1), dest=needs_negation},
+            {type="xor", source=operand.i(65535), dest=divisor},
+            {type="add", source=operand.i(1), dest=divisor},
+            {type="label", target=divisor_positive_label},
+        })
+    end
+
+    util.extend(instructions, {
         {type="mov", source=operand.i(0), dest=quotient},
         {type="mov", source=operand.i(0), dest=remainder},
         {type="mov", source=operand.i(15), dest=bit_index},
@@ -299,18 +322,38 @@ function tac_arithmetic_lowerer.long_division_16(instruction, dividend, divisor,
         {type="sub", source=operand.i(1), dest=bit_index},
         {type="jmp", target=loop_label},
         {type="label", target=end_label}
-    }
+    })
+
+    
+    if(is_signed) then
+        local signed_end_label = operand.lb()
+        util.extend(instructions,
+        {
+            {type="cmp", first=needs_negation, second=operand.r("r0")},
+            {type="jz", target=signed_end_label},
+            {type="xor", source=operand.i(65535), dest=quotient},
+            {type="add", source=operand.i(1), dest=quotient},
+            {type="xor", source=operand.i(65535), dest=remainder},
+            {type="add", source=operand.i(1), dest=remainder},
+            {type="label", target=signed_end_label},
+        }
+    )
+    end
+
+    
+    return instructions
+
 end
 
-function tac_arithmetic_lowerer.long_division(instruction, dividend, divisor, quotient, remainder)
+function tac_arithmetic_lowerer.long_division(instruction, dividend, divisor, quotient, remainder, is_signed)
     if(divisor.bitsize == 16 and dividend.bitsize == 16) then
-        return tac_arithmetic_lowerer.long_division_16(instruction, dividend, divisor, quotient, remainder)
+        return tac_arithmetic_lowerer.long_division_16(instruction, dividend, divisor, quotient, remainder, is_signed)
     else
-        return tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor, quotient, remainder)
+        return tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor, quotient, remainder, is_signed)
     end
 end
 
-function tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor, quotient, remainder)
+function tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor, quotient, remainder, is_signed)
     assert(reg_rvalue_operands[dividend.type], "dividend must be an rvalue oriented operand in a register")
     assert(reg_rvalue_operands[divisor.type], "divisor must be an rvalue oriented operand in a register")
 
@@ -331,9 +374,40 @@ function tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor,
     local remainder_high = operand.t()
     local quotient_high = operand.t()
 
-    return {
+    local needs_negation = operand.t()
+
+    local instructions = {
         {type="exh", low=dividend, dest=dividend_high, high=operand.r("r0")},
         {type="exh", low=divisor, dest=divisor_high, high=operand.r("r0")},
+    }
+
+    if(is_signed) then
+        local dividend_positive_label = operand.lb()
+        local divisor_positive_label = operand.lb()
+
+        util.extend(instructions, {
+            {type="mov", source=operand.r("r0"), dest=needs_negation},
+            {type="test", first=dividend_high, second=operand.i(0x8000)},
+            {type="jz", target=dividend_positive_label},
+            {type="mov", source=operand.i(1), dest=needs_negation},
+            {type="xor", source=operand.i(65535), dest=dividend_high},
+            {type="xor", source=operand.i(65535), dest=dividend},
+            {type="add", source=operand.i(1), dest=dividend},
+            {type="adc", source=operand.r("r0"), dest=dividend_high},
+
+            {type="label", target=dividend_positive_label},
+            {type="test", first=divisor_high, second=operand.i(0x8000)},
+            {type="jz", target=divisor_positive_label},
+            {type="xor", source=operand.i(1), dest=needs_negation},
+            {type="xor", source=operand.i(65535), dest=divisor_high},
+            {type="xor", source=operand.i(65535), dest=divisor},
+            {type="add", source=operand.i(1), dest=divisor},
+            {type="adc", source=operand.r("r0"), dest=divisor_high},
+            {type="label", target=divisor_positive_label},
+        })
+    end
+
+    util.extend(instructions, {
         {type="mov", source=operand.i(0), dest=quotient},
         {type="mov", source=operand.i(0), dest=remainder},
         {type="mov", source=operand.i(0), dest=remainder_high},
@@ -396,12 +470,34 @@ function tac_arithmetic_lowerer.long_division_32(instruction, dividend, divisor,
         {type="sub", source=operand.i(1), dest=bit_index},
         {type="jmp", target=loop_label},
         {type="label", target=end_label},
+    })
+
+    if(is_signed) then
+        local signed_end_label = operand.lb()
+        util.extend(instructions, {
+            {type="cmp", first=needs_negation, second=operand.r("r0")},
+            {type="jz", target=signed_end_label},
+            {type="xor", source=operand.i(65535), dest=quotient},
+            {type="xor", source=operand.i(65535), dest=quotient_high},
+            {type="add", source=operand.i(1), dest=quotient},
+            {type="adc", source=operand.r("r0"), dest=quotient_high},
+            {type="xor", source=operand.i(65535), dest=remainder},
+            {type="xor", source=operand.i(65535), dest=remainder_high},
+            {type="add", source=operand.i(1), dest=remainder},
+            {type="adc", source=operand.r("r0"), dest=remainder_high},
+            {type="label", target=signed_end_label},
+        })
+
+    end
+
+    util.extend(instructions, {
         {type="exh", low=operand.r("r0"), dest=quotient_high, high=quotient_high},
         {type="mov3", low=quotient, high=quotient_high, dest=quotient},
         {type="exh", low=operand.r("r0"), dest=remainder_high, high=remainder_high},
         {type="mov3", low=remainder, high=remainder_high, dest=remainder},
+    })
 
-    }
+    return instructions
 end
 
 function tac_arithmetic_lowerer.shl(instruction, source, dest)

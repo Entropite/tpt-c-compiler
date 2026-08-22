@@ -1291,7 +1291,7 @@ end
                 divisor = load_operand_into_register(divisor)
             end
 
-            table.insert(tac[current_method.id], {type="long_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder})
+            table.insert(tac[current_method.id], {type="long_division", dividend=dividend, divisor=divisor, quotient=quotient, remainder=remainder, is_signed=is_signed})
         end
 
         return quotient, remainder
