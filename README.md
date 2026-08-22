@@ -103,6 +103,26 @@ Displays a signed integer.
 
 ---
 
+## `void __print_unsigned_long(long l)`
+Displays an unsigned long.
+
+- **Parameters**
+  - `l` — The long to display
+- **Returns**
+  - `void`
+
+---
+
+## `void __print_signed_long(long l)`
+Displays a signed long.
+
+- **Parameters**
+  - `l` — The long to display
+- **Returns**
+  - `void`
+
+---
+
 ## `void putchar(char c)`
 
 Displays a single character.
