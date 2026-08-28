@@ -229,7 +229,9 @@ function Type_Checker.type_check(ast, symbol_table)
         local identifier_node = Node:new("IDENTIFIER")
         identifier_node.id = "va_args"
         add_symbol(identifier_node.id, {type=array(0, base("VOID"))}, symbol_table.ordinary)
-        table.insert(parameter_list, {id=identifier_node, handle=get_symbol(identifier_node.id, symbol_table.ordinary)})
+        local symbol = get_symbol(identifier_node.id, symbol_table.ordinary)
+        
+        table.insert(parameter_list, {id=identifier_node, value_type=array(0, base("VOID")), handle=get_symbol(identifier_node.id, symbol_table.ordinary)})
     end
 
     function can_coerce_array_to_struct(initializer, n)
@@ -666,8 +668,8 @@ function Type_Checker.type_check(ast, symbol_table)
     function check_equality_expression(n)
         if(node_check(n, "EQUALITY_EXPRESSION")) then
             for i=1, #n, 2 do
-
-                if(not can_coerce(check_relational_expression(n[i]), base("INT"))) then
+                local relational_type = check_relational_expression(n[i])
+                if(not Type.INTEGRAL_TYPES[relational_type.kind]) then
                     Diagnostics.submit(Message.error("Equality expression terms must be integral types", n[i].pos))
                 end
             end
@@ -1050,10 +1052,10 @@ function Type_Checker.type_check(ast, symbol_table)
                 Diagnostics.submit(Message.error("Argument type does not match parameter type", argument.pos))
                 
             end
-
-            if(argument_type.kind == Type.KINDS["INT"] and parameter_types[i].kind == Type.KINDS["LONG"]) then
-                arguments.value[i] = get_implicit_cast(argument, base("LONG"))
-                
+            if(i <= #parameter_types) then
+                if(argument_type.kind == Type.KINDS["INT"] and parameter_types[i].kind == Type.KINDS["LONG"]) then
+                    arguments.value[i] = get_implicit_cast(argument, base("LONG"))
+                end
             end
         end
     end
@@ -1137,7 +1139,6 @@ function Type_Checker.type_check(ast, symbol_table)
                     base_type = base(child.type_specifier.kind)
                 else
                     base_type = get_symbol(child.type_specifier.kind[1], symbol_table.ordinary).type
-                    print("BASE TYPE: " .. to_string_pretty(base_type))
                 end
                 table.insert(parameter_types, build_declarator(child.declarator, base_type))
                 if(parameter_types[#parameter_types].kind == Type.KINDS["ARRAY"]) then

@@ -187,7 +187,17 @@ function Parser.parse(toks, symbol_table)
         if(check(")")) then
             return parameter_list_node
         end
+        if(accept("...")) then
+            parameter_list_node.is_variadic = true
+            if(check(")")) then
+                return parameter_list_node
+            else
+                Diagnostics.submit(Message.error("Variadic parameters must be the last parameter", peek_token().pos))
+            end
+        end
+
         table.insert(parameter_list_node, parse_parameter_declaration())
+        
         if(not parameter_list_node[1].declarator and parameter_list_node[1].type_specifier.kind[1] == "void") then
             parameter_list_node[1] = nil
             return parameter_list_node

@@ -324,7 +324,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                         param_place.bitsize = IRVisitor.LONG_BITS
                     end
 
-                    if aggregate_types[Type.INVERTED_KINDS[p.value_type.kind]] then -- since an pointer of an struct is pushed, the called function copies the data from that pointer into an copy in its stack frame.
+                    if aggregate_types[Type.INVERTED_KINDS[p.value_type.kind]] and p.value_type.kind ~= Type.KINDS["ARRAY"] then -- since an pointer of an struct is pushed, the called function copies the data from that pointer into an copy in its stack frame.
                         local ptr = operand.t()
                         table.insert(tac[current_method.id], {type="ld", source=param_place, dest=ptr})
 
@@ -670,6 +670,9 @@ end
             local temp_place = load_operand_into_register(emit_bool_rvalue(n[1]))
 
             for i = 2, #n - 3, 2 do
+
+                emit_type_coercion(temp_place, n[i].value_type, n[i + 1].value_type)
+                
                 local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
                 local jump_type = symbol_to_signed_comparison_type[n[i].value]
                 if(not jump_type) then
@@ -1598,6 +1601,7 @@ end
             local symbol = n.handle
             if(symbol) then
                 if(aggregate_types[Type.INVERTED_KINDS[symbol.type.kind]]) then
+                    
                     n.place = emit_address_of(symbol.place)
                 else
                     n.place = symbol.place
