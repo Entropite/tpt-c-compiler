@@ -147,6 +147,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     end
 
                     -- implicitly_cast_initializer_list(declarator.initializer, declarator.value_type)
+                    -- find a way to implement this!
 
                     declarator.initializer.value_type = declarator.value_type
                 else
@@ -471,7 +472,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     end
                 else
                     if(can_coerce(check_initializer(n[1]), member.type)) then
-                        coercion_function(n[1], n, member.type)
+                        n[1].value = get_implicit_cast(n[1].value, member.type)
                         return true
                     end
                 end
@@ -490,10 +491,15 @@ function Type_Checker.type_check(ast, symbol_table)
 
             elseif(node_check(child, "INITIALIZER")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
-                    
                     same_type = can_coerce(check_initializer(child), target_type.members[i].type)
+                    if(same_type) then
+                        n[i].value = get_implicit_cast(child.value, target_type.members[i].type)
+                    end
                 else
                     same_type = can_coerce(check_initializer(child), target_type.points_to)
+                    if(same_type) then
+                        n[i].value = get_implicit_cast(child.value, target_type.points_to)
+                    end
                 end
             else
                 Diagnostics.submit(Message.error("Invalid initializer", child.pos))
@@ -805,6 +811,9 @@ function Type_Checker.type_check(ast, symbol_table)
     end
 
     function get_implicit_cast(n, target_type)
+        if(n.value_type == target_type) then
+            return n
+        end
         local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
         local expression_node = Node:new(Node.NODE_TYPES["EXPRESSION"])
         expression_node[1] = n
@@ -1146,7 +1155,16 @@ function Type_Checker.type_check(ast, symbol_table)
                 end
             else
                 -- prototype
-                table.insert(parameter_types, base(child.type_specifier.kind))
+                -- TODO: make it use abstract declarator in the parser module rather than just the type name
+                if(not Type.BASE_KINDS[string.upper(child.type_specifier.kind[1])]) then
+                    local param_type = get_symbol(child.type_specifier.kind[1], symbol_table.ordinary).type
+                    table.insert(parameter_types, param_type)
+                else
+                    table.insert(parameter_types, base(child.type_specifier.kind))
+                end
+
+                print(Type.to_string_pretty(parameter_types[#parameter_types]))
+
             end
             child.value_type = parameter_types[#parameter_types]
         end

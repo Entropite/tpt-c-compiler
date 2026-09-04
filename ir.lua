@@ -143,6 +143,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     register_string_literal(element, start)
                 end
             else           
+                
                 emit_assignment_expression(element)
                 emit_move(element.place, start)
             end
@@ -163,6 +164,8 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     start = Operand:new(start.type, start.value + IRVisitor:sizeof(child.value_type))
                 end
             end
+        else
+            print(Node.INVERTED_NODE_TYPES[n.type])
         end
     end
 

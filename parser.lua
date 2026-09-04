@@ -195,9 +195,8 @@ function Parser.parse(toks, symbol_table)
                 Diagnostics.submit(Message.error("Variadic parameters must be the last parameter", peek_token().pos))
             end
         end
-
-        table.insert(parameter_list_node, parse_parameter_declaration())
         
+        table.insert(parameter_list_node, parse_parameter_declaration())
         if(not parameter_list_node[1].declarator and parameter_list_node[1].type_specifier.kind[1] == "void") then
             parameter_list_node[1] = nil
             return parameter_list_node
@@ -219,6 +218,7 @@ function Parser.parse(toks, symbol_table)
     function parse_parameter_declaration()
         local parameter_declaration_node = new("PARAMETER_DECLARATION")
         parameter_declaration_node.type_specifier = parse_type_specifier()
+        -- should allow for abstract declarators
         if(not multi_check({",", ")"})) then
             parameter_declaration_node.declarator = parse_declarator()
             parameter_declaration_node.declarator.id = parameter_declaration_node.declarator.direct_declarator.id
@@ -730,6 +730,7 @@ function Parser.parse(toks, symbol_table)
     end
 
     function parse_type_specifier()
+        -- Focus on replicating the bug first
         local type_specifier_node = new("TYPE_SPECIFIER")
 
         if(check("TYPE_SPECIFIER")) then

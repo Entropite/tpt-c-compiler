@@ -88,6 +88,10 @@ function Type.get_largest_integral_type(it)
     return util.reduce(Type.value_type_iterator(it), nil, Type.compare_and_choose_largest_integral_type)
 end
 
+Type.__eq = function(a, b)
+    return Type.same_type_chain(a, b, true)
+end
+
 function Type:new(t)
     local o = setmetatable(t or {}, Type)
     return o
