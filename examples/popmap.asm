@@ -73,8 +73,6 @@ init:
 
 start:
     mov stack_pointer,8191
-	mov r1, 0
-	st r1, 6666
 	jmp __tptcc_fn_main
 __tptcc_fn_draw_map:
 	push base_pointer
@@ -590,8 +588,8 @@ __tptcc_fn_main:
 	jmp .label_49
 	.label_50:
 	sub r5, r8
-	mov r1, r5
-	cmp r1, r0
+	mov r2, r5
+	cmp r2, r0
 	jl .label_52
 	.label_54:
 	mov r1, r5

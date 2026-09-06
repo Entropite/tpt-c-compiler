@@ -135,6 +135,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             elseif(node_check(element, "CHARACTER")) then
                 initialize_word(operand.i(element.value), start)
             elseif(node_check(element, "STRING_LITERAL")) then
+
                 if(Type.same_type_chain(n.value_type, Type.pointer(Type.base("CHAR")))) then
                     local global_place = operand.g(element.value_type.length)
                     register_string_literal(element, global_place)
@@ -145,7 +146,12 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             else           
                 
                 emit_assignment_expression(element)
-                emit_move(element.place, start)
+                
+                if(element.place.type == "i") then -- If the value is known at compile time, just initialize statically
+                    initialize_word(element.place, start)
+                else
+                    emit_move(element.place, start)
+                end
             end
         elseif(node_check(n, "INITIALIZER_LIST")) then
 

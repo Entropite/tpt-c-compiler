@@ -97,7 +97,7 @@ function Type:new(t)
     return o
 end
 
-function Type.same_type_chain(type1, type2, allow_length_mismatch)
+function Type.same_type_chain(type1, type2, allow_length_mismatch, allow_array_decay)
     allow_length_mismatch = allow_length_mismatch or false
     while(type1 ~= nil and type2 ~= nil) do
         if(type1.kind ~= type2.kind or (not allow_length_mismatch and type1.length ~= type2.length)) then

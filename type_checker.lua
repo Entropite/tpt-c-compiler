@@ -142,7 +142,7 @@ function Type_Checker.type_check(ast, symbol_table)
                         declarator.value_type.length = #declarator.initializer
                     end
                     -- checks whether the initializer list can be morphed into the target type
-                    if(not match_initializer_list(declarator.initializer, declarator.value_type)) then
+                    if(not match_initializer_list(declarator.initializer, declarator.value_type, get_implicit_cast)) then
                         Diagnostics.submit(Message.error("Initializer list does not match the declared type", declarator.pos))
                     end
 
@@ -467,12 +467,12 @@ function Type_Checker.type_check(ast, symbol_table)
         if(target_type.kind == Type.KINDS["UNION"]) then
             for i, member in ipairs(target_type.members) do
                 if(node_check(n[1], "INITIALIZER_LIST")) then
-                    if(match_initializer_list(n[1], member.type)) then
+                    if(match_initializer_list(n[1], member.type, coercion_function)) then
                         return true
                     end
                 else
                     if(can_coerce(check_initializer(n[1]), member.type)) then
-                        n[1].value = get_implicit_cast(n[1].value, member.type)
+                        n[1].value = coercion_function(n[1].value, member.type)
                         return true
                     end
                 end
@@ -484,21 +484,21 @@ function Type_Checker.type_check(ast, symbol_table)
             local same_type = nil
             if(node_check(child, "INITIALIZER_LIST")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
-                    same_type = match_initializer_list(child, target_type.members[i].type)
+                    same_type = match_initializer_list(child, target_type.members[i].type, coercion_function)
                 else
-                    same_type = match_initializer_list(child, target_type.points_to)
+                    same_type = match_initializer_list(child, target_type.points_to, coercion_function)
                 end
 
             elseif(node_check(child, "INITIALIZER")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
                     same_type = can_coerce(check_initializer(child), target_type.members[i].type)
                     if(same_type) then
-                        n[i].value = get_implicit_cast(child.value, target_type.members[i].type)
+                        n[i].value = coercion_function(child.value, target_type.members[i].type)
                     end
                 else
                     same_type = can_coerce(check_initializer(child), target_type.points_to)
-                    if(same_type) then
-                        n[i].value = get_implicit_cast(child.value, target_type.points_to)
+                    if(same_type and not node_check(child.value, "STRING_LITERAL")) then
+                        n[i].value = coercion_function(child.value, target_type.points_to)
                     end
                 end
             else
@@ -526,7 +526,11 @@ function Type_Checker.type_check(ast, symbol_table)
     function check_initializer(n)
 
         n.value_type = check_assignment_expression(n.value)
-
+        -- print(n.value_type.kind, to_string_pretty(n.value_type))
+        -- if(n.value_type.kind == Type.KINDS["ARRAY"]) then
+        --     n.value_type = pointer(n.value_type.points_to)
+        -- end
+        -- n.value.value_type = n.value_type
         return n.value_type
     end
 
@@ -811,7 +815,7 @@ function Type_Checker.type_check(ast, symbol_table)
     end
 
     function get_implicit_cast(n, target_type)
-        if(n.value_type == target_type) then
+        if(Type.same_type_chain(n.value_type, target_type, true)) then
             return n
         end
         local cast_node = Node:new(Node.NODE_TYPES["CAST_EXPRESSION"])
@@ -1163,7 +1167,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     table.insert(parameter_types, base(child.type_specifier.kind))
                 end
 
-                print(Type.to_string_pretty(parameter_types[#parameter_types]))
+                -- print(Type.to_string_pretty(parameter_types[#parameter_types]))
 
             end
             child.value_type = parameter_types[#parameter_types]
