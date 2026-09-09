@@ -16,7 +16,6 @@ function fixed_point_division_16(dividend, divisor, quotient, remainder, is_sign
     local fixed_point_factor = (1 << 16) // divisor.value
     local end_label = operand.lb()
     local divisor_temp = operand.t()
-    print(is_signed)
     return {
         {type="mov", source=operand.i(fixed_point_factor), dest=divisor_temp},
         {type=(is_signed and "mulx" or "mulh"), source=divisor_temp, third=dividend, dest=quotient},

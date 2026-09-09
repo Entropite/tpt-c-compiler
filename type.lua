@@ -205,6 +205,14 @@ end
                     result = result .. Type.to_string_pretty(param, show_unsigned) .. ", "
                 end
                 result = result .. ") -> " .. Type.to_string_pretty(type.return_type, show_unsigned) .. ")"
+            elseif(type.kind == Type.KINDS["UNION"] or type.kind == Type.KINDS["STRUCT"]) then
+                result = string.format("%s [%s %s] {", result, Type.INVERTED_KINDS[type.kind], type.id)
+                local member_string = {}
+                for _, member in ipairs(type.members) do
+                    member_string[#member_string + 1] = Type.to_string_pretty(member.type)
+                end
+                result = result .. table.concat(member_string, ", ")
+                result = result .. "}"
             elseif(Type.INVERTED_KINDS[type.kind]) then
                 if(Type.INTEGRAL_TYPES[type.kind] and show_unsigned and not type.is_signed) then
                     result = result .. "U" .. Type.INVERTED_KINDS[type.kind]
@@ -212,12 +220,13 @@ end
                     result = result .. Type.INVERTED_KINDS[type.kind]
                 end
             else
-                local potential_symbol = get_symbol(type.kind, symbol_table.ordinary)
-                if(potential_symbol) then
-                    result = result .. Type.to_string_pretty(potential_symbol.type, show_unsigned)
-                else
-                    error()
-                end
+                error("INTERNAL ERROR")
+                -- local potential_symbol = symbol_table:get_symbol(type.id, symbol_table.ordinary) -- no symbol table?
+                -- if(potential_symbol) then
+                --     result = result .. Type.to_string_pretty(potential_symbol.type, show_unsigned)
+                -- else
+                --     error()
+                -- end
             end
 
             i = i - 1

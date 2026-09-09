@@ -126,6 +126,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
     function emit_static_initializer(n, start)
         local start = Operand.copy_place(start)
         -- n is the initializer: either of type initializer_list or initializer
+        
         if(node_check(n, "INITIALIZER")) then
             local element = n.value
             if(node_check(element, "INT")) then
@@ -135,7 +136,6 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             elseif(node_check(element, "CHARACTER")) then
                 initialize_word(operand.i(element.value), start)
             elseif(node_check(element, "STRING_LITERAL")) then
-
                 if(Type.same_type_chain(n.value_type, Type.pointer(Type.base("CHAR")))) then
                     local global_place = operand.g(element.value_type.length)
                     register_string_literal(element, global_place)
@@ -146,7 +146,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             else           
                 
                 emit_assignment_expression(element)
-                
+
                 if(element.place.type == "i") then -- If the value is known at compile time, just initialize statically
                     initialize_word(element.place, start)
                 else
@@ -164,7 +164,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     elseif(n.value_type.kind == Type.KINDS["STRUCT"]) then
                         child.value_type = n.value_type.members[i].type
                     elseif(n.value_type.kind == Type.KINDS["UNION"]) then
-                        child.value_type = Type.base("VOID")
+                        
                     end
                     emit_static_initializer(child, start)
                     start = Operand:new(start.type, start.value + IRVisitor:sizeof(child.value_type))
@@ -186,7 +186,6 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     char = string.format("'%s'", string.sub(n.value, i, i))
                 end]]
             end
-
             register_global_word(char, start)
             start = Operand:new(start.type, start.value + 1)
         end
@@ -257,8 +256,17 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                 if(declarator.initializer) then
                 
                     local initializer_place = nil
+                    -- local serpent = require("serpent") -- here you left off
+                    -- print(serpent.block(declarator.initializer[1].value))
+            
                     if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
-                        initializer_place = operand.g(declarator.initializer.value_type.length) -- string literals are stored in global memory
+                        if(declarator.initializer.value_type.kind == Type.KINDS["ARRAY"]) then
+                            initializer_place = operand.g(declarator.initializer.value_type.length) -- string literals are stored in global memory
+                        else
+                            local pointer_place = operand.g(1)
+                            register_global_word(Operand.global, pointer_place)
+                            initializer_place = operand.g(declarator.initializer.value.value_type.length) -- for char pointers
+                        end
                     else
                         if(n.specifier.storage_class.kind == "register") then
                             if(not aggregate_types[Type.INVERTED_KINDS[declarator.value_type.kind]]) then

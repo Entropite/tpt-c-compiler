@@ -150,6 +150,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     -- find a way to implement this!
 
                     declarator.initializer.value_type = declarator.value_type
+                    
                 else
                     -- important
                     if(not can_coerce(check_initializer(declarator.initializer), declarator.value_type, true)) then
@@ -161,6 +162,8 @@ function Type_Checker.type_check(ast, symbol_table)
                         if(declarator.value_type.kind == Type.KINDS["ARRAY"] and declarator.value_type.length == -1) then
                             declarator.value_type.length = #declarator.initializer.value.value + 1
                         else
+                            -- I think I left this as a second clause to account for when the char array has a definite length
+                            -- Some other code in IR depends on the value_length of a string literal initializer being an array, not a pointer
                             declarator.initializer.value_type = declarator.value_type
                         end
                     else
@@ -472,7 +475,10 @@ function Type_Checker.type_check(ast, symbol_table)
                     end
                 else
                     if(can_coerce(check_initializer(n[1]), member.type)) then
-                        n[1].value = coercion_function(n[1].value, member.type)
+                        if(not node_check(n[1].value, "STRING_LITERAL")) then -- make this work
+                            n[1].value = coercion_function(n[1].value, member.type)
+                        end
+                        n[1].value_type = member.type
                         return true
                     end
                 end
@@ -492,7 +498,7 @@ function Type_Checker.type_check(ast, symbol_table)
             elseif(node_check(child, "INITIALIZER")) then
                 if(target_type.kind == Type.KINDS["STRUCT"]) then
                     same_type = can_coerce(check_initializer(child), target_type.members[i].type)
-                    if(same_type) then
+                    if(same_type and not node_check(child.value, "STRING_LITERAL")) then
                         n[i].value = coercion_function(child.value, target_type.members[i].type)
                     end
                 else
