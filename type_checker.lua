@@ -924,16 +924,24 @@ function Type_Checker.type_check(ast, symbol_table)
             elseif(n.operator == "SIZEOF") then
                 n.value_type = base("INT")
             elseif(n.operator == "&") then
-                n.value_type = pointer(n.child.value_type)
-            elseif(n.operator == "*") then
-                if(n.child.value_type.kind == Type.KINDS["POINTER"] or n.child.value_type.kind == Type.KINDS["ARRAY"]) then
-                    if(n.child.value_type.points_to.kind == Type.KINDS["VOID"]) then
-                        Diagnostics.submit(Message.error("Cannot dereference a void pointer", n.child.pos))
-                    else
-                        n.value_type = n.child.value_type.points_to
-                    end
+                if(Type.is_function_pointer(n.child.value_type)) then
+                    n.value_type = n.child.value_type
                 else
-                    Diagnostics.submit(Message.error("The dereference operator can only be performed on either a pointer or an array", n.child.pos))
+                    n.value_type = pointer(n.child.value_type)
+                end
+            elseif(n.operator == "*") then
+                if(Type.is_function_pointer(n.child.value_type)) then
+                    n.value_type = n.child.value_type
+                else
+                    if(n.child.value_type.kind == Type.KINDS["POINTER"] or n.child.value_type.kind == Type.KINDS["ARRAY"]) then
+                        if(n.child.value_type.points_to.kind == Type.KINDS["VOID"]) then
+                            Diagnostics.submit(Message.error("Cannot dereference a void pointer", n.child.pos))
+                        else
+                            n.value_type = n.child.value_type.points_to
+                        end
+                    else
+                        Diagnostics.submit(Message.error("The dereference operator can only be performed on either a pointer or an array", n.child.pos))
+                    end
                 end
             elseif(n.operator == "!") then
                 n.value_type = base("INT")
@@ -1019,6 +1027,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     end
                 elseif(operation.type == "(") then
                     n.value_types[i-1] = n.value_types[i-1].kind == Type.KINDS["POINTER"] and n.value_types[i-1].points_to or n.value_types[i-1]
+                    
                     if(n.value_types[i-1].kind == Type.KINDS["FUNCTION"]) then
                         
                         check_argument_list(operation, n.value_types[i-1].parameter_types) -- passes entire operation node to update the argument tree if a cast is needed
@@ -1172,7 +1181,7 @@ function Type_Checker.type_check(ast, symbol_table)
                 else
                     table.insert(parameter_types, base(child.type_specifier.kind))
                 end
-
+                
                 -- print(Type.to_string_pretty(parameter_types[#parameter_types]))
 
             end

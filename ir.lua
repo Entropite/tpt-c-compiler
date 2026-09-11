@@ -108,7 +108,8 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
 
     -- For literals
     function initialize_word(word_place, place)
-        if(type(word_place.value) == "string") then
+        if(type(word_place.value) == "string" and #word_place.value == 1) then
+            
             word_place.value = string.byte(word_place.value)
         end
 
@@ -116,7 +117,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             register_global_word(word_place.value, place)
         else
             
-            if(word_place.value > 65535) then -- literals are always unsigned
+            if(type(word_place.value) == "number" and word_place.value > 65535) then -- literals are always unsigned
                 word_place.bitsize = IRVisitor.LONG_BITS
             end
             emit_move(word_place, place)
@@ -146,7 +147,6 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
             else           
                 
                 emit_assignment_expression(element)
-
                 if(element.place.type == "i") then -- If the value is known at compile time, just initialize statically
                     initialize_word(element.place, start)
                 else
@@ -1351,10 +1351,23 @@ end
                 n.place = operand.i(IRVisitor:sizeof(n.child.value_type))
             elseif(n.operator == "&") then
                 emit_cast_expression(n.child)
-                n.place = emit_address_of(n.child.place)
+                if(Type.is_function_pointer(n.child.value_type)) then
+                    n.place = load_operand_into_register(n.child.place)
+                    
+                else
+                    n.place = emit_address_of(n.child.place)
+                end
             elseif(n.operator == "*") then
                 emit_cast_expression(n.child)
-                n.place = emit_dereference(n.child.place)
+                if(Type.is_function_pointer(n.child.value_type)) then
+                    if(rvalue_operands[n.child.place.type]) then
+                        n.place = n.child.place
+                    else
+                        n.place = load_operand_into_register(n.child.place)
+                    end
+                else
+                    n.place = emit_dereference(n.child.place)
+                end
                 if(n.child.value_type.points_to.kind == Type.KINDS["LONG"]) then
                     n.place = copy_place(n.place)
                     n.place.bitsize = IRVisitor.LONG_BITS

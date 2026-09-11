@@ -170,6 +170,20 @@ end
         end
     end
 
+
+    function Type.is_function_pointer(type)
+        assert(type ~= nil)
+        if(type.kind ~= Type.KINDS["POINTER"]) then
+            return false
+        end
+
+        while(type.kind == Type.KINDS["POINTER"]) do
+            type = type.points_to
+        end
+
+        return type.kind == Type.KINDS["FUNCTION"]
+    end
+
     function Type.to_string_pretty(type, show_unsigned)
         show_unsigned = show_unsigned or true
         if(type == nil) then
