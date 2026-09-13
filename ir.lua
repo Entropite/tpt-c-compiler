@@ -959,9 +959,21 @@ end
             emit_asm(n.child)
         elseif(node_check(n.child, "EMPTY_STATEMENT")) then
             --nothing
+        elseif(node_check(n.child, "DO_WHILE")) then
+            emit_do_while(n.child)
         else
             emit_expression(n.child)
         end
+    end
+
+    function emit_do_while(n)
+        -- complete this
+        local start_label = operand.lb()
+        local end_label = operand.lb()
+        table.insert(tac[current_method.id], {type="label", target=start_label})
+        emit_statement(n.statement)
+        emit_bool_control_flow(n.condition, start_label, end_label)
+        table.insert(tac[current_method.id], {type="label", target=end_label})
     end
 
     function emit_asm(n)

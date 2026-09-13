@@ -493,12 +493,28 @@ function Parser.parse(toks, symbol_table)
         elseif(check("ASM")) then
             non_if_statement_node = parse_asm()
             expect(";")
+        elseif(check("DO")) then
+            non_if_statement_node = parse_do_while()
         else
             non_if_statement_node = parse_expression()
             expect(";")
         end
 
         return non_if_statement_node
+    end
+
+    function parse_do_while()
+        local do_while_node = new("DO_WHILE")
+        expect("DO")
+        do_while_node.statement = parse_statement()
+
+        expect("WHILE")
+        expect("(")
+        do_while_node.condition = parse_expression()
+        expect(")")
+        expect(";")
+
+        return do_while_node
     end
 
     function parse_asm()

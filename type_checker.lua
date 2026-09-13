@@ -301,7 +301,18 @@ function Type_Checker.type_check(ast, symbol_table)
             -- nothing
         elseif(node_check(n.child, "EXPRESSION")) then
             check_expression(n.child)
+        elseif(node_check(n.child, "DO_WHILE")) then
+            check_do_while(n.child)
         end
+    end
+
+    function check_do_while(n)
+        check_statement(n.statement)
+        check_expression(n.condition)
+        if(not Type.INTEGRAL_TYPES[n.condition.value_type.kind]) then
+            Diagnostics.submit(Message.error("The condition for a do-while statement must be an integral type", n.condition.pos))
+        end
+        
     end
 
     function check_asm(n)
