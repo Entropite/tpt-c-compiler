@@ -301,17 +301,16 @@ __tptcc_fn_show_cell:
 	mull r2, 29
 	ld r3, base_pointer, 4
 	add r2, r3
-	add r1, r2
-	ld r4, r1
-	mov r1, 1561
-	mov r2, r4
-	mov r3, 8192
-	cmp r2, r3
+	ld r1, r1, r2
+	mov r2, 1561
+	mov r3, r1
+	mov r4, 8192
+	cmp r3, r4
 	jne .label_10
 	jmp .label_9
 	.label_10:
-	mov r22, r4
-	mov r23, r1
+	mov r22, r1
+	mov r23, r2
 	mull r22, 3
 	add r24, r22, r23
 	ld r23, r24, 1
@@ -447,40 +446,40 @@ __tptcc_fn_main:
 	add stack_pointer, 4
 	call __tptcc_fn_getchar
 	mov r1, return_reg
-	mov r7, r1
-	mov r8, 1
-	mov r1, r7
-	mov r2, 97
-	cmp r1, r2
+	mov r2, r1
+	mov r7, 1
+	mov r1, r2
+	mov r7, 97
+	cmp r1, r7
 	jge .label_22
 	jmp .label_21
 	.label_22:
-	mov r8, 1
+	mov r7, 1
 	jmp .label_23
 	.label_21:
 	mov r1, 32
-	add r7, r1
-	mov r8, 5
+	add r2, r1
+	mov r7, 5
 	.label_23:
 	mov r1, 6713
-	mov r2, r7
-	sub r2, 'a'
-	ld r1, r1, r2
+	mov r8, r2
+	sub r8, 'a'
+	ld r1, r1, r8
 	push r6
 	push r3
-	mov r2, 240
-	push r2
+	mov r8, 240
+	push r8
 	call __tptcc_fn_show_cell
 	add stack_pointer, 3
 	push r4
 	push r5
-	mov r2, 240
-	push r2
+	mov r8, 240
+	push r8
 	call __tptcc_fn_show_cell
 	add stack_pointer, 3
-	mov r2, r1
+	mov r8, r1
 	mov r9, 1
-	cmp r2, r9
+	cmp r8, r9
 	je .label_25
 	jmp .label_24
 	.label_25:
@@ -490,7 +489,7 @@ __tptcc_fn_main:
 	push r1
 	call __tptcc_fn_show_cell
 	add stack_pointer, 3
-	mov r1, r7
+	mov r1, r2
 	cmp r1, 'w'
 	je .label_28
 	cmp r1, 'a'
@@ -502,13 +501,13 @@ __tptcc_fn_main:
 	jmp .label_27
 	.label_28:
 	mov r1, r3
-	mov r2, r8
+	mov r2, r7
 	sub r2, 1
 	cmp r1, r2
 	jg .label_30
 	jmp .label_29
 	.label_30:
-	sub r3, r8
+	sub r3, r7
 	jmp .label_31
 	.label_29:
 	mov r3, 0
@@ -516,20 +515,20 @@ __tptcc_fn_main:
 	jmp .label_27
 	.label_32:
 	mov r1, r4
-	mov r2, r8
+	mov r2, r7
 	sub r2, 1
 	cmp r1, r2
 	jg .label_34
 	jmp .label_33
 	.label_34:
-	sub r4, r8
+	sub r4, r7
 	jmp .label_35
 	.label_33:
 	mov r4, 0
 	.label_35:
 	jmp .label_27
 	.label_36:
-	add r3, r8
+	add r3, r7
 	mov r1, r3
 	mov r2, 24
 	cmp r1, r2
@@ -546,7 +545,7 @@ __tptcc_fn_main:
 	.label_39:
 	jmp .label_27
 	.label_41:
-	add r4, r8
+	add r4, r7
 	mov r1, r4
 	mov r2, 29
 	cmp r1, r2
@@ -564,9 +563,9 @@ __tptcc_fn_main:
 	.label_27:
 	jmp .label_26
 	.label_24:
-	mov r2, r1
+	mov r8, r1
 	mov r9, 2
-	cmp r2, r9
+	cmp r8, r9
 	je .label_47
 	jmp .label_46
 	.label_47:
@@ -576,7 +575,7 @@ __tptcc_fn_main:
 	push r1
 	call __tptcc_fn_show_cell
 	add stack_pointer, 3
-	mov r1, r7
+	mov r1, r2
 	cmp r1, 't'
 	je .label_50
 	cmp r1, 'f'
@@ -587,9 +586,9 @@ __tptcc_fn_main:
 	je .label_64
 	jmp .label_49
 	.label_50:
-	sub r5, r8
-	mov r2, r5
-	cmp r2, r0
+	sub r5, r7
+	mov r1, r5
+	cmp r1, r0
 	jl .label_52
 	.label_54:
 	mov r1, r5
@@ -603,7 +602,7 @@ __tptcc_fn_main:
 	.label_53:
 	jmp .label_49
 	.label_55:
-	sub r6, r8
+	sub r6, r7
 	mov r1, r6
 	cmp r1, r0
 	jl .label_57
@@ -621,12 +620,12 @@ __tptcc_fn_main:
 	.label_60:
 	mov r1, r5
 	mov r2, 24
-	sub r2, r8
+	sub r2, r7
 	cmp r1, r2
 	jl .label_62
 	jmp .label_61
 	.label_62:
-	add r5, r8
+	add r5, r7
 	jmp .label_63
 	.label_61:
 	mov r5, 24
@@ -635,12 +634,12 @@ __tptcc_fn_main:
 	.label_64:
 	mov r1, r6
 	mov r2, 29
-	sub r2, r8
+	sub r2, r7
 	cmp r1, r2
 	jl .label_66
 	jmp .label_65
 	.label_66:
-	add r6, r8
+	add r6, r7
 	jmp .label_67
 	.label_65:
 	mov r6, 28
@@ -648,8 +647,9 @@ __tptcc_fn_main:
 	.label_49:
 	jmp .label_48
 	.label_46:
-	mov r2, 3
-	cmp r1, r2
+	mov r8, r1
+	mov r1, 3
+	cmp r8, r1
 	je .label_69
 	jmp .label_68
 	.label_69:
@@ -665,7 +665,7 @@ __tptcc_fn_main:
 	push r1
 	call __tptcc_fn_show_cell
 	add stack_pointer, 3
-	mov r1, r7
+	mov r1, r2
 	cmp r1, 'i'
 	je .label_72
 	cmp r1, 'j'
@@ -677,14 +677,14 @@ __tptcc_fn_main:
 	jmp .label_71
 	.label_72:
 	mov r1, r3
-	mov r2, r8
+	mov r2, r7
 	sub r2, 1
 	cmp r1, r2
 	jg .label_74
 	jmp .label_73
 	.label_74:
-	sub r3, r8
-	sub r5, r8
+	sub r3, r7
+	sub r5, r7
 	jmp .label_75
 	.label_73:
 	mov r1, r5
@@ -695,14 +695,14 @@ __tptcc_fn_main:
 	jmp .label_71
 	.label_76:
 	mov r1, r4
-	mov r2, r8
+	mov r2, r7
 	sub r2, 1
 	cmp r1, r2
 	jg .label_78
 	jmp .label_77
 	.label_78:
-	sub r4, r8
-	sub r6, r8
+	sub r4, r7
+	sub r6, r7
 	jmp .label_79
 	.label_77:
 	mov r1, r6
@@ -714,13 +714,13 @@ __tptcc_fn_main:
 	.label_80:
 	mov r1, r5
 	mov r2, 24
-	sub r2, r8
+	sub r2, r7
 	cmp r1, r2
 	jl .label_82
 	jmp .label_81
 	.label_82:
-	add r5, r8
-	add r3, r8
+	add r5, r7
+	add r3, r7
 	jmp .label_83
 	.label_81:
 	mov r1, r5
@@ -734,13 +734,13 @@ __tptcc_fn_main:
 	.label_84:
 	mov r1, r6
 	mov r2, 29
-	sub r2, r8
+	sub r2, r7
 	cmp r1, r2
 	jl .label_86
 	jmp .label_85
 	.label_86:
-	add r6, r8
-	add r4, r8
+	add r6, r7
+	add r4, r7
 	jmp .label_87
 	.label_85:
 	mov r1, r6
@@ -753,7 +753,7 @@ __tptcc_fn_main:
 	.label_71:
 	jmp .label_70
 	.label_68:
-	mov r1, r7
+	mov r1, r2
 	cmp r1, 'm'
 	je .label_89
 	jmp .label_88

@@ -28,7 +28,7 @@ function IRVisitor:sizeof(type)
     if(type.kind == Type.KINDS["STRUCT"] or type.kind == Type.KINDS["UNION"]) then
         return size * type.size
     end
-
+    
     assert(type ~= nil, "Base type is nil")
     return IRVisitor.types[Type.INVERTED_KINDS[type.kind]] * size
 end
@@ -142,7 +142,10 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     register_string_literal(element, global_place)
                     initialize_word(operand.i(global_place.value+CodeGen.global_addr), start)
                 else
-                    register_string_literal(element, start)
+                    local global_place = operand.g(element.value_type.length)
+                    register_string_literal(element, global_place)
+                    emit_local_string_copy(global_place, start, element.value_type.length)
+                    -- table.insert(tac[current_method.id], {type="memcpy", source=global_place, dest=start, size=element.value_type.length})
                 end
             else           
                 
@@ -154,7 +157,7 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                 end
             end
         elseif(node_check(n, "INITIALIZER_LIST")) then
-
+            
             if(Type.same_type_chain(n.value_type, Type.pointer(Type.base("CHAR")))) then
                 print("?")
             else
@@ -169,13 +172,57 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     emit_static_initializer(child, start)
                     start = Operand:new(start.type, start.value + IRVisitor:sizeof(child.value_type))
                 end
+                
             end
         else
             print(Node.INVERTED_NODE_TYPES[n.type])
+            error()
         end
     end
 
+    function emit_local_string_copy(source, dest, size)
+        assert(source.type == "g" and dest.type=="l", "Operand types are not appropriate for a global to local string copy operation")
+        local t = operand.t()
+        local source_copy = copy_place(source)
+        local dest_copy = copy_place(dest)
+        if(size < 4) then
+            for i = 1, size do
+                table.insert(tac[current_method.id], {type="ld", source=source_copy, dest=t})
+                table.insert(tac[current_method.id], {type="st", source=t, dest=dest_copy})
+                source_copy = copy_place(source_copy)
+                source_copy.value = source_copy.value + 1
+                dest_copy = copy_place(dest_copy)
+                dest_copy.value = dest_copy.value + 1
+            end
+        else
+            local start_loop_label = operand.lb()
+            local end_loop_label = operand.lb()
+            local source_base = operand.t()
+            local dest_base = operand.t()
+
+            
+            local counter = operand.t()
+
+            --table.insert(tac[current_method.id], {type="add3", source=operand.r("base_pointer"), dest=dest_base, offset=operand.i(dest_copy.value)})
+            table.insert(tac[current_method.id], {type="!get_address", target=dest_copy, dest=dest_base})
+            table.insert(tac[current_method.id], {type="mov", source=source_copy, dest=source_base})
+            table.insert(tac[current_method.id], {type="mov", source=operand.i(size - 1), dest=counter})
+            table.insert(tac[current_method.id], {type="label", target=start_loop_label})
+            table.insert(tac[current_method.id], {type="cmp", first=counter, second=operand.r("r0")})
+            table.insert(tac[current_method.id], {type="jl", target=end_loop_label})
+            table.insert(tac[current_method.id], {type="ldoffset", source=source_base, offset=counter, dest=t})
+            table.insert(tac[current_method.id], {type="stoffset", source=t, offset=counter, dest=dest_base})
+            table.insert(tac[current_method.id], {type="sub", source=operand.i(1), dest=counter})
+            table.insert(tac[current_method.id], {type="jmp", target=start_loop_label})
+            table.insert(tac[current_method.id], {type="label", target=end_loop_label})
+
+        end
+    end
+
+
     function register_string_literal(n, start)
+        assert(start.type == "g", "String literal must be registered in global memory")
+        
         for i = 1, n.value_type.length do 
             local char = 0
             if(i <= #n.value) then
@@ -1356,6 +1403,7 @@ end
                 emit_move(next_reg, n.child.place)
                 n.place = next_reg
             elseif(n.operator == "SIZEOF") then
+                
                 if(not node_check(n.child, "TYPE_NAME")) then
                     emit_cast_expression(n.child)
                 end

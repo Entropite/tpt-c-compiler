@@ -91,6 +91,7 @@ CodeGen.emission_map = {
     ["nop"]=function(c) return c.type end,
     ["add3"]=function(c) return string.format("%s %s, %s, %s", "add", CodeGen.as_reg(c.dest), c.source.type == "i" and c.source.value or CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end, -- might remove this later since the __index metamethod can handle 3 operand instructions
     ["ldoffset"]=function(c) return string.format("%s %s, %s, %s", "ld", CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
+    ["stoffset"]=function(c) return string.format("%s %s, %s, %s", "st", CodeGen.as_reg(c.source), CodeGen.as_reg(c.dest), c.offset.type == "i" and c.offset.value or CodeGen.as_reg(c.offset)) end,
     ["asm"]=function(c) return c.asm end,
     ["mulh"]=function(c) return string.format("%s %s, %s, %s", c.type, CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
     ["mulx"]=function(c) return string.format("%s %s, %s, %s", c.type, CodeGen.as_reg(c.dest), CodeGen.as_reg(c.source), c.third.type == "i" and c.third.value or CodeGen.as_reg(c.third)) end,
@@ -325,6 +326,7 @@ CodeGen.use_def_map = {
     ["call"]=function(c) return {c.target}, {} end,
     ["add3"]=function(c) return {c.source, c.offset}, {c.dest} end,
     ["ldoffset"]=function(c) return {c.source, c.offset}, {c.dest} end,
+    ["stoffset"]=function(c) return {c.source, c.offset, c.dest}, {} end,
     ["cmp"]=function(c) return {c.first, c.second}, {} end,
     ["add"]=function(c) return {c.source, c.dest}, {c.dest} end,
     ["sub"]=function(c) return {c.source, c.dest}, {c.dest} end,

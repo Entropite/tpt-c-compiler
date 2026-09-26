@@ -152,34 +152,34 @@ __tptcc_fn_show_bombs:
 	push r2
 	push r3
 	push r4
-	mov r2, 0
+	mov r1, 0
 	.label_10:
-	mov r1, r2
+	mov r2, r1
 	mov r3, 8
-	cmp r1, r3
+	cmp r2, r3
 	jl .label_13
 	jmp .label_12
 	.label_13:
-	mov r1, 0
+	mov r2, 0
 	.label_14:
-	mov r3, r1
+	mov r3, r2
 	mov r4, 12
 	cmp r3, r4
 	jl .label_17
 	jmp .label_16
 	.label_17:
 	mov r3, 97
-	mov r4, r2
+	mov r4, r1
 	mull r4, 12
 	add r3, r4
-	ld r3, r3, r1
+	ld r3, r3, r2
 	mov r4, 9
 	cmp r3, r4
 	jge .label_19
 	jmp .label_18
 	.label_19:
-	mov r23, r1
-	mov r22, r2
+	mov r23, r2
+	mov r22, r1
 	call __tptcc_fn_set_cursor
 	mov r23, 15
 	mov r22, 12
@@ -195,13 +195,13 @@ __tptcc_fn_show_bombs:
 	.label_18:
 	.label_20:
 	.label_15:
-	mov r3, r1
-	add r1, 1
+	mov r3, r2
+	add r2, 1
 	jmp .label_14
 	.label_16:
 	.label_11:
-	mov r1, r2
-	add r2, 1
+	mov r2, r1
+	add r1, 1
 	jmp .label_10
 	.label_12:
 .exit_show_bombs:
@@ -1008,17 +1008,18 @@ __tptcc_fn_add_to_surrounding_cells:
 	ld r5, base_pointer, 3
 	mov r1, r4
 	sub r1, 1
-	mov r2, r5
-	sub r2, 1
-	mov r6, r2
-	mov r2, r4
-	add r2, 1
-	mov r7, r2
-	mov r2, r5
-	add r2, 1
-	mov r8, r2
-	mov r2, r4
-	cmp r2, r0
+	mov r6, r1
+	mov r1, r5
+	sub r1, 1
+	mov r7, r1
+	mov r1, r4
+	add r1, 1
+	mov r8, r1
+	mov r1, r5
+	add r1, 1
+	mov r9, r1
+	mov r1, r4
+	cmp r1, r0
 	jg .label_131
 	jmp .label_130
 	.label_131:
@@ -1027,38 +1028,38 @@ __tptcc_fn_add_to_surrounding_cells:
 	jg .label_134
 	jmp .label_133
 	.label_134:
-	mov r2, 97
-	mov r3, r1
-	mull r3, 12
+	mov r1, 97
+	mov r2, r6
+	mull r2, 12
+	add r1, r2
+	add r1, r7
+	ld r2, r1
+	ld r3, base_pointer, 4
 	add r2, r3
-	add r2, r6
-	ld r3, r2
-	ld r9, base_pointer, 4
-	add r3, r9
-	st r3, r2
+	st r2, r1
 	jmp .label_135
 	.label_133:
 	.label_135:
-	mov r2, 97
-	mov r3, r1
-	mull r3, 12
+	mov r1, 97
+	mov r2, r6
+	mull r2, 12
+	add r1, r2
+	add r1, r5
+	ld r2, r1
+	ld r3, base_pointer, 4
 	add r2, r3
-	add r2, r5
-	ld r3, r2
-	ld r9, base_pointer, 4
-	add r3, r9
-	st r3, r2
-	mov r2, r5
-	mov r3, 11
-	cmp r2, r3
+	st r2, r1
+	mov r1, r5
+	mov r2, 11
+	cmp r1, r2
 	jl .label_137
 	jmp .label_136
 	.label_137:
-	mov r2, 97
-	mull r1, 12
-	add r2, r1
-	mov r1, r2
-	add r1, r8
+	mov r1, 97
+	mov r2, r6
+	mull r2, 12
+	add r1, r2
+	add r1, r9
 	ld r2, r1
 	ld r3, base_pointer, 4
 	add r2, r3
@@ -1078,7 +1079,7 @@ __tptcc_fn_add_to_surrounding_cells:
 	mov r2, r4
 	mull r2, 12
 	add r1, r2
-	add r1, r6
+	add r1, r7
 	ld r2, r1
 	ld r3, base_pointer, 4
 	add r2, r3
@@ -1096,7 +1097,7 @@ __tptcc_fn_add_to_surrounding_cells:
 	mov r2, r4
 	mull r2, 12
 	add r1, r2
-	add r1, r8
+	add r1, r9
 	ld r2, r1
 	ld r3, base_pointer, 4
 	add r2, r3
@@ -1116,10 +1117,10 @@ __tptcc_fn_add_to_surrounding_cells:
 	jmp .label_148
 	.label_149:
 	mov r1, 97
-	mov r2, r7
+	mov r2, r8
 	mull r2, 12
 	add r1, r2
-	add r1, r6
+	add r1, r7
 	ld r2, r1
 	ld r3, base_pointer, 4
 	add r2, r3
@@ -1128,7 +1129,7 @@ __tptcc_fn_add_to_surrounding_cells:
 	.label_148:
 	.label_150:
 	mov r1, 97
-	mov r2, r7
+	mov r2, r8
 	mull r2, 12
 	add r1, r2
 	add r1, r5
@@ -1143,10 +1144,10 @@ __tptcc_fn_add_to_surrounding_cells:
 	jmp .label_151
 	.label_152:
 	mov r1, 97
-	mov r2, r7
+	mov r2, r8
 	mull r2, 12
 	add r1, r2
-	add r1, r8
+	add r1, r9
 	ld r2, r1
 	ld r3, base_pointer, 4
 	add r2, r3
@@ -1191,31 +1192,33 @@ __tptcc_fn_main:
 	mov r2, 9
 	st r2, r1
 	mov r1, 97
-	mov r2, 413
-	mov r22, r2
+	mov r4, r1
+	mov r1, 413
+	mov r22, r1
 	call __tptcc_fn_print_char_array
-	add r2, base_pointer, 1
-	push r2
+	add r1, base_pointer, 1
+	push r1
 	call __tptcc_fn___scan_signed_int
 	add stack_pointer, 1
-	mov r2, return_reg
-	ld r2, base_pointer, 1
-	mov r3, 96
-	sub r3, r2
-	mov r4, r3
+	mov r1, return_reg
+	ld r5, base_pointer, 1
+	mov r1, 96
+	sub r1, r5
+	mov r8, r1
 	mov r22, 14
 	call __tptcc_fn_set_text_colour
-	mov r3, 433
-	mov r22, r3
+	mov r1, 433
+	mov r22, r1
 	call __tptcc_fn_print_char_array
-	add r3, base_pointer, 2
-	push r3
+	add r1, base_pointer, 2
+	push r1
 	call __tptcc_fn___scan_signed_int
 	add stack_pointer, 1
-	mov r3, return_reg
-	ld r3, base_pointer, 2
-	xor r3, 65535
-	add r3, 1
+	mov r1, return_reg
+	ld r1, base_pointer, 2
+	xor r1, 65535
+	add r1, 1
+	mov r6, r1
 	mov r22, 10
 	call __tptcc_fn_putchar
 	mov r23, 8
@@ -1224,8 +1227,8 @@ __tptcc_fn_main:
 	mov r23, 0
 	mov r22, 7
 	call __tptcc_fn_set_cursor
-	mov r5, 477
-	mov r22, r5
+	mov r1, 477
+	mov r22, r1
 	call __tptcc_fn_print_char_array
 	mov r23, 0
 	mov r22, 7
@@ -1233,206 +1236,213 @@ __tptcc_fn_main:
 	mov r23, 10
 	mov r22, 10
 	call __tptcc_fn_set_colour
-	mov r5, 0
+	mov r7, 0
 	.label_154:
-	mov r6, r5
-	cmp r6, r2
+	mov r1, r7
+	cmp r1, r5
 	jl .label_157
 	jmp .label_156
 	.label_157:
-	mov r6, r3
-	add r6, 1
-	shl r6, 3
-	xor r3, r6
-	mov r6, r3
-	shr r6, 5
-	xor r3, r6
-	mov r6, r3
-	shl r6, 2
-	xor r3, r6
-	mov r6, r3
-	mov r7, 127
-	and r6, r7
+	mov r1, r6
+	add r1, 1
+	shl r1, 3
+	xor r6, r1
+	mov r1, r6
+	shr r1, 5
+	xor r6, r1
+	mov r1, r6
+	shl r1, 2
+	xor r6, r1
+	mov r1, r6
+	mov r2, 127
+	and r1, r2
 	.label_158:
-	mov r7, r6
-	mov r8, 96
-	cmp r7, r8
+	mov r2, r1
+	mov r3, 96
+	cmp r2, r3
 	jge .label_160
 	.label_161:
-	mov r7, r1
-	add r7, r6
-	ld r7, r7, 0
-	mov r8, 9
-	cmp r7, r8
+	mov r2, r4
+	add r2, r1
+	ld r2, r2, 0
+	mov r3, 9
+	cmp r2, r3
 	jge .label_160
 	jmp .label_159
 	.label_160:
-	mov r6, r3
-	add r6, 1
-	shl r6, 3
-	xor r3, r6
-	mov r6, r3
-	shr r6, 5
-	xor r3, r6
-	mov r6, r3
-	shl r6, 2
-	xor r3, r6
-	mov r6, r3
-	mov r7, 127
-	and r6, r7
+	mov r1, r6
+	add r1, 1
+	shl r1, 3
+	xor r6, r1
+	mov r1, r6
+	shr r1, 5
+	xor r6, r1
+	mov r1, r6
+	shl r1, 2
+	xor r6, r1
+	mov r1, r6
+	mov r2, 127
+	and r1, r2
 	jmp .label_158
 	.label_159:
-	mov r7, r1
-	add r7, r6
-	ld r8, r7
+	mov r2, r4
+	add r2, r1
+	ld r3, r2
 	mov r9, 9
-	add r8, r9
-	st r8, r7
-	mov r7, 299
-	ld r7, r7, r6
-	mov r8, r7
-	mull r8, 12
-	sub r6, r8
-	mov r8, r7
-	sub r8, 1
-	mov r9, r6
-	sub r9, 1
-	mov r10, r7
-	add r10, 1
-	mov r11, r6
-	add r11, 1
-	mov r12, r7
-	cmp r12, r0
+	add r3, r9
+	st r3, r2
+	mov r2, 299
+	add r2, r1
+	ld r9, r2
+	mov r2, r9
+	mull r2, 12
+	sub r1, r2
+	mov r10, r1
+	mov r1, r9
+	sub r1, 1
+	mov r2, r10
+	sub r2, 1
+	mov r11, r2
+	mov r2, r9
+	add r2, 1
+	mov r12, r2
+	mov r2, r10
+	add r2, 1
+	mov r13, r2
+	mov r2, r9
+	cmp r2, r0
 	jg .label_163
 	jmp .label_162
 	.label_163:
-	mov r12, r6
-	cmp r12, r0
+	mov r2, r10
+	cmp r2, r0
 	jg .label_166
 	jmp .label_165
 	.label_166:
-	mov r12, 97
-	mov r13, r8
-	mull r13, 12
-	add r12, r13
-	add r12, r9
-	ld r13, r12
+	mov r2, 97
+	mov r3, r1
+	mull r3, 12
+	add r2, r3
+	add r2, r11
+	ld r3, r2
 	mov r14, 1
-	add r13, r14
-	st r13, r12
+	add r3, r14
+	st r3, r2
 	jmp .label_167
 	.label_165:
 	.label_167:
-	mov r12, 97
-	mov r13, r8
-	mull r13, 12
-	add r12, r13
-	add r12, r6
-	ld r13, r12
+	mov r2, 97
+	mov r3, r1
+	mull r3, 12
+	add r2, r3
+	add r2, r10
+	ld r3, r2
 	mov r14, 1
-	add r13, r14
-	st r13, r12
-	mov r12, r6
-	mov r13, 11
-	cmp r12, r13
+	add r3, r14
+	st r3, r2
+	mov r2, r10
+	mov r3, 11
+	cmp r2, r3
 	jl .label_169
 	jmp .label_168
 	.label_169:
-	mov r12, 97
-	mull r8, 12
-	add r12, r8
-	mov r8, r12
-	add r8, r11
-	ld r12, r8
-	mov r13, 1
-	add r12, r13
-	st r12, r8
+	mov r2, 97
+	mull r1, 12
+	add r2, r1
+	mov r1, r2
+	add r1, r13
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
 	jmp .label_170
 	.label_168:
 	.label_170:
 	jmp .label_164
 	.label_162:
 	.label_164:
-	mov r8, r6
-	cmp r8, r0
+	mov r1, r10
+	cmp r1, r0
 	jg .label_172
 	jmp .label_171
 	.label_172:
-	mov r8, 97
-	mov r12, r7
-	mull r12, 12
-	add r8, r12
-	add r8, r9
-	ld r12, r8
-	mov r13, 1
-	add r12, r13
-	st r12, r8
+	mov r1, 97
+	mov r2, r9
+	mull r2, 12
+	add r1, r2
+	add r1, r11
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
 	jmp .label_173
 	.label_171:
 	.label_173:
-	mov r8, r6
-	mov r12, 11
-	cmp r8, r12
+	mov r1, r10
+	mov r2, 11
+	cmp r1, r2
 	jl .label_175
 	jmp .label_174
 	.label_175:
-	mov r8, 97
-	mov r12, r7
-	mull r12, 12
-	add r8, r12
-	add r8, r11
-	ld r12, r8
-	mov r13, 1
-	add r12, r13
-	st r12, r8
+	mov r1, 97
+	mov r2, r9
+	mull r2, 12
+	add r1, r2
+	add r1, r13
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
 	jmp .label_176
 	.label_174:
 	.label_176:
-	mov r8, 7
-	cmp r7, r8
+	mov r1, r9
+	mov r2, 7
+	cmp r1, r2
 	jl .label_178
 	jmp .label_177
 	.label_178:
-	mov r7, r6
-	cmp r7, r0
+	mov r1, r10
+	cmp r1, r0
 	jg .label_181
 	jmp .label_180
 	.label_181:
-	mov r7, 97
-	mov r8, r10
-	mull r8, 12
-	add r7, r8
-	add r7, r9
-	ld r8, r7
-	mov r9, 1
-	add r8, r9
-	st r8, r7
+	mov r1, 97
+	mov r2, r12
+	mull r2, 12
+	add r1, r2
+	add r1, r11
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
 	jmp .label_182
 	.label_180:
 	.label_182:
-	mov r7, 97
-	mov r8, r10
-	mull r8, 12
-	add r7, r8
-	add r7, r6
-	ld r8, r7
-	mov r9, 1
-	add r8, r9
-	st r8, r7
-	mov r7, 11
-	cmp r6, r7
+	mov r1, 97
+	mov r2, r12
+	mull r2, 12
+	add r1, r2
+	add r1, r10
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
+	mov r1, r10
+	mov r2, 11
+	cmp r1, r2
 	jl .label_184
 	jmp .label_183
 	.label_184:
-	mov r6, 97
-	mov r7, r10
-	mull r7, 12
-	add r6, r7
-	add r6, r11
-	ld r7, r6
-	mov r8, 1
-	add r7, r8
-	st r7, r6
+	mov r1, 97
+	mov r2, r12
+	mull r2, 12
+	add r1, r2
+	add r1, r13
+	ld r2, r1
+	mov r3, 1
+	add r2, r3
+	st r2, r1
 	jmp .label_185
 	.label_183:
 	.label_185:
@@ -1442,8 +1452,8 @@ __tptcc_fn_main:
 	mov r22, '.'
 	call __tptcc_fn_putchar
 	.label_155:
-	mov r6, r5
-	add r5, 1
+	mov r1, r7
+	add r7, 1
 	jmp .label_154
 	.label_156:
 	mov r1, 97
@@ -1481,27 +1491,27 @@ __tptcc_fn_main:
 	mov r23, 0
 	mov r22, 0
 	call __tptcc_fn_set_cursor
-	mov r5, 0
-	mov r6, 0
+	mov r1, 0
+	mov r2, 0
 	mov r3, 1
 	.label_190:
-	mov r1, 1
-	cmp r1, 0
+	mov r4, 1
+	cmp r4, 0
 	je .label_191
 	.label_192:
-	mov r23, r6
-	mov r22, r5
+	mov r23, r2
+	mov r22, r1
 	call __tptcc_fn_set_cursor
 	mov r22, 9
 	call __tptcc_fn_set_text_colour
-	mov r1, 1
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	ld r1, r1, r6
-	mov r2, r1
-	mov r7, 'F'
-	cmp r2, r7
+	mov r4, 1
+	mov r5, r1
+	mull r5, 12
+	add r4, r5
+	ld r4, r4, r2
+	mov r5, r4
+	mov r6, 'F'
+	cmp r5, r6
 	je .label_194
 	jmp .label_193
 	.label_194:
@@ -1514,8 +1524,8 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_195
 	.label_193:
-	mov r2, r1
-	cmp r2, r0
+	mov r5, r4
+	cmp r5, r0
 	je .label_197
 	jmp .label_196
 	.label_197:
@@ -1528,9 +1538,9 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_198
 	.label_196:
-	mov r2, r1
-	mov r7, 'B'
-	cmp r2, r7
+	mov r5, r4
+	mov r6, 'B'
+	cmp r5, r6
 	je .label_200
 	jmp .label_199
 	.label_200:
@@ -1543,13 +1553,13 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_201
 	.label_199:
-	mov r2, r1
-	mov r7, '0'
-	cmp r2, r7
+	mov r5, r4
+	mov r6, '0'
+	cmp r5, r6
 	jne .label_203
 	jmp .label_202
 	.label_203:
-	mov r22, r1
+	mov r22, r4
 	call __tptcc_fn_putchar
 	jmp .label_204
 	.label_202:
@@ -1563,14 +1573,13 @@ __tptcc_fn_main:
 	.label_198:
 	.label_195:
 	call __tptcc_fn_getchar
-	mov r2, return_reg
-	mov r7, r2
-	mov r23, r6
-	mov r22, r5
+	mov r5, return_reg
+	mov r23, r2
+	mov r22, r1
 	call __tptcc_fn_set_cursor
-	mov r2, r1
-	mov r8, 'F'
-	cmp r2, r8
+	mov r6, r4
+	mov r7, 'F'
+	cmp r6, r7
 	je .label_206
 	jmp .label_205
 	.label_206:
@@ -1586,8 +1595,8 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_207
 	.label_205:
-	mov r2, r1
-	cmp r2, r0
+	mov r6, r4
+	cmp r6, r0
 	je .label_209
 	jmp .label_208
 	.label_209:
@@ -1603,9 +1612,9 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_210
 	.label_208:
-	mov r2, r1
-	mov r8, 'B'
-	cmp r2, r8
+	mov r6, r4
+	mov r7, 'B'
+	cmp r6, r7
 	je .label_212
 	jmp .label_211
 	.label_212:
@@ -1621,167 +1630,159 @@ __tptcc_fn_main:
 	call __tptcc_fn_putchar
 	jmp .label_213
 	.label_211:
-	mov r2, 289
-	mov r8, r1
-	sub r8, '0'
-	add r2, r8
-	ld r22, r2
+	mov r6, 289
+	mov r7, r4
+	sub r7, '0'
+	add r6, r7
+	ld r22, r6
 	call __tptcc_fn_set_text_colour
-	mov r22, r1
+	mov r22, r4
 	call __tptcc_fn_putchar
 	.label_213:
 	.label_210:
 	.label_207:
-	mov r1, r7
-	mov r2, 'a'
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 'a'
+	cmp r4, r6
 	je .label_217
 	jmp .label_214
 	.label_217:
-	mov r1, r6
-	cmp r1, r0
+	mov r4, r2
+	cmp r4, r0
 	jg .label_215
 	jmp .label_214
 	.label_215:
-	mov r1, r6
-	sub r1, 1
-	mov r6, r1
+	sub r2, 1
 	jmp .label_216
 	.label_214:
-	mov r1, r7
-	mov r2, 'd'
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 'd'
+	cmp r4, r6
 	je .label_221
 	jmp .label_218
 	.label_221:
-	mov r1, r6
-	mov r2, 11
-	cmp r1, r2
+	mov r4, r2
+	mov r6, 11
+	cmp r4, r6
 	jl .label_219
 	jmp .label_218
 	.label_219:
-	mov r1, r6
-	add r1, 1
-	mov r6, r1
+	add r2, 1
 	jmp .label_220
 	.label_218:
-	mov r1, r7
-	mov r2, 'w'
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 'w'
+	cmp r4, r6
 	je .label_225
 	jmp .label_222
 	.label_225:
-	mov r1, r5
-	cmp r1, r0
+	mov r4, r1
+	cmp r4, r0
 	jg .label_223
 	jmp .label_222
 	.label_223:
-	mov r1, r5
 	sub r1, 1
-	mov r5, r1
 	jmp .label_224
 	.label_222:
-	mov r1, r7
-	mov r2, 's'
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 's'
+	cmp r4, r6
 	je .label_229
 	jmp .label_226
 	.label_229:
-	mov r1, r5
-	mov r2, 7
-	cmp r1, r2
+	mov r4, r1
+	mov r6, 7
+	cmp r4, r6
 	jl .label_227
 	jmp .label_226
 	.label_227:
-	mov r1, r5
 	add r1, 1
-	mov r5, r1
 	jmp .label_228
 	.label_226:
-	mov r1, r7
-	mov r2, 'f'
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 'f'
+	cmp r4, r6
 	je .label_231
 	jmp .label_230
 	.label_231:
-	mov r1, 1
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	ld r1, r1, r6
-	mov r2, 'F'
-	cmp r1, r2
+	mov r4, 1
+	mov r5, r1
+	mull r5, 12
+	add r4, r5
+	ld r4, r4, r2
+	mov r5, 'F'
+	cmp r4, r5
 	je .label_234
 	jmp .label_233
 	.label_234:
-	mov r1, 1
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	add r1, r6
-	mov r2, 0
-	st r2, r1
+	mov r4, 1
+	mov r5, r1
+	mull r5, 12
+	add r4, r5
+	add r4, r2
+	mov r5, 0
+	st r5, r4
 	jmp .label_235
 	.label_233:
-	mov r1, 1
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	ld r1, r1, r6
-	cmp r1, r0
+	mov r4, 1
+	mov r5, r1
+	mull r5, 12
+	add r4, r5
+	ld r4, r4, r2
+	cmp r4, r0
 	je .label_237
 	jmp .label_236
 	.label_237:
-	mov r1, 1
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	add r1, r6
-	mov r2, 'F'
-	st r2, r1
+	mov r4, 1
+	mov r5, r1
+	mull r5, 12
+	add r4, r5
+	add r4, r2
+	mov r5, 'F'
+	st r5, r4
 	jmp .label_238
 	.label_236:
 	.label_238:
 	.label_235:
 	jmp .label_232
 	.label_230:
-	mov r1, r7
-	mov r2, 10
-	cmp r1, r2
+	mov r4, r5
+	mov r6, 10
+	cmp r4, r6
 	je .label_240
 	.label_242:
-	mov r1, r7
-	mov r2, 'r'
-	cmp r1, r2
+	mov r4, r5
+	mov r5, 'r'
+	cmp r4, r5
 	je .label_240
 	jmp .label_239
 	.label_240:
 	cmp r3, 0
 	je .label_243
 	.label_244:
-	mov r1, 97
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	ld r1, r1, r6
-	mov r2, 9
-	cmp r1, r2
+	mov r3, 97
+	mov r4, r1
+	mull r4, 12
+	add r3, r4
+	ld r3, r3, r2
+	mov r4, 9
+	cmp r3, r4
 	jge .label_247
 	jmp .label_246
 	.label_247:
-	mov r1, 97
-	mov r2, r5
-	mull r2, 12
-	add r1, r2
-	add r1, r6
-	ld r2, r1
-	mov r3, 9
-	sub r2, r3
-	st r2, r1
-	mov r1, 65535
+	mov r3, 97
+	mov r4, r1
+	mull r4, 12
+	add r3, r4
+	add r3, r2
+	ld r4, r3
+	mov r5, 9
+	sub r4, r5
+	st r4, r3
+	mov r3, 65535
+	push r3
+	push r2
 	push r1
-	push r6
-	push r5
 	call __tptcc_fn_add_to_surrounding_cells
 	add stack_pointer, 3
 	jmp .label_248
@@ -1791,12 +1792,12 @@ __tptcc_fn_main:
 	jmp .label_245
 	.label_243:
 	.label_245:
-	push r6
-	push r5
+	push r2
+	push r1
 	call __tptcc_fn_sweep_cell
 	add stack_pointer, 2
-	ld r1, 298
-	cmp r1, r4
+	ld r4, 298
+	cmp r4, r8
 	jge .label_250
 	jmp .label_249
 	.label_250:

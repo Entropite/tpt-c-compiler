@@ -724,16 +724,27 @@ function Parser.parse(toks, symbol_table)
         direct_declarator_node.dimensions = {}
         while(multi_check({"[", "("})) do
             if(accept("[")) then
-                if(check("INT") or check("UNSIGNED_INT")) then
-                    table.insert(direct_declarator_node.dimensions, next_token().value)
-                else
+                if(accept("]")) then
                     if(#direct_declarator_node.dimensions == 0) then
                         table.insert(direct_declarator_node.dimensions, -1)
                     else
                         Diagnostics.submit(Message.error("Array dimensions must be specified for all dimensions except the first one", peek_token().pos))
                     end
+                else
+                    table.insert(direct_declarator_node.dimensions, parse_ternary_expression())
+                    expect("]")
                 end
-                expect("]")
+                
+                -- if(check("INT") or check("UNSIGNED_INT")) then
+                --     table.insert(direct_declarator_node.dimensions, next_token().value)
+                -- else
+                --     if(#direct_declarator_node.dimensions == 0) then
+                --         table.insert(direct_declarator_node.dimensions, -1)
+                --     else
+                --         Diagnostics.submit(Message.error("Array dimensions must be specified for all dimensions except the first one", peek_token().pos))
+                --     end
+                -- end
+                
             elseif(accept("(")) then
                 direct_declarator_node.parameter_list = parse_parameter_list()
                 expect(")")

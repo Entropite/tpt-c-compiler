@@ -4,6 +4,7 @@ local Type = require('type')
 local Operand = require('operand')
 local Diagnostics = require("diagnostics")
 local Message = require("message")
+local CE_Analyzer = require("CE_Analyzer")
 local Type_Checker = {}
 
 
@@ -471,6 +472,7 @@ function Type_Checker.type_check(ast, symbol_table)
     end
 
     function match_initializer_list(n, target_type, coercion_function)
+        
         assert(target_type.kind == Type.KINDS["ARRAY"] or target_type.kind == Type.KINDS["STRUCT"] or target_type.kind == Type.KINDS["UNION"], "Declared type must be an aggregate type")
         -- if((target_type.kind == Type.KINDS["ARRAY"] and target_type.length < #n) or (target_type.kind == Type.KINDS["STRUCT"] and #target_type.members < #n)) then
         --     return false
@@ -569,6 +571,11 @@ function Type_Checker.type_check(ast, symbol_table)
         -- May not have a lhs or rhs
         if(node_check(n, "ASSIGNMENT")) then
             local lhs_type = check_ternary_expression(n.lhs)
+            
+            if(lhs_type.kind == Type.KINDS["ARRAY"]) then
+                Diagnostics.submit(Message.error("Cannot assign values to an array", n.lhs.pos))
+            end
+
             local rhs_type = check_assignment_expression(n.rhs)
             assert(lhs_type ~= nil and rhs_type ~= nil, "Assignment expression must have a lhs and rhs")
             
@@ -794,12 +801,19 @@ function Type_Checker.type_check(ast, symbol_table)
         return false
     end
 
+    function decay(type)
+        if(type.kind == Type.KINDS["ARRAY"]) then
+            return pointer(type.points_to)
+        end
+        return type
+    end
     function check_sum_expression(n)
         if(node_check(n, "SUM_EXPRESSION")) then
             local pointer_type = nil
             for i=1, #n, 2 do
                 local term = n[i]
                 local term_type = check_term(term)
+                term_type = decay(term_type)
                 if(term_type.kind == Type.KINDS["POINTER"]) then
                     pointer_type = term_type
                 elseif(not Type.INTEGRAL_TYPES[term_type.kind]) then
@@ -1056,9 +1070,10 @@ function Type_Checker.type_check(ast, symbol_table)
                         Diagnostics.submit(Message.error("Can only perform the member access operation on a struct or union", operation.value.pos))
                     end
                     local member_type = n.value_types[i-1].members[operation.value.id].type
-                    if(member_type.kind == Type.KINDS["ARRAY"]) then
-                        member_type = pointer(member_type.points_to)
-                    end
+                    -- Not the right spot for pointer decay
+                    -- if(member_type.kind == Type.KINDS["ARRAY"]) then
+                    --     member_type = pointer(member_type.points_to)
+                    -- end
                     table.insert(n.value_types, member_type)
                 elseif(operation.type == "->") then
                     if(n.value_types[i-1].kind ~= Type.KINDS["POINTER"] or n.value_types[i-1].points_to.kind ~= Type.KINDS["STRUCT"] and n.value_types[i-1].points_to.kind ~= Type.KINDS["UNION"]) then
@@ -1086,6 +1101,8 @@ function Type_Checker.type_check(ast, symbol_table)
 
         for i, argument in ipairs(arguments.value) do
             local argument_type = check_assignment_expression(argument)
+            
+            --decay(argument_type)
             if(not (parameter_types.is_variadic or can_coerce(argument_type, parameter_types[i]))) then
                 print(to_string_pretty(argument_type) .. " " .. to_string_pretty(parameter_types[i]))
                 Diagnostics.submit(Message.error("Argument type does not match parameter type", argument.pos))
@@ -1110,7 +1127,7 @@ function Type_Checker.type_check(ast, symbol_table)
                 Diagnostics.submit(Message.error("Symbol '" .. n.value .. "' used before definition", n.pos))
             end
             if(n.handle.type.kind == Type.KINDS["ARRAY"]) then
-                n.value_type = pointer(n.handle.type.points_to)
+                n.value_type = n.handle.type --pointer(n.handle.type.points_to)
             else
                 n.value_type = n.handle.type
             end
@@ -1154,7 +1171,17 @@ function Type_Checker.type_check(ast, symbol_table)
 
     function build_direct_declarator(n, type)
         for i=#n.dimensions, 1, -1 do
-            type = array(n.dimensions[i], type)
+            if(n.dimensions[i] ~= -1) then
+                check_ternary_expression(n.dimensions[i])
+                local status = CE_Analyzer.get_status(n.dimensions[i])
+                if(status == CE_Analyzer.status_types["ICE"]) then
+                    type = array(CE_Analyzer.get_value(n.dimensions[i]), type)
+                else
+                    Diagnostics.submit(Message.error("Array dimensions must be an integer constant expression", n.dimensions[i].pos))
+                end
+            else
+                type=array(-1, type)
+            end
         end
         if(n.parameter_list) then
             type = func(type, build_parameter_list(n.parameter_list))
