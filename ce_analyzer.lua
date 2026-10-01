@@ -10,6 +10,7 @@ setmetatable(ce_analyzer.cache, {__mode="k"})
 ce_analyzer.inverted_status_types = {
     "NONE",
     "ICE",
+    "ICE_LIST",
     "ACE",
     "AC",
 }
@@ -20,6 +21,7 @@ ce_analyzer.get_status = function(node)
     if ce_analyzer.cache[node] then
         return ce_analyzer.cache[node].status
     end
+
 
     ce_analyzer.cache[node] = dispatch(node)
     return ce_analyzer.cache[node].status
@@ -35,6 +37,14 @@ ce_analyzer.get_value = function(node)
 end
 
 ce_analyzer.ce = function(status, value) return {["status"] = ce_analyzer.status_types[status], ["value"] = value} end
+
+
+-- ce_analyzer.check_initializer = function(node)
+--     if(node_check(node, "INITIALIZER_LIST")) then
+--         for i = 1, #node do
+
+-- end
+
 
 function dispatch(node)
     local node_check = Node.node_check
@@ -205,8 +215,28 @@ function dispatch(node)
         end
     end
 
-    
-   return ternary_expression(node)
+    if(node_check(node, "INITIALIZER_LIST")) then
+        for i = 1, #node do
+            local temp = dispatch(node[i])
+            if(not (check_status(temp, "ICE") or check_status(temp, "ICE_LIST"))) then
+                return temp
+            end
+        end
+        return ce("ICE_LIST", node)
+    elseif(node_check(node, "INITIALIZER")) then
+        local temp = dispatch(node.value)
+        if(not check_status(temp, "ICE")) then
+            return temp
+        else
+            node.value = Node:new(Node.NODE_TYPES["INT"], node.value.pos)
+            node.value.value = temp.value
+            return temp
+        end
+        -- how are we updating the initializers?
+
+    else
+        return ternary_expression(node)
+    end
 end
 -- functions are parsed at runtime! Make sure they are statically parsed!
 return ce_analyzer

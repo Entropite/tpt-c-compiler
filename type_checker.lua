@@ -181,6 +181,14 @@ function Type_Checker.type_check(ast, symbol_table)
                         declarator.initializer.value = get_implicit_cast(declarator.initializer.value, declarator.value_type)
                     end
                 end
+                if(n.specifier.storage_class.kind == "static") then
+                    
+                    local status = CE_Analyzer.get_status(declarator.initializer, true)
+                    
+                    if(status ~= CE_Analyzer.status_types["ICE"] and status ~= CE_Analyzer.status_types["ICE_LIST"]) then
+                        Diagnostics.submit(Message.error("Initializers for static variables must be constant expressions", declarator.initializer.pos))
+                    end
+                end
             end
 
             -- register the variable in the symbol table

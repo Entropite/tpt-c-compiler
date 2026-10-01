@@ -142,9 +142,13 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                     register_string_literal(element, global_place)
                     initialize_word(operand.i(global_place.value+CodeGen.global_addr), start)
                 else
-                    local global_place = operand.g(element.value_type.length)
-                    register_string_literal(element, global_place)
-                    emit_local_string_copy(global_place, start, element.value_type.length)
+                    if(start.type == "g") then
+                        register_string_literal(element, start)
+                    else
+                        local global_place = operand.g(element.value_type.length)
+                        register_string_literal(element, global_place)
+                        emit_local_string_copy(global_place, start, element.value_type.length)
+                    end
                     -- table.insert(tac[current_method.id], {type="memcpy", source=global_place, dest=start, size=element.value_type.length})
                 end
             else           
@@ -321,6 +325,8 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                             else
                                 Diagnostics.submit(Message.error("Cannot store aggregate type in register", declarator.initializer.pos))
                             end
+                        elseif(n.specifier.storage_class.kind == "static") then
+                            initializer_place = operand.g(IRVisitor:sizeof(declarator.initializer.value_type))
                         else
                             initializer_place = static_allocate_place(IRVisitor:sizeof(declarator.initializer.value_type))
                         end
