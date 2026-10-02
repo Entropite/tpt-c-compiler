@@ -210,7 +210,10 @@ function dispatch(node)
             return ce("ICE", node.value)
         elseif(node_check(node, "EXPRESSION")) then
             return ternary_expression(node)
+        elseif(node_check(node, "STRING_LITERAL")) then
+            return ce("AC", nil)
         else
+            print(Node.INVERTED_NODE_TYPES[node.type], node.pos.row)
             return ce("NONE", nil)
         end
     end

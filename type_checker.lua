@@ -185,7 +185,7 @@ function Type_Checker.type_check(ast, symbol_table)
                     
                     local status = CE_Analyzer.get_status(declarator.initializer, true)
                     
-                    if(status ~= CE_Analyzer.status_types["ICE"] and status ~= CE_Analyzer.status_types["ICE_LIST"]) then
+                    if(status ~= CE_Analyzer.status_types["ICE"] and status ~= CE_Analyzer.status_types["ICE_LIST"] and status ~= CE_Analyzer.status_types["AC"]) then
                         Diagnostics.submit(Message.error("Initializers for static variables must be constant expressions", declarator.initializer.pos))
                     end
                 end
