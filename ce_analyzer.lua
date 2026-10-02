@@ -241,5 +241,5 @@ function dispatch(node)
         return ternary_expression(node)
     end
 end
--- functions are parsed at runtime! Make sure they are statically parsed!
+
 return ce_analyzer

@@ -603,9 +603,13 @@ function Type_Checker.type_check(ast, symbol_table)
 
     function check_ternary_expression(n)
         if(node_check(n, "TERNARY")) then
+            
             local condition_type = check_logical_or_expression(n.condition)
+            decay(n.condition)
             local true_case_type = check_assignment_expression(n.true_case)
+            decay(n.true_case)
             local false_case_type = check_logical_or_expression(n.false_case)
+            decay(n.false_case)
             if(not can_coerce(false_case_type, true_case_type, true)) then
                 Diagnostics.submit(Message.error("Ternary false and true case types do not match", n.pos))
             end

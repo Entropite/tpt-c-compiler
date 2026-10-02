@@ -307,8 +307,6 @@ function IRVisitor.generate_ir_code(ast, breakpoints)
                 if(declarator.initializer) then
                 
                     local initializer_place = nil
-                    -- local serpent = require("serpent") -- here you left off
-                    -- print(serpent.block(declarator.initializer[1].value))
             
                     if(declarator.initializer.value and node_check(declarator.initializer.value, "STRING_LITERAL")) then
                         if(declarator.initializer.value_type.kind == Type.KINDS["ARRAY"]) then
