@@ -235,7 +235,7 @@ function dispatch(node)
             node.value.value = temp.value
             return temp
         end
-        -- how are we updating the initializers?
+        
 
     else
         return ternary_expression(node)
