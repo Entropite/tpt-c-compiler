@@ -31,6 +31,12 @@ function Operand:next_label()
     return temp
 end
 
+function Operand:reset()
+    self.label = 0
+    self.temp = 0
+    self.global = 0
+end
+
 Operand.__index = Operand
 Operand.lvalue_operands = {["l"]=1,["p"]=2,["g"]=3, ["pr"]=4, ["vr"]=5} -- has lvalue; may or may not have a register
 Operand.mem_lvalue_operands = {["l"]=1, ["p"]=1, ["g"]=1, ["vr"]=1} -- has lvalue but doesn't have a register

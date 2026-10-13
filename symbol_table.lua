@@ -1,5 +1,6 @@
 local Type = require("type")
 local util = require("util")
+local Operand = require("operand")
 local base = Type.base
 local pointer = Type.pointer
 local func = Type.func
@@ -61,6 +62,7 @@ symbol_table.__index = symbol_table
 
 function symbol_table.reset()
     symbol_table.current_scope = util.deep_copy(symbol_table.default_symbol_table)
+    Operand:reset()
 end
 
 symbol_table.namespace_get = {
