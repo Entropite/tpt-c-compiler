@@ -1024,6 +1024,7 @@ function Parser.parse(toks, symbol_table)
 
     function parse_argument_list()
         local argument_list_node = new("ARGUMENT_LIST")
+        argument_list_node.pos = peek_token().pos
         if peek_token().type == TOKEN_TYPES[")"] then
             return argument_list_node
         end

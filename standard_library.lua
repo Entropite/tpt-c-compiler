@@ -3,7 +3,12 @@ local Standard_Library = {}
 Standard_Library.code = {}
 
 Standard_Library.dependencies = {["__print_signed_long"] = {"__print_unsigned_long"},
-["__print_signed_int"] = {"__print_unsigned_int"}}
+["__print_signed_int"] = {"__print_unsigned_int"},
+["__scan_unsigned_long"] = {"getchar"},
+["__scan_signed_long"] = {"__scan_unsigned_long"},
+["__scan_unsigned_int"] = {"getchar"},
+["__scan_signed_int"] = {"__scan_unsigned_int"},
+["__scan_char_array"] = {"getchar"}}
 
 function Standard_Library.resolve_dependencies(included_standard_functions)
     local resolved_dependencies = {}
@@ -188,6 +193,29 @@ __tptcc_fn_print_char_array:
     ret
 ]]
 
+Standard_Library.code["__scan_char_array"] = [[
+__tptcc_fn_scan_char_array:
+    mov %3, 0
+    sub %2, 1
+__tptcc_fn_scan_char_array_loop:
+    cmp %3, %2
+    jge __tptcc_fn_scan_char_array_exit
+    call __tptcc_fn_getchar
+    st return_reg, term_reg, term_base
+    cmp return_reg, 10
+    je __tptcc_fn_scan_char_array_exit
+    cmp return_reg, ' '
+    je __tptcc_fn_scan_char_array_exit
+    st return_reg, %1, %3
+    add %3, 1
+    jmp __tptcc_fn_scan_char_array_loop
+__tptcc_fn_scan_char_array_exit:
+    st r0, %1, %3
+    add %3, 1
+    mov return_reg, %3
+    ret
+]]
+
 Standard_Library.code["putchar"] = [[
 __tptcc_fn_putchar:
     st %1, term_reg, term_base
@@ -254,6 +282,7 @@ __tptcc_fn_scan_unsigned_int:
     mov %2, 0
 __scan_unsigned_int_loop:
     call __tptcc_fn_getchar
+__scan_unsigned_int_loop_signed_plugin:
     st return_reg, term_reg, term_base
     sub return_reg, '0'
     cmp return_reg, 9
@@ -268,6 +297,69 @@ __scan_unsigned_int_not_digit:
     ret
 
 ]]
+
+Standard_Library.code["__scan_signed_int"] = [[
+__tptcc_fn_scan_signed_int:
+    mov %2, 0
+    call __tptcc_fn_getchar
+    cmp return_reg, '-'
+    jne __scan_unsigned_int_loop_signed_plugin
+    st return_reg, term_reg, term_base
+    call __tptcc_fn_scan_unsigned_int
+    xor %2, 65535
+    add %2, 1
+    st %2, %1
+    ret
+]]
+
+Standard_Library.code["__scan_unsigned_long"] = [[
+__tptcc_fn_scan_unsigned_long:
+    mov %2, 0
+    mov %3, 0
+__scan_unsigned_long_loop:
+    call __tptcc_fn_getchar
+__scan_unsigned_long_loop_signed_plugin:
+    st return_reg, term_reg, term_base
+    sub return_reg, '0'
+    cmp return_reg, 9
+    jg __scan_unsigned_long_not_digit
+    cmp return_reg, r0
+    jl __scan_unsigned_long_not_digit
+    
+    mulh %4, %2, 10
+    mull %3, 10
+    add %3, %4
+    mull %2, 10
+    add %2, return_reg
+    adc %3, r0
+    jmp __scan_unsigned_long_loop
+
+__scan_unsigned_long_not_digit:
+    exh %3, r0, %3
+    mov %2, %3, %2
+    st %2, %1
+    ret
+    ]]
+
+Standard_Library.code["__scan_signed_long"] = [[
+__tptcc_fn_scan_signed_long:
+    mov %2, 0
+    mov %3, 0
+    call __tptcc_fn_getchar
+    cmp return_reg, '-'
+    jne __scan_unsigned_long_loop_signed_plugin
+    st return_reg, term_reg, term_base
+    call __tptcc_fn_scan_unsigned_long
+    exh %3, %3, %3
+    xor %2, 65535
+    xor %3, 65535
+    add %2, 1
+    adc %3, r0
+    exh %3, r0, %3
+    mov %2, %3, %2
+    st %2, %1
+    ret
+    ]]
     
 Standard_Library.code["vscroll"] = [[
 __tptcc_fn_vscroll:

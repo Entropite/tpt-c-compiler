@@ -1108,7 +1108,7 @@ function Type_Checker.type_check(ast, symbol_table)
 
     function check_argument_list(arguments, parameter_types)
         if((parameter_types.is_variadic and #arguments.value < #parameter_types) or (not parameter_types.is_variadic and #arguments.value ~= #parameter_types)) then
-            Diagnostics.submit(Message.error("Argument list length does not match the parameter list length", arguments.pos))
+            Diagnostics.submit(Message.error("Argument list length does not match the parameter list length", arguments.value.pos))
         end
 
         for i, argument in ipairs(arguments.value) do

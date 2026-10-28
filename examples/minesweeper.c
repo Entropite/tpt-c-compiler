@@ -1,29 +1,6 @@
 char board[8][12];
 
-char __scan_signed_int(int *num) {
-    // Register variables can be more efficiently accessed and updated than local variables
-    register char c;
-    register int res = 0;
-    register int sign = 1;
-    if((c = getchar()) == '-') {
-        sign = -1;
-    }else{
-        sign = 1;
-        res = c - '0';
-    }
-    putchar(c);
-    while((c = getchar()) >= '0' && c <= '9') {
-        putchar(c);
-        res = res * 10 + (c - '0');
-    }
 
-    if(sign == -1) {
-        res = -res;
-    }
-
-    *num = res;
-    return c;
-}
 int has_mine[8][12];
 int is_interior[8][12] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 int digit_colour[9] = {0x77, 0x79, 0x72, 0x7c, 0x71, 0x74, 0x76, 0x75, 0x78};

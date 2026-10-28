@@ -7,6 +7,7 @@ if(not lpeg_installed) then
 end
 
 local Preprocessor = {}
+Preprocessor.s_stdlib_path = "c_std_lib/"
 local locale = lpeg.locale()
 Preprocessor.include_pattern = lpeg.Ct(((lpeg.Cp() * lpeg.P("\n")^-1 * lpeg.P("#include") * lpeg.P(" ")^0 * lpeg.C((lpeg.P("\"") + "<") * (locale.alnum + lpeg.S("._-[]|()!@#$%^&*,"))^0 * (lpeg.P("\"") + ">")) * lpeg.Cp() / function(start, filename, finish) return {start=start, finish=finish - 1, value=filename} end) + lpeg.P(1))^0)
     
@@ -34,6 +35,11 @@ function Preprocessor.preprocess(program)
             
             -- the include directive must be at the start of a line (must check for either the start of the patch or just after a newline)
             if(start == 1 or patch:sub(start, start) == "\n") then
+                local location = ""
+                if(string.sub(name, 1, 1) == "<" and string.sub(name, #name, #name) == ">") then
+                    location = Preprocessor.s_stdlib_path
+                end
+
                 name = string.sub(name, 2, #name - 1)
 
                 local segment = string.sub(patch, last_code_patch_pos + 1, start - 1)
@@ -42,7 +48,7 @@ function Preprocessor.preprocess(program)
 
                 if(visited[name] == nil) then
                     visited[name] = true
-                    local file = io.open(name)
+                    local file = io.open(location .. name)
                     if(file == nil) then
                         error("File " .. name .. " not found")
                     else

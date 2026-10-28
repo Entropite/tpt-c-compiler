@@ -81,8 +81,35 @@ Your compiled program should now be stored in the R3's memory. By turning decora
 
 #### If you encounter any problems during the compilation process, make sure to reach out to me on [TPT's discord](https://powdertoy.co.uk/Discussions/Thread/View.html?Thread=25871) where I have the username lithium404.
 
-# Standard Library Documentation
-Many of the methods in this library have the prefix "`__`" which usually indicates that these methods are for the compiler's internal use. However, since a formal standard library is still being designed, these temporary methods can still be tremendously useful.
+# C Standard Library Implementation
+Most features that would otherwise be supported by an underlying operating system are not provided in this compiler's C standard library. This is done on purpose since general solutions would entail a substantial performance penalty compared to bespoke application-specific implementations. At this point, the only C standard library methods supported are `printf` and `scanf`. Note that the compiler comes with many built-in functions for IO as described in the [next section](#tptcc-standard-library-documentation).
+
+## `stdio.h`
+---
+
+### `void printf(char* fmt, ...)`
+Displays a formatted string.
+- **Parameters**
+  - `fmt` — The null terminated string to display. It may feature any of the following format specifiers: %d, %l, %u, %lu, %c, %s. The number of format specifiers must match the number of arguments following the format string.
+  - `...` — The variadic parameters that will be inserted into the format string after being converted to a string as specified by their associated format specifier. Note that type checking is not performed on these variadic parameters.
+- **Returns**
+  - `void`
+
+---
+
+### `int scanf(char *fmt, ...)`
+---
+
+Retrieves input from the keyboard.
+- **Parameters**
+  - `fmt` — A null terminated string which specifies the way in which input is to be read from the keyboard. This string can feature any ASCII characters along with format specifiers which convert keyboard input to the specified type. The supported format specifiers are: %d, %l, %u, %lu, %c, %s. The number of format specifiers must match the number of arguments following the format string.
+  - `...` — The variadic parameters in which the values produced from the keyboard's input will be stored. Each parameter here should be a pointer to the targetted type. For instance, if the format specifier %d is used, the argument provided should be of type `int*`. Note that type checking is not performed on these variadic parameters.
+- **Returns**
+  - `int` — The number of conversions made. A conversion is when input has been retrieved from the keyboard, convered into a specified type, and then stored into the provided memory location pointed to by the associated variadic parameter. If the keyboard's input does not match the format string, the number of conversions returned may be less than what is expected. The number of conversions cannot surpass the number of format specifiers in the format string.
+
+
+# TPTCC Standard Library Documentation
+Many of the methods in this library have the prefix "`__`" which usually indicates that these methods are for the compiler's internal use. However, programmers should feel free to use such methods if appropriate. Note that the methods and constants in this library do not need any include directives and are automatically placed in the compiler's symbol table before the program has even been preprocessed.
 
 ## `void __print_unsigned_int(int i)`
 Displays an unsigned integer.
@@ -180,12 +207,57 @@ Reads a single entered character. Unlike `getchar()`, this function does not wai
 
 ## `void __scan_unsigned_int(int* out)`
 
-Reads an unsigned integer from the input and stores it in the provided integer
+Reads an unsigned integer from the keyboard and stores it in the provided integer pointer
 
 - **Parameters**
   - `out` — Address of the integer to store the result in
 - **Returns**
   - `void`
+
+---
+
+## `void __scan_signed_int(int* out)`
+
+Reads a signed integer from the keyboard and stores it in the provided integer pointer
+
+- **Parameters**
+  - `out` — Address of the integer to store the result in
+- **Returns**
+  - `void`
+
+---
+
+## `void __scan_unsigned_long(unsigned long* out)`
+
+Reads an unsigned long from the keyboard and stores it in the provided long pointer
+
+- **Parameters**
+  - `out` — Address of the long to store the result in
+- **Returns**
+  - `void`
+
+---
+
+## `void __scan_signed_long(long* out)`
+
+Reads a signed long from the keyboard and stores it in the provided long pointer
+
+- **Parameters**
+  - `out` — Address of the long to store the result in
+- **Returns**
+  - `void`
+
+---
+
+## `int __scan_char_array(char* str, int length)`
+
+Reads a string from the keyboard. The string has a maximum length of `length` including the null terminator. When a whitespace character is read from the keyboard, this method will insert a null terminator instead and return.
+
+- **Parameters**
+  - `str` — The string that the keyboard input is read into
+  - `length` — The maximum length of the string including the null terminator
+- **Returns**
+  - `int` — the number of characters read into the string including the null terminator
 
 ---
 
