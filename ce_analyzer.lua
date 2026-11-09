@@ -212,6 +212,12 @@ function dispatch(node)
             return ternary_expression(node)
         elseif(node_check(node, "STRING_LITERAL")) then
             return ce("AC", nil)
+        elseif(node_check(node, "IDENTIFIER")) then
+            if(node.handle.place.type == "i") then
+                return ce("ICE", node.handle.place.value)
+            else
+                return ce("NONE", nil)
+            end
         else
             print(Node.INVERTED_NODE_TYPES[node.type], node.pos.row)
             return ce("NONE", nil)

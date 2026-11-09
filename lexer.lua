@@ -159,7 +159,7 @@ function Lexer.lex(s)
     local type_specifier = (lpeg.C(lpeg.P("int") + "char" + "void" + "long" + "unsigned" + "signed"+ "struct" + "union" + "enum") * -(loc.alnum + "_")) 
     type_specifier = lpeg.Cp() * type_specifier / function(pos, ts) return Token:new(TOKEN_TYPES["TYPE_SPECIFIER"], ts, get_pos(pos)) end
 
-    local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static" + "typedef") * -loc.alnum)
+    local storage_class = (lpeg.C(lpeg.P("auto") + "register" + "static" + "typedef") * -(loc.alnum + "_"))
     storage_class = lpeg.Cp() * storage_class / function(pos, sc) return Token:new(TOKEN_TYPES["STORAGE_CLASS"], sc, get_pos(pos)) end
     -- Punctuation
     local punctuation = lpeg.C(lpeg.S("(){};,[]")) 

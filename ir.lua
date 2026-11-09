@@ -603,6 +603,11 @@ end
                     n.place = n.lhs.place
                 else
                     n.place = emit_move(n.rhs.place, n.lhs.place) -- emit_move will return the source for optimization reasons
+                    if(n.value_type.kind == Type.KINDS["LONG"]) then
+                        n.place.bitsize = IRVisitor.LONG_BITS
+                    else
+                        n.place.bitsize = IRVisitor.INT_BITS
+                    end
                 end
             elseif(n.op == "/=") then
                 local lhs_place = n.lhs.place
@@ -738,7 +743,6 @@ end
             local temp_place = load_operand_into_register(emit_bool_rvalue(n[1]))
 
             for i = 2, #n - 3, 2 do
-
                 emit_type_coercion(temp_place, n[i].value_type, n[i + 1].value_type)
                 
                 local next_reg = load_operand_into_read_only_register(emit_bool_rvalue(n[i + 1]))
